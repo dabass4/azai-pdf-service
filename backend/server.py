@@ -181,16 +181,27 @@ Return ONLY the JSON object, no additional text or explanation."""
                 logger.error(f"Invalid JSON structure: {extracted_json}")
                 return ExtractedData()
             
+            # Parse time_entries array
+            time_entries = []
+            time_entries_data = extracted_json.get("time_entries", [])
+            
+            if isinstance(time_entries_data, list):
+                for entry in time_entries_data:
+                    if isinstance(entry, dict):
+                        time_entries.append(TimeEntry(
+                            date=entry.get("date"),
+                            time_in=entry.get("time_in"),
+                            time_out=entry.get("time_out"),
+                            hours_worked=entry.get("hours_worked")
+                        ))
+            
             # Create ExtractedData with validated fields
             return ExtractedData(
                 employee_name=extracted_json.get("employee_name"),
-                date=extracted_json.get("date"),
-                time_in=extracted_json.get("time_in"),
-                time_out=extracted_json.get("time_out"),
-                hours_worked=extracted_json.get("hours_worked"),
                 client_name=extracted_json.get("client_name"),
                 service_code=extracted_json.get("service_code"),
-                signature=extracted_json.get("signature")
+                signature=extracted_json.get("signature"),
+                time_entries=time_entries
             )
             
         except json.JSONDecodeError as e:
