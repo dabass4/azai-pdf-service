@@ -224,15 +224,24 @@ async def submit_to_sandata(timesheet: Timesheet) -> dict:
         auth_token = os.environ.get('SANDATA_AUTH_TOKEN', '')
         
         # Mock submission - log the data that would be sent
+        # Format time entries for submission
+        time_entries_payload = []
+        if timesheet.extracted_data.time_entries:
+            for entry in timesheet.extracted_data.time_entries:
+                time_entries_payload.append({
+                    "date": entry.date,
+                    "time_in": entry.time_in,
+                    "time_out": entry.time_out,
+                    "hours_worked": entry.hours_worked
+                })
+        
         payload = {
             "employee_name": timesheet.extracted_data.employee_name,
-            "date": timesheet.extracted_data.date,
-            "time_in": timesheet.extracted_data.time_in,
-            "time_out": timesheet.extracted_data.time_out,
-            "hours_worked": timesheet.extracted_data.hours_worked,
             "client_name": timesheet.extracted_data.client_name,
             "service_code": timesheet.extracted_data.service_code,
-            "signature_verified": timesheet.extracted_data.signature == "Yes"
+            "signature_verified": timesheet.extracted_data.signature == "Yes",
+            "time_entries": time_entries_payload,
+            "total_entries": len(time_entries_payload)
         }
         
         logger.info(f"[MOCK] Submitting to Sandata API: {payload}")
