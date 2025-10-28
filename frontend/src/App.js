@@ -209,14 +209,22 @@ const Home = () => {
                         {timesheet.extracted_data.employee_entries && timesheet.extracted_data.employee_entries.length > 0 && (() => {
                           // Flatten all time entries from all employees and add employee info
                           const allEntries = [];
+                          let totalUnits = 0;
+                          
                           timesheet.extracted_data.employee_entries.forEach(employee => {
                             if (employee.time_entries) {
                               employee.time_entries.forEach(entry => {
+                                // Calculate units: 1 unit = 15 minutes, so 1 hour = 4 units
+                                const hours = parseFloat(entry.hours_worked) || 0;
+                                const units = Math.round(hours * 4); // 4 units per hour
+                                totalUnits += units;
+                                
                                 allEntries.push({
                                   ...entry,
                                   employee_name: employee.employee_name,
                                   service_code: employee.service_code,
-                                  signature: employee.signature
+                                  signature: employee.signature,
+                                  units: units
                                 });
                               });
                             }
