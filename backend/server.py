@@ -73,30 +73,36 @@ async def extract_timesheet_data(file_path: str, file_type: str) -> ExtractedDat
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"timesheet-{uuid.uuid4()}",
-            system_message="You are an expert at extracting structured data from timesheets. Extract all fields accurately."
+            system_message="You are an expert at extracting structured data from timesheets. Extract all fields accurately and return valid JSON."
         ).with_model("gemini", "gemini-2.0-flash")
         
-        # Determine mime type
-        mime_type = "application/pdf" if file_type == "pdf" else "image/jpeg"
+        # Determine mime type - use image/jpeg for images, application/pdf for PDFs
+        if file_type in ['jpg', 'jpeg', 'png']:
+            mime_type = f"image/{file_type if file_type != 'jpg' else 'jpeg'}"
+        else:
+            mime_type = "application/pdf"
+        
+        logger.info(f"Processing file: {file_path}, type: {file_type}, mime: {mime_type}")
         
         file_content = FileContentWithMimeType(
             file_path=file_path,
             mime_type=mime_type
         )
         
-        extraction_prompt = """Extract the following information from this timesheet and return it as a JSON object:
-        {
-            "employee_name": "employee's full name",
-            "date": "date in format YYYY-MM-DD",
-            "time_in": "time in format HH:MM AM/PM",
-            "time_out": "time out format HH:MM AM/PM",
-            "hours_worked": "total hours",
-            "client_name": "client/patient name",
-            "service_code": "service code",
-            "signature": "'Yes' if signature present, 'No' if not"
-        }
-        
-        Return ONLY the JSON object, no other text."""
+        extraction_prompt = """Analyze this timesheet document carefully and extract the following information. Return ONLY a valid JSON object with this exact structure:
+
+{
+  "employee_name": "full name of the employee",
+  "date": "date in YYYY-MM-DD format",
+  "time_in": "clock in time in HH:MM AM/PM format",
+  "time_out": "clock out time in HH:MM AM/PM format",
+  "hours_worked": "total hours worked as number or text",
+  "client_name": "name of the client or patient",
+  "service_code": "service or billing code",
+  "signature": "Yes if signature is present, No if not"
+}
+
+If any field is not found or unclear, use "Not Found" as the value. Return ONLY the JSON object, no additional text or explanation."""
         
         user_message = UserMessage(
             text=extraction_prompt,
@@ -104,27 +110,59 @@ async def extract_timesheet_data(file_path: str, file_type: str) -> ExtractedDat
         )
         
         response = await chat.send_message(user_message)
-        logger.info(f"LLM Response: {response}")
+        logger.info(f"LLM Raw Response: {response}")
         
-        # Parse JSON from response
+        # Parse JSON from response with better error handling
         try:
-            # Try to extract JSON from response
             response_text = response.strip()
+            
+            # Remove markdown code blocks if present
             if "```json" in response_text:
                 response_text = response_text.split("```json")[1].split("```")[0].strip()
             elif "```" in response_text:
                 response_text = response_text.split("```")[1].split("```")[0].strip()
             
+            logger.info(f"Cleaned response text: {response_text}")
+            
+            # Parse JSON
             extracted_json = json.loads(response_text)
-            return ExtractedData(**extracted_json)
+            
+            # Validate that it's a dict/object, not a list
+            if isinstance(extracted_json, list):
+                logger.error(f"LLM returned a list instead of object: {extracted_json}")
+                # If it's a list with one item, use that
+                if len(extracted_json) > 0 and isinstance(extracted_json[0], dict):
+                    extracted_json = extracted_json[0]
+                else:
+                    return ExtractedData()
+            
+            # Ensure all required keys exist
+            if not isinstance(extracted_json, dict):
+                logger.error(f"Invalid JSON structure: {extracted_json}")
+                return ExtractedData()
+            
+            # Create ExtractedData with validated fields
+            return ExtractedData(
+                employee_name=extracted_json.get("employee_name"),
+                date=extracted_json.get("date"),
+                time_in=extracted_json.get("time_in"),
+                time_out=extracted_json.get("time_out"),
+                hours_worked=extracted_json.get("hours_worked"),
+                client_name=extracted_json.get("client_name"),
+                service_code=extracted_json.get("service_code"),
+                signature=extracted_json.get("signature")
+            )
+            
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing error: {e}")
-            logger.error(f"Response text: {response}")
-            # Return empty extracted data on parse failure
+            logger.error(f"Failed to parse: {response_text}")
+            return ExtractedData()
+        except TypeError as e:
+            logger.error(f"Type error when creating ExtractedData: {e}")
             return ExtractedData()
             
     except Exception as e:
-        logger.error(f"Extraction error: {e}")
+        logger.error(f"Extraction error: {e}", exc_info=True)
         raise
 
 async def submit_to_sandata(timesheet: Timesheet) -> dict:
