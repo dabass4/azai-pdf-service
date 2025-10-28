@@ -312,7 +312,7 @@ const Home = () => {
                                   </tbody>
                                 </table>
                                 <div className="bg-gray-50 px-4 py-2 text-xs text-gray-600 border-t border-gray-200">
-                                  <span className="font-semibold">Note:</span> 1 unit = 15 minutes (4 units per hour)
+                                  <span className="font-semibold">Note:</span> 1 unit = 15 minutes (4 units per hour). Time periods greater than 35 minutes are rounded up to 3 units (45 min).
                                 </div>
                               </div>
                             </div>
