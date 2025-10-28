@@ -115,36 +115,48 @@ async def extract_timesheet_data(file_path: str, file_type: str) -> ExtractedDat
             mime_type=mime_type
         )
         
-        extraction_prompt = """Analyze this timesheet document carefully and extract ALL dates and time entries. The timesheet may contain multiple days of work.
+        extraction_prompt = """Analyze this timesheet document carefully. It may contain ONE patient/client with MULTIPLE employees who worked with that patient.
 
 Return ONLY a valid JSON object with this exact structure:
 
 {
-  "employee_name": "full name of the employee",
-  "client_name": "name of the client or patient",
-  "service_code": "service or billing code",
-  "signature": "Yes if signature is present, No if not",
-  "time_entries": [
+  "client_name": "name of the patient or client",
+  "employee_entries": [
     {
-      "date": "YYYY-MM-DD",
-      "time_in": "HH:MM AM/PM",
-      "time_out": "HH:MM AM/PM",
-      "hours_worked": "number of hours"
+      "employee_name": "first employee's full name",
+      "service_code": "service or billing code for this employee",
+      "signature": "Yes if signature is present, No if not",
+      "time_entries": [
+        {
+          "date": "YYYY-MM-DD",
+          "time_in": "HH:MM AM/PM",
+          "time_out": "HH:MM AM/PM",
+          "hours_worked": "number of hours"
+        }
+      ]
     },
     {
-      "date": "YYYY-MM-DD",
-      "time_in": "HH:MM AM/PM", 
-      "time_out": "HH:MM AM/PM",
-      "hours_worked": "number of hours"
+      "employee_name": "second employee's full name",
+      "service_code": "service or billing code for this employee",
+      "signature": "Yes if signature is present, No if not",
+      "time_entries": [
+        {
+          "date": "YYYY-MM-DD",
+          "time_in": "HH:MM AM/PM",
+          "time_out": "HH:MM AM/PM",
+          "hours_worked": "number of hours"
+        }
+      ]
     }
   ]
 }
 
-IMPORTANT: 
-- Extract ALL date/time entries from the timesheet, not just one
-- If there's only one date entry, the array should have one object
-- If there are multiple dates/entries, include all of them in the array
-- If any field is not found, use "Not Found" as the value
+IMPORTANT:
+- Extract ALL employees from the timesheet
+- If there's only one employee, the employee_entries array should have one object
+- Extract ALL date/time entries for each employee
+- Group time entries by employee
+- If the timesheet has the same service code for all employees, repeat it for each
 
 Return ONLY the JSON object, no additional text or explanation."""
         
