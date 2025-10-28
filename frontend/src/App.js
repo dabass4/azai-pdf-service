@@ -246,6 +246,9 @@ const Home = () => {
                                 <span className="text-gray-500 text-xs">
                                   • {timesheet.extracted_data.employee_entries.length} Employee{timesheet.extracted_data.employee_entries.length !== 1 ? 's' : ''}
                                 </span>
+                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">
+                                  {totalUnits} Total Units
+                                </span>
                               </h3>
                               
                               <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -258,6 +261,7 @@ const Home = () => {
                                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Time In</th>
                                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Time Out</th>
                                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Hours</th>
+                                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Units</th>
                                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Signed</th>
                                     </tr>
                                   </thead>
@@ -269,7 +273,8 @@ const Home = () => {
                                         <td className="px-4 py-3 text-sm text-gray-700">{entry.service_code || "N/A"}</td>
                                         <td className="px-4 py-3 text-sm text-gray-900">{entry.time_in || "N/A"}</td>
                                         <td className="px-4 py-3 text-sm text-gray-900">{entry.time_out || "N/A"}</td>
-                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{entry.hours_worked || "N/A"}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{entry.hours_worked || "N/A"}</td>
+                                        <td className="px-4 py-3 text-sm font-bold text-blue-900">{entry.units}</td>
                                         <td className="px-4 py-3 text-sm text-gray-700">
                                           {entry.signature === "Yes" ? "✓" : "✗"}
                                         </td>
@@ -277,6 +282,9 @@ const Home = () => {
                                     ))}
                                   </tbody>
                                 </table>
+                                <div className="bg-gray-50 px-4 py-2 text-xs text-gray-600 border-t border-gray-200">
+                                  <span className="font-semibold">Note:</span> 1 unit = 15 minutes (4 units per hour)
+                                </div>
                               </div>
                             </div>
                           );
