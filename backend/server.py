@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,10 +6,14 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
+import base64
+import json
 
+from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
+import aiohttp
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -25,46 +29,263 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
+class ExtractedData(BaseModel):
+    employee_name: Optional[str] = None
+    date: Optional[str] = None
+    time_in: Optional[str] = None
+    time_out: Optional[str] = None
+    hours_worked: Optional[str] = None
+    client_name: Optional[str] = None
+    service_code: Optional[str] = None
+    signature: Optional[str] = None
+
+class Timesheet(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    filename: str
+    file_type: str
+    extracted_data: Optional[ExtractedData] = None
+    status: str = "processing"  # processing, completed, failed, submitted
+    sandata_status: Optional[str] = None  # pending, submitted, error
+    error_message: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class TimesheetCreate(BaseModel):
+    filename: str
+    file_type: str
 
-# Add your routes to the router instead of directly to app
+# Initialize LLM Chat
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
+
+async def extract_timesheet_data(file_path: str, file_type: str) -> ExtractedData:
+    """Extract data from timesheet using Gemini Vision API"""
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"timesheet-{uuid.uuid4()}",
+            system_message="You are an expert at extracting structured data from timesheets. Extract all fields accurately."
+        ).with_model("gemini", "gemini-2.0-flash")
+        
+        # Determine mime type
+        mime_type = "application/pdf" if file_type == "pdf" else "image/jpeg"
+        
+        file_content = FileContentWithMimeType(
+            file_path=file_path,
+            mime_type=mime_type
+        )
+        
+        extraction_prompt = """Extract the following information from this timesheet and return it as a JSON object:
+        {
+            "employee_name": "employee's full name",
+            "date": "date in format YYYY-MM-DD",
+            "time_in": "time in format HH:MM AM/PM",
+            "time_out": "time out format HH:MM AM/PM",
+            "hours_worked": "total hours",
+            "client_name": "client/patient name",
+            "service_code": "service code",
+            "signature": "'Yes' if signature present, 'No' if not"
+        }
+        
+        Return ONLY the JSON object, no other text."""
+        
+        user_message = UserMessage(
+            text=extraction_prompt,
+            file_contents=[file_content]
+        )
+        
+        response = await chat.send_message(user_message)
+        logger.info(f"LLM Response: {response}")
+        
+        # Parse JSON from response
+        try:
+            # Try to extract JSON from response
+            response_text = response.strip()
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+            
+            extracted_json = json.loads(response_text)
+            return ExtractedData(**extracted_json)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing error: {e}")
+            logger.error(f"Response text: {response}")
+            # Return empty extracted data on parse failure
+            return ExtractedData()
+            
+    except Exception as e:
+        logger.error(f"Extraction error: {e}")
+        raise
+
+async def submit_to_sandata(timesheet: Timesheet) -> dict:
+    """Submit timesheet data to Sandata API (mocked for now)"""
+    try:
+        sandata_url = os.environ.get('SANDATA_API_URL', '')
+        api_key = os.environ.get('SANDATA_API_KEY', '')
+        auth_token = os.environ.get('SANDATA_AUTH_TOKEN', '')
+        
+        # Mock submission - log the data that would be sent
+        payload = {
+            "employee_name": timesheet.extracted_data.employee_name,
+            "date": timesheet.extracted_data.date,
+            "time_in": timesheet.extracted_data.time_in,
+            "time_out": timesheet.extracted_data.time_out,
+            "hours_worked": timesheet.extracted_data.hours_worked,
+            "client_name": timesheet.extracted_data.client_name,
+            "service_code": timesheet.extracted_data.service_code,
+            "signature_verified": timesheet.extracted_data.signature == "Yes"
+        }
+        
+        logger.info(f"[MOCK] Submitting to Sandata API: {payload}")
+        logger.info(f"[MOCK] API URL: {sandata_url}")
+        logger.info(f"[MOCK] Using API Key: {api_key[:10]}... (masked)")
+        
+        # Simulate successful submission
+        return {
+            "status": "success",
+            "sandata_id": f"SND-{uuid.uuid4().hex[:8].upper()}",
+            "message": "Timesheet submitted successfully (MOCKED)"
+        }
+        
+    except Exception as e:
+        logger.error(f"Sandata submission error: {e}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Timesheet Scanner API"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+@api_router.post("/timesheets/upload")
+async def upload_timesheet(file: UploadFile = File(...)):
+    """Upload and process a timesheet file"""
+    try:
+        # Validate file type
+        file_extension = file.filename.split('.')[-1].lower()
+        if file_extension not in ['pdf', 'jpg', 'jpeg', 'png']:
+            raise HTTPException(status_code=400, detail="Only PDF and image files are supported")
+        
+        # Save file temporarily
+        upload_dir = Path("/tmp/timesheets")
+        upload_dir.mkdir(exist_ok=True)
+        
+        file_id = str(uuid.uuid4())
+        file_path = upload_dir / f"{file_id}.{file_extension}"
+        
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        logger.info(f"File saved: {file_path}")
+        
+        # Create timesheet record
+        timesheet = Timesheet(
+            filename=file.filename,
+            file_type=file_extension,
+            status="processing"
+        )
+        
+        # Save to database
+        doc = timesheet.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        await db.timesheets.insert_one(doc)
+        
+        # Extract data in background (for now, doing it synchronously)
+        try:
+            extracted_data = await extract_timesheet_data(str(file_path), file_extension)
+            timesheet.extracted_data = extracted_data
+            timesheet.status = "completed"
+            
+            # Auto-submit to Sandata
+            submission_result = await submit_to_sandata(timesheet)
+            if submission_result["status"] == "success":
+                timesheet.sandata_status = "submitted"
+            else:
+                timesheet.sandata_status = "error"
+                timesheet.error_message = submission_result.get("message", "Unknown error")
+            
+        except Exception as e:
+            logger.error(f"Processing error: {e}")
+            timesheet.status = "failed"
+            timesheet.error_message = str(e)
+        
+        # Update database
+        timesheet.updated_at = datetime.now(timezone.utc)
+        update_doc = timesheet.model_dump()
+        update_doc['created_at'] = update_doc['created_at'].isoformat()
+        update_doc['updated_at'] = update_doc['updated_at'].isoformat()
+        
+        await db.timesheets.update_one(
+            {"id": timesheet.id},
+            {"$set": update_doc}
+        )
+        
+        # Clean up temp file
+        try:
+            file_path.unlink()
+        except:
+            pass
+        
+        return timesheet
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+@api_router.get("/timesheets", response_model=List[Timesheet])
+async def get_timesheets():
+    """Get all timesheets"""
+    timesheets = await db.timesheets.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
     # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    for ts in timesheets:
+        if isinstance(ts.get('created_at'), str):
+            ts['created_at'] = datetime.fromisoformat(ts['created_at'])
+        if isinstance(ts.get('updated_at'), str):
+            ts['updated_at'] = datetime.fromisoformat(ts['updated_at'])
     
-    return status_checks
+    return timesheets
+
+@api_router.get("/timesheets/{timesheet_id}", response_model=Timesheet)
+async def get_timesheet(timesheet_id: str):
+    """Get specific timesheet by ID"""
+    timesheet = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+    
+    if not timesheet:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+    
+    # Convert ISO string timestamps
+    if isinstance(timesheet.get('created_at'), str):
+        timesheet['created_at'] = datetime.fromisoformat(timesheet['created_at'])
+    if isinstance(timesheet.get('updated_at'), str):
+        timesheet['updated_at'] = datetime.fromisoformat(timesheet['updated_at'])
+    
+    return timesheet
+
+@api_router.delete("/timesheets/{timesheet_id}")
+async def delete_timesheet(timesheet_id: str):
+    """Delete a timesheet"""
+    result = await db.timesheets.delete_one({"id": timesheet_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+    
+    return {"message": "Timesheet deleted successfully"}
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -76,13 +297,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
