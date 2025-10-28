@@ -46,12 +46,16 @@ class TimeEntry(BaseModel):
     time_out: Optional[str] = None
     hours_worked: Optional[str] = None
 
-class ExtractedData(BaseModel):
+class EmployeeEntry(BaseModel):
+    """Single employee's complete timesheet data"""
     employee_name: Optional[str] = None
-    client_name: Optional[str] = None
     service_code: Optional[str] = None
     signature: Optional[str] = None
-    time_entries: List[TimeEntry] = []  # Multiple date/time entries
+    time_entries: List[TimeEntry] = []
+
+class ExtractedData(BaseModel):
+    client_name: Optional[str] = None  # Single patient/client
+    employee_entries: List[EmployeeEntry] = []  # Multiple employees
 
 class Timesheet(BaseModel):
     model_config = ConfigDict(extra="ignore")
