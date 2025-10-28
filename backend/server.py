@@ -111,20 +111,38 @@ async def extract_timesheet_data(file_path: str, file_type: str) -> ExtractedDat
             mime_type=mime_type
         )
         
-        extraction_prompt = """Analyze this timesheet document carefully and extract the following information. Return ONLY a valid JSON object with this exact structure:
+        extraction_prompt = """Analyze this timesheet document carefully and extract ALL dates and time entries. The timesheet may contain multiple days of work.
+
+Return ONLY a valid JSON object with this exact structure:
 
 {
   "employee_name": "full name of the employee",
-  "date": "date in YYYY-MM-DD format",
-  "time_in": "clock in time in HH:MM AM/PM format",
-  "time_out": "clock out time in HH:MM AM/PM format",
-  "hours_worked": "total hours worked as number or text",
   "client_name": "name of the client or patient",
   "service_code": "service or billing code",
-  "signature": "Yes if signature is present, No if not"
+  "signature": "Yes if signature is present, No if not",
+  "time_entries": [
+    {
+      "date": "YYYY-MM-DD",
+      "time_in": "HH:MM AM/PM",
+      "time_out": "HH:MM AM/PM",
+      "hours_worked": "number of hours"
+    },
+    {
+      "date": "YYYY-MM-DD",
+      "time_in": "HH:MM AM/PM", 
+      "time_out": "HH:MM AM/PM",
+      "hours_worked": "number of hours"
+    }
+  ]
 }
 
-If any field is not found or unclear, use "Not Found" as the value. Return ONLY the JSON object, no additional text or explanation."""
+IMPORTANT: 
+- Extract ALL date/time entries from the timesheet, not just one
+- If there's only one date entry, the array should have one object
+- If there are multiple dates/entries, include all of them in the array
+- If any field is not found, use "Not Found" as the value
+
+Return ONLY the JSON object, no additional text or explanation."""
         
         user_message = UserMessage(
             text=extraction_prompt,
