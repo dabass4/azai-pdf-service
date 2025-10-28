@@ -199,54 +199,71 @@ const Home = () => {
                   {timesheet.extracted_data && timesheet.status === "completed" && (
                     <CardContent>
                       <div className="space-y-6">
-                        {/* General Information */}
-                        <div className="bg-gray-50 rounded-lg p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Employee Name</p>
-                            <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.employee_name || "N/A"}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Client Name</p>
-                            <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.client_name || "N/A"}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Service Code</p>
-                            <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.service_code || "N/A"}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Signature</p>
-                            <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.signature || "N/A"}</p>
-                          </div>
+                        {/* Client Information */}
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                          <p className="text-xs text-blue-700 uppercase font-semibold mb-1">Patient/Client</p>
+                          <p className="text-lg font-bold text-blue-900">{timesheet.extracted_data.client_name || "N/A"}</p>
                         </div>
 
-                        {/* Time Entries Table */}
-                        {timesheet.extracted_data.time_entries && timesheet.extracted_data.time_entries.length > 0 && (
-                          <div data-testid={`time-entries-${timesheet.id}`}>
-                            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase">
-                              Time Entries ({timesheet.extracted_data.time_entries.length} day{timesheet.extracted_data.time_entries.length !== 1 ? 's' : ''})
+                        {/* Employee Entries */}
+                        {timesheet.extracted_data.employee_entries && timesheet.extracted_data.employee_entries.length > 0 && (
+                          <div className="space-y-6">
+                            <h3 className="text-sm font-semibold text-gray-700 uppercase flex items-center gap-2">
+                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                {timesheet.extracted_data.employee_entries.length} Employee{timesheet.extracted_data.employee_entries.length !== 1 ? 's' : ''}
+                              </span>
                             </h3>
-                            <div className="border border-gray-200 rounded-lg overflow-hidden">
-                              <table className="w-full">
-                                <thead className="bg-blue-50">
-                                  <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Time In</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Time Out</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Hours Worked</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                  {timesheet.extracted_data.time_entries.map((entry, index) => (
-                                    <tr key={index} className="hover:bg-gray-50" data-testid={`time-entry-${timesheet.id}-${index}`}>
-                                      <td className="px-4 py-3 text-sm text-gray-900">{entry.date || "N/A"}</td>
-                                      <td className="px-4 py-3 text-sm text-gray-900">{entry.time_in || "N/A"}</td>
-                                      <td className="px-4 py-3 text-sm text-gray-900">{entry.time_out || "N/A"}</td>
-                                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{entry.hours_worked || "N/A"}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
+                            
+                            {timesheet.extracted_data.employee_entries.map((employee, empIndex) => (
+                              <div key={empIndex} className="border border-gray-200 rounded-lg overflow-hidden" data-testid={`employee-entry-${timesheet.id}-${empIndex}`}>
+                                {/* Employee Header */}
+                                <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                      <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Employee Name</p>
+                                      <p className="text-sm font-bold text-gray-900">{employee.employee_name || "N/A"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Service Code</p>
+                                      <p className="text-sm font-medium text-gray-900">{employee.service_code || "N/A"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Signature</p>
+                                      <p className="text-sm font-medium text-gray-900">{employee.signature || "N/A"}</p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Employee Time Entries */}
+                                {employee.time_entries && employee.time_entries.length > 0 && (
+                                  <div className="bg-white">
+                                    <table className="w-full">
+                                      <thead className="bg-blue-50">
+                                        <tr>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Time In</th>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Time Out</th>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Hours Worked</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-gray-200">
+                                        {employee.time_entries.map((entry, entryIndex) => (
+                                          <tr key={entryIndex} className="hover:bg-gray-50" data-testid={`time-entry-${timesheet.id}-${empIndex}-${entryIndex}`}>
+                                            <td className="px-4 py-3 text-sm text-gray-900">{entry.date || "N/A"}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-900">{entry.time_in || "N/A"}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-900">{entry.time_out || "N/A"}</td>
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{entry.hours_worked || "N/A"}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                    <div className="bg-gray-50 px-4 py-2 text-xs text-gray-600 border-t border-gray-200">
+                                      {employee.time_entries.length} time entr{employee.time_entries.length === 1 ? 'y' : 'ies'} for this employee
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
@@ -254,7 +271,7 @@ const Home = () => {
                       {timesheet.sandata_status === "submitted" && (
                         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg" data-testid={`sandata-success-${timesheet.id}`}>
                           <p className="text-sm text-green-700 font-medium">
-                            ✓ Successfully submitted {timesheet.extracted_data.time_entries?.length || 0} time entr{timesheet.extracted_data.time_entries?.length === 1 ? 'y' : 'ies'} to Sandata API
+                            ✓ Successfully submitted timesheet with {timesheet.extracted_data.employee_entries?.length || 0} employee{timesheet.extracted_data.employee_entries?.length === 1 ? '' : 's'} to Sandata API
                           </p>
                         </div>
                       )}
