@@ -252,24 +252,36 @@ async def submit_to_sandata(timesheet: Timesheet) -> dict:
         auth_token = os.environ.get('SANDATA_AUTH_TOKEN', '')
         
         # Mock submission - log the data that would be sent
-        # Format time entries for submission
-        time_entries_payload = []
-        if timesheet.extracted_data.time_entries:
-            for entry in timesheet.extracted_data.time_entries:
-                time_entries_payload.append({
-                    "date": entry.date,
-                    "time_in": entry.time_in,
-                    "time_out": entry.time_out,
-                    "hours_worked": entry.hours_worked
+        # Format employee entries for submission
+        employee_submissions = []
+        total_time_entries = 0
+        
+        if timesheet.extracted_data.employee_entries:
+            for emp_entry in timesheet.extracted_data.employee_entries:
+                # Format time entries for this employee
+                time_entries_payload = []
+                if emp_entry.time_entries:
+                    for entry in emp_entry.time_entries:
+                        time_entries_payload.append({
+                            "date": entry.date,
+                            "time_in": entry.time_in,
+                            "time_out": entry.time_out,
+                            "hours_worked": entry.hours_worked
+                        })
+                    total_time_entries += len(time_entries_payload)
+                
+                employee_submissions.append({
+                    "employee_name": emp_entry.employee_name,
+                    "service_code": emp_entry.service_code,
+                    "signature_verified": emp_entry.signature == "Yes",
+                    "time_entries": time_entries_payload
                 })
         
         payload = {
-            "employee_name": timesheet.extracted_data.employee_name,
             "client_name": timesheet.extracted_data.client_name,
-            "service_code": timesheet.extracted_data.service_code,
-            "signature_verified": timesheet.extracted_data.signature == "Yes",
-            "time_entries": time_entries_payload,
-            "total_entries": len(time_entries_payload)
+            "employee_submissions": employee_submissions,
+            "total_employees": len(employee_submissions),
+            "total_time_entries": total_time_entries
         }
         
         logger.info(f"[MOCK] Submitting to Sandata API: {payload}")
