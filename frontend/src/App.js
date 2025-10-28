@@ -198,44 +198,64 @@ const Home = () => {
                   
                   {timesheet.extracted_data && timesheet.status === "completed" && (
                     <CardContent>
-                      <div className="bg-gray-50 rounded-lg p-6 grid grid-cols-1 md:grid-cols-2 gap-4" data-testid={`extracted-data-${timesheet.id}`}>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Employee Name</p>
-                          <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.employee_name || "N/A"}</p>
+                      <div className="space-y-6">
+                        {/* General Information */}
+                        <div className="bg-gray-50 rounded-lg p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Employee Name</p>
+                            <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.employee_name || "N/A"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Client Name</p>
+                            <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.client_name || "N/A"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Service Code</p>
+                            <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.service_code || "N/A"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Signature</p>
+                            <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.signature || "N/A"}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Date</p>
-                          <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.date || "N/A"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Time In</p>
-                          <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.time_in || "N/A"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Time Out</p>
-                          <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.time_out || "N/A"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Hours Worked</p>
-                          <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.hours_worked || "N/A"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Client Name</p>
-                          <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.client_name || "N/A"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Service Code</p>
-                          <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.service_code || "N/A"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Signature</p>
-                          <p className="text-sm font-medium text-gray-900">{timesheet.extracted_data.signature || "N/A"}</p>
-                        </div>
+
+                        {/* Time Entries Table */}
+                        {timesheet.extracted_data.time_entries && timesheet.extracted_data.time_entries.length > 0 && (
+                          <div data-testid={`time-entries-${timesheet.id}`}>
+                            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase">
+                              Time Entries ({timesheet.extracted_data.time_entries.length} day{timesheet.extracted_data.time_entries.length !== 1 ? 's' : ''})
+                            </h3>
+                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                              <table className="w-full">
+                                <thead className="bg-blue-50">
+                                  <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Time In</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Time Out</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Hours Worked</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                  {timesheet.extracted_data.time_entries.map((entry, index) => (
+                                    <tr key={index} className="hover:bg-gray-50" data-testid={`time-entry-${timesheet.id}-${index}`}>
+                                      <td className="px-4 py-3 text-sm text-gray-900">{entry.date || "N/A"}</td>
+                                      <td className="px-4 py-3 text-sm text-gray-900">{entry.time_in || "N/A"}</td>
+                                      <td className="px-4 py-3 text-sm text-gray-900">{entry.time_out || "N/A"}</td>
+                                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{entry.hours_worked || "N/A"}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       
                       {timesheet.sandata_status === "submitted" && (
                         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg" data-testid={`sandata-success-${timesheet.id}`}>
-                          <p className="text-sm text-green-700 font-medium">✓ Successfully submitted to Sandata API</p>
+                          <p className="text-sm text-green-700 font-medium">
+                            ✓ Successfully submitted {timesheet.extracted_data.time_entries?.length || 0} time entr{timesheet.extracted_data.time_entries?.length === 1 ? 'y' : 'ies'} to Sandata API
+                          </p>
                         </div>
                       )}
                     </CardContent>
