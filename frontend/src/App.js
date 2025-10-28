@@ -227,6 +227,11 @@ const Home = () => {
                                 diffMinutes += 24 * 60; // Add 24 hours
                               }
                               
+                              // Special rounding rule: if > 35 minutes and < 45 minutes, round to 3 units (45 min)
+                              if (diffMinutes > 35 && diffMinutes < 45) {
+                                return 3;
+                              }
+                              
                               // Convert minutes to units (1 unit = 15 minutes)
                               const units = Math.round(diffMinutes / 15);
                               return units;
