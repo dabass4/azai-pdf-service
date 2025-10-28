@@ -211,12 +211,36 @@ const Home = () => {
                           const allEntries = [];
                           let totalUnits = 0;
                           
+                          // Helper function to calculate units from time in and time out
+                          const calculateUnits = (timeIn, timeOut, date) => {
+                            try {
+                              // Parse time strings (e.g., "08:00 AM")
+                              const dateStr = date || '2025-01-01'; // Use date or default
+                              const timeInDate = new Date(`${dateStr} ${timeIn}`);
+                              const timeOutDate = new Date(`${dateStr} ${timeOut}`);
+                              
+                              // Calculate difference in minutes
+                              let diffMinutes = (timeOutDate - timeInDate) / (1000 * 60);
+                              
+                              // Handle overnight shifts (time out is next day)
+                              if (diffMinutes < 0) {
+                                diffMinutes += 24 * 60; // Add 24 hours
+                              }
+                              
+                              // Convert minutes to units (1 unit = 15 minutes)
+                              const units = Math.round(diffMinutes / 15);
+                              return units;
+                            } catch (e) {
+                              console.error('Error calculating units:', e);
+                              return 0;
+                            }
+                          };
+                          
                           timesheet.extracted_data.employee_entries.forEach(employee => {
                             if (employee.time_entries) {
                               employee.time_entries.forEach(entry => {
-                                // Calculate units: 1 unit = 15 minutes, so 1 hour = 4 units
-                                const hours = parseFloat(entry.hours_worked) || 0;
-                                const units = Math.round(hours * 4); // 4 units per hour
+                                // Calculate units from time in/out
+                                const units = calculateUnits(entry.time_in, entry.time_out, entry.date);
                                 totalUnits += units;
                                 
                                 allEntries.push({
