@@ -39,15 +39,19 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Define Models
-class ExtractedData(BaseModel):
-    employee_name: Optional[str] = None
+class TimeEntry(BaseModel):
+    """Single time entry for a specific date"""
     date: Optional[str] = None
     time_in: Optional[str] = None
     time_out: Optional[str] = None
     hours_worked: Optional[str] = None
+
+class ExtractedData(BaseModel):
+    employee_name: Optional[str] = None
     client_name: Optional[str] = None
     service_code: Optional[str] = None
     signature: Optional[str] = None
+    time_entries: List[TimeEntry] = []  # Multiple date/time entries
 
 class Timesheet(BaseModel):
     model_config = ConfigDict(extra="ignore")
