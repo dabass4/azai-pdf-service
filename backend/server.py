@@ -14,6 +14,8 @@ import json
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
 import aiohttp
+from pdf2image import convert_from_path
+from PIL import Image
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
