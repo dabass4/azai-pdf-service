@@ -78,16 +78,32 @@ async def extract_timesheet_data(file_path: str, file_type: str) -> ExtractedDat
             system_message="You are an expert at extracting structured data from timesheets. Extract all fields accurately and return valid JSON."
         ).with_model("gemini", "gemini-2.0-flash")
         
-        # Determine mime type - use image/jpeg for images, application/pdf for PDFs
-        if file_type in ['jpg', 'jpeg', 'png']:
-            mime_type = f"image/{file_type if file_type != 'jpg' else 'jpeg'}"
-        else:
-            mime_type = "application/pdf"
+        # Convert PDF to image if needed (Gemini works better with images)
+        processing_file_path = file_path
+        mime_type = "image/jpeg"
         
-        logger.info(f"Processing file: {file_path}, type: {file_type}, mime: {mime_type}")
+        if file_type == 'pdf':
+            try:
+                logger.info(f"Converting PDF to image: {file_path}")
+                # Convert PDF first page to image
+                images = convert_from_path(file_path, first_page=1, last_page=1)
+                if images:
+                    # Save as JPEG
+                    image_path = file_path.replace('.pdf', '_page1.jpg')
+                    images[0].save(image_path, 'JPEG')
+                    processing_file_path = image_path
+                    logger.info(f"PDF converted to image: {image_path}")
+            except Exception as e:
+                logger.error(f"PDF conversion error: {e}")
+                # Try with original PDF anyway
+                mime_type = "application/pdf"
+        elif file_type in ['jpg', 'jpeg', 'png']:
+            mime_type = f"image/{file_type if file_type != 'jpg' else 'jpeg'}"
+        
+        logger.info(f"Processing file: {processing_file_path}, type: {file_type}, mime: {mime_type}")
         
         file_content = FileContentWithMimeType(
-            file_path=file_path,
+            file_path=processing_file_path,
             mime_type=mime_type
         )
         
