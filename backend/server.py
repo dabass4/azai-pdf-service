@@ -45,6 +45,7 @@ class TimeEntry(BaseModel):
     time_in: Optional[str] = None
     time_out: Optional[str] = None
     hours_worked: Optional[str] = None
+    
 
 class EmployeeEntry(BaseModel):
     """Single employee's complete timesheet data"""
