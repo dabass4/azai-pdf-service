@@ -691,6 +691,83 @@ async def delete_employee(employee_id: str):
     
     return {"message": "Employee deleted successfully"}
 
+# Insurance Contract / Payer Endpoints
+@api_router.post("/insurance-contracts", response_model=InsuranceContract)
+async def create_contract(contract: InsuranceContract):
+    """Create a new insurance contract"""
+    try:
+        doc = contract.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        
+        await db.insurance_contracts.insert_one(doc)
+        logger.info(f"Insurance contract created: {contract.id}")
+        
+        return contract
+    except Exception as e:
+        logger.error(f"Error creating contract: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/insurance-contracts", response_model=List[InsuranceContract])
+async def get_contracts():
+    """Get all insurance contracts"""
+    contracts = await db.insurance_contracts.find({}, {"_id": 0}).sort("payer_name", 1).to_list(1000)
+    
+    # Convert ISO string timestamps
+    for contract in contracts:
+        if isinstance(contract.get('created_at'), str):
+            contract['created_at'] = datetime.fromisoformat(contract['created_at'])
+        if isinstance(contract.get('updated_at'), str):
+            contract['updated_at'] = datetime.fromisoformat(contract['updated_at'])
+    
+    return contracts
+
+@api_router.get("/insurance-contracts/{contract_id}", response_model=InsuranceContract)
+async def get_contract(contract_id: str):
+    """Get specific contract by ID"""
+    contract = await db.insurance_contracts.find_one({"id": contract_id}, {"_id": 0})
+    
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    # Convert ISO string timestamps
+    if isinstance(contract.get('created_at'), str):
+        contract['created_at'] = datetime.fromisoformat(contract['created_at'])
+    if isinstance(contract.get('updated_at'), str):
+        contract['updated_at'] = datetime.fromisoformat(contract['updated_at'])
+    
+    return contract
+
+@api_router.put("/insurance-contracts/{contract_id}", response_model=InsuranceContract)
+async def update_contract(contract_id: str, contract_update: InsuranceContract):
+    """Update insurance contract"""
+    contract_update.id = contract_id
+    contract_update.updated_at = datetime.now(timezone.utc)
+    
+    doc = contract_update.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat() if isinstance(doc['created_at'], datetime) else doc['created_at']
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    result = await db.insurance_contracts.update_one(
+        {"id": contract_id},
+        {"$set": doc}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    return contract_update
+
+@api_router.delete("/insurance-contracts/{contract_id}")
+async def delete_contract(contract_id: str):
+    """Delete an insurance contract"""
+    result = await db.insurance_contracts.delete_one({"id": contract_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    return {"message": "Contract deleted successfully"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
