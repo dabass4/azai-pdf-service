@@ -39,6 +39,28 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Define Models
+class PatientProfile(BaseModel):
+    """Patient profile with all required information"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    first_name: str
+    last_name: str
+    sex: str  # Male, Female, Other
+    date_of_birth: str  # YYYY-MM-DD format
+    address_street: str
+    address_city: str
+    address_state: str
+    address_zip: str
+    prior_auth_number: str  # Alphanumeric with special characters
+    icd10_code: str
+    icd10_description: Optional[str] = None
+    physician_name: str
+    physician_npi: str  # 10-digit NPI
+    medicaid_number: str  # 12 characters max
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class TimeEntry(BaseModel):
     """Single time entry for a specific date"""
     date: Optional[str] = None
@@ -68,6 +90,7 @@ class Timesheet(BaseModel):
     status: str = "processing"  # processing, completed, failed, submitted
     sandata_status: Optional[str] = None  # pending, submitted, error
     error_message: Optional[str] = None
+    patient_id: Optional[str] = None  # Link to patient profile
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
