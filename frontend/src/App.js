@@ -408,6 +408,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/patients" element={<Patients />} />
+          <Route path="/employees" element={<Employees />} />
         </Routes>
       </BrowserRouter>
     </div>
