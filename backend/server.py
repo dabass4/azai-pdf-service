@@ -567,6 +567,83 @@ async def delete_patient(patient_id: str):
     
     return {"message": "Patient deleted successfully"}
 
+# Employee Profile Endpoints
+@api_router.post("/employees", response_model=EmployeeProfile)
+async def create_employee(employee: EmployeeProfile):
+    """Create a new employee profile"""
+    try:
+        doc = employee.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        
+        await db.employees.insert_one(doc)
+        logger.info(f"Employee created: {employee.id}")
+        
+        return employee
+    except Exception as e:
+        logger.error(f"Error creating employee: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/employees", response_model=List[EmployeeProfile])
+async def get_employees():
+    """Get all employee profiles"""
+    employees = await db.employees.find({}, {"_id": 0}).sort("last_name", 1).to_list(1000)
+    
+    # Convert ISO string timestamps
+    for employee in employees:
+        if isinstance(employee.get('created_at'), str):
+            employee['created_at'] = datetime.fromisoformat(employee['created_at'])
+        if isinstance(employee.get('updated_at'), str):
+            employee['updated_at'] = datetime.fromisoformat(employee['updated_at'])
+    
+    return employees
+
+@api_router.get("/employees/{employee_id}", response_model=EmployeeProfile)
+async def get_employee(employee_id: str):
+    """Get specific employee by ID"""
+    employee = await db.employees.find_one({"id": employee_id}, {"_id": 0})
+    
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Convert ISO string timestamps
+    if isinstance(employee.get('created_at'), str):
+        employee['created_at'] = datetime.fromisoformat(employee['created_at'])
+    if isinstance(employee.get('updated_at'), str):
+        employee['updated_at'] = datetime.fromisoformat(employee['updated_at'])
+    
+    return employee
+
+@api_router.put("/employees/{employee_id}", response_model=EmployeeProfile)
+async def update_employee(employee_id: str, employee_update: EmployeeProfile):
+    """Update employee profile"""
+    employee_update.id = employee_id
+    employee_update.updated_at = datetime.now(timezone.utc)
+    
+    doc = employee_update.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    result = await db.employees.update_one(
+        {"id": employee_id},
+        {"$set": doc}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    return employee_update
+
+@api_router.delete("/employees/{employee_id}")
+async def delete_employee(employee_id: str):
+    """Delete an employee profile"""
+    result = await db.employees.delete_one({"id": employee_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    return {"message": "Employee deleted successfully"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
