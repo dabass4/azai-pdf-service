@@ -39,6 +39,47 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Define Models
+class EmployeeProfile(BaseModel):
+    """Employee profile with all required information"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    first_name: str
+    last_name: str
+    middle_name: Optional[str] = None
+    ssn: str  # Social Security Number (9 digits)
+    date_of_birth: str  # YYYY-MM-DD format
+    sex: str  # Male, Female, Other
+    
+    # Contact Information
+    email: Optional[str] = None
+    phone: str
+    address_street: str
+    address_city: str
+    address_state: str
+    address_zip: str
+    
+    # Employment Information
+    employee_id: Optional[str] = None  # Internal employee ID
+    hire_date: str  # YYYY-MM-DD format
+    job_title: str
+    department: Optional[str] = None
+    hourly_rate: Optional[float] = None
+    employment_status: str  # Full-time, Part-time, Contract
+    
+    # Emergency Contact
+    emergency_contact_name: str
+    emergency_contact_phone: str
+    emergency_contact_relation: str
+    
+    # Certifications & Licenses
+    certifications: Optional[str] = None  # Comma-separated or free text
+    license_number: Optional[str] = None
+    license_expiration: Optional[str] = None
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class PatientProfile(BaseModel):
     """Patient profile with all required information"""
     model_config = ConfigDict(extra="ignore")
