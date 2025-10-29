@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import axios from "axios";
-import { Upload, FileText, CheckCircle, XCircle, Clock, Trash2, Users, Home as HomeIcon } from "lucide-react";
+import { Upload, FileText, CheckCircle, XCircle, Clock, Trash2, Users, Home as HomeIcon, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import Patients from "@/pages/Patients";
+import Employees from "@/pages/Employees";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -42,6 +43,18 @@ const Navigation = () => {
             >
               <Users className="mr-2" size={18} />
               Patients
+            </Link>
+            <Link
+              to="/employees"
+              className={`inline-flex items-center px-3 py-2 border-b-2 text-sm font-medium ${
+                location.pathname === "/employees" 
+                  ? "border-blue-500 text-blue-600" 
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              data-testid="nav-employees"
+            >
+              <UserCheck className="mr-2" size={18} />
+              Employees
             </Link>
           </div>
         </div>
