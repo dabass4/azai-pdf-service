@@ -239,14 +239,27 @@ const Home = () => {
                           </CardDescription>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(timesheet.id)}
-                        data-testid={`delete-timesheet-${timesheet.id}`}
-                      >
-                        <Trash2 className="text-red-500" size={18} />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Link to={`/timesheet/edit/${timesheet.id}`}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`edit-timesheet-${timesheet.id}`}
+                            title="Edit timesheet"
+                          >
+                            <Edit2 className="text-blue-600" size={18} />
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(timesheet.id)}
+                          data-testid={`delete-timesheet-${timesheet.id}`}
+                          title="Delete timesheet"
+                        >
+                          <Trash2 className="text-red-500" size={18} />
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   
