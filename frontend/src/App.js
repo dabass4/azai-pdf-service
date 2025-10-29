@@ -391,8 +391,10 @@ function App() {
   return (
     <div className="App">
       <BrowserRouter>
+        <Navigation />
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/patients" element={<Patients />} />
         </Routes>
       </BrowserRouter>
     </div>
