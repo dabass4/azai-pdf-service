@@ -102,6 +102,32 @@ class PatientProfile(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class BillableService(BaseModel):
+    """Billable service with toggle status"""
+    service_code: str
+    service_name: str
+    description: Optional[str] = None
+    is_active: bool = True
+
+class InsuranceContract(BaseModel):
+    """Insurance/Payer contract information"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    payer_name: str  # e.g., Ohio Department of Medicaid
+    insurance_type: str  # Medicaid, Medicare, Private, etc.
+    contract_number: Optional[str] = None
+    start_date: str  # YYYY-MM-DD
+    end_date: Optional[str] = None  # YYYY-MM-DD or None for active
+    contact_person: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    notes: Optional[str] = None
+    billable_services: List[BillableService] = []  # Services under this contract
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class TimeEntry(BaseModel):
     """Single time entry for a specific date"""
     date: Optional[str] = None
