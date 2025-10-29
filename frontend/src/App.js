@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import axios from "axios";
-import { Upload, FileText, CheckCircle, XCircle, Clock, Trash2, Users, Home as HomeIcon, UserCheck, Edit2, DollarSign, Menu, X } from "lucide-react";
+import { Upload, FileText, CheckCircle, XCircle, Clock, Trash2, Users, Home as HomeIcon, UserCheck, Edit2, DollarSign, Menu, X, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import Patients from "@/pages/Patients";
 import Employees from "@/pages/Employees";
 import TimesheetEditor from "@/pages/TimesheetEditor";
 import Payers from "@/pages/Payers";
+import Claims from "@/pages/Claims";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -23,6 +24,7 @@ const Navigation = () => {
     { to: "/patients", icon: Users, label: "Patients" },
     { to: "/employees", icon: UserCheck, label: "Employees" },
     { to: "/payers", icon: DollarSign, label: "Payers" },
+    { to: "/claims", icon: ClipboardCheck, label: "Claims" },
   ];
   
   return (
