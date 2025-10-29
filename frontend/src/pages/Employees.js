@@ -1,0 +1,674 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { UserCheck, Plus, Edit, Trash2, X, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+const US_STATES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+];
+
+const Employees = () => {
+  const [employees, setEmployees] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    middle_name: "",
+    ssn: "",
+    date_of_birth: "",
+    sex: "",
+    email: "",
+    phone: "",
+    address_street: "",
+    address_city: "",
+    address_state: "",
+    address_zip: "",
+    employee_id: "",
+    hire_date: "",
+    job_title: "",
+    department: "",
+    hourly_rate: "",
+    employment_status: "",
+    emergency_contact_name: "",
+    emergency_contact_phone: "",
+    emergency_contact_relation: "",
+    certifications: "",
+    license_number: "",
+    license_expiration: ""
+  });
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await axios.get(`${API}/employees`);
+      setEmployees(response.data);
+    } catch (e) {
+      console.error("Error fetching employees:", e);
+      toast.error("Failed to load employees");
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Format SSN with dashes
+    if (name === "ssn") {
+      const cleaned = value.replace(/\D/g, "");
+      let formatted = cleaned;
+      if (cleaned.length > 3 && cleaned.length <= 5) {
+        formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+      } else if (cleaned.length > 5) {
+        formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3, 5)}-${cleaned.slice(5, 9)}`;
+      }
+      setFormData(prev => ({ ...prev, [name]: formatted }));
+    } else if (name === "phone" || name === "emergency_contact_phone") {
+      // Format phone with dashes
+      const cleaned = value.replace(/\D/g, "");
+      let formatted = cleaned;
+      if (cleaned.length > 3 && cleaned.length <= 6) {
+        formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+      } else if (cleaned.length > 6) {
+        formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
+      }
+      setFormData(prev => ({ ...prev, [name]: formatted }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSelectChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate SSN (9 digits)
+    const ssnDigits = formData.ssn.replace(/\D/g, "");
+    if (ssnDigits.length !== 9) {
+      toast.error("SSN must be exactly 9 digits");
+      return;
+    }
+
+    try {
+      if (editingEmployee) {
+        await axios.put(`${API}/employees/${editingEmployee.id}`, formData);
+        toast.success("Employee updated successfully");
+      } else {
+        await axios.post(`${API}/employees`, formData);
+        toast.success("Employee created successfully");
+      }
+      
+      setShowForm(false);
+      setEditingEmployee(null);
+      resetForm();
+      await fetchEmployees();
+    } catch (e) {
+      console.error("Error saving employee:", e);
+      toast.error(e.response?.data?.detail || "Failed to save employee");
+    }
+  };
+
+  const handleEdit = (employee) => {
+    setEditingEmployee(employee);
+    setFormData({
+      first_name: employee.first_name,
+      last_name: employee.last_name,
+      middle_name: employee.middle_name || "",
+      ssn: employee.ssn,
+      date_of_birth: employee.date_of_birth,
+      sex: employee.sex,
+      email: employee.email || "",
+      phone: employee.phone,
+      address_street: employee.address_street,
+      address_city: employee.address_city,
+      address_state: employee.address_state,
+      address_zip: employee.address_zip,
+      employee_id: employee.employee_id || "",
+      hire_date: employee.hire_date,
+      job_title: employee.job_title,
+      department: employee.department || "",
+      hourly_rate: employee.hourly_rate || "",
+      employment_status: employee.employment_status,
+      emergency_contact_name: employee.emergency_contact_name,
+      emergency_contact_phone: employee.emergency_contact_phone,
+      emergency_contact_relation: employee.emergency_contact_relation,
+      certifications: employee.certifications || "",
+      license_number: employee.license_number || "",
+      license_expiration: employee.license_expiration || ""
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this employee?")) return;
+    
+    try {
+      await axios.delete(`${API}/employees/${id}`);
+      toast.success("Employee deleted");
+      await fetchEmployees();
+    } catch (e) {
+      console.error("Delete error:", e);
+      toast.error("Failed to delete employee");
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      first_name: "",
+      last_name: "",
+      middle_name: "",
+      ssn: "",
+      date_of_birth: "",
+      sex: "",
+      email: "",
+      phone: "",
+      address_street: "",
+      address_city: "",
+      address_state: "",
+      address_zip: "",
+      employee_id: "",
+      hire_date: "",
+      job_title: "",
+      department: "",
+      hourly_rate: "",
+      employment_status: "",
+      emergency_contact_name: "",
+      emergency_contact_phone: "",
+      emergency_contact_relation: "",
+      certifications: "",
+      license_number: "",
+      license_expiration: ""
+    });
+  };
+
+  const maskSSN = (ssn) => {
+    if (!ssn) return "N/A";
+    const digits = ssn.replace(/\D/g, "");
+    if (digits.length === 9) {
+      return `***-**-${digits.slice(5)}`;
+    }
+    return ssn;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Employee Profiles
+            </h1>
+            <p className="text-gray-600">Manage employee information and records</p>
+          </div>
+          <Button
+            onClick={() => {
+              resetForm();
+              setEditingEmployee(null);
+              setShowForm(true);
+            }}
+            className="bg-blue-600 hover:bg-blue-700"
+            data-testid="add-employee-btn"
+          >
+            <Plus className="mr-2" size={18} />
+            Add Employee
+          </Button>
+        </div>
+
+        {/* Employee Form Modal */}
+        {showForm && (
+          <Card className="mb-8 border-2 border-blue-200 shadow-lg" data-testid="employee-form">
+            <CardHeader className="bg-blue-50">
+              <div className="flex justify-between items-center">
+                <CardTitle className="flex items-center gap-2">
+                  {editingEmployee ? "Edit Employee" : "New Employee"}
+                  <Shield className="text-blue-600" size={20} />
+                </CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => { setShowForm(false); setEditingEmployee(null); }}>
+                  <X size={20} />
+                </Button>
+              </div>
+              <CardDescription>All employee data is securely stored and encrypted</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Personal Information */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Personal Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="first_name">First Name *</Label>
+                      <Input
+                        id="first_name"
+                        name="first_name"
+                        value={formData.first_name}
+                        onChange={handleInputChange}
+                        required
+                        data-testid="first-name-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="middle_name">Middle Name</Label>
+                      <Input
+                        id="middle_name"
+                        name="middle_name"
+                        value={formData.middle_name}
+                        onChange={handleInputChange}
+                        data-testid="middle-name-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="last_name">Last Name *</Label>
+                      <Input
+                        id="last_name"
+                        name="last_name"
+                        value={formData.last_name}
+                        onChange={handleInputChange}
+                        required
+                        data-testid="last-name-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="ssn">Social Security Number *</Label>
+                      <Input
+                        id="ssn"
+                        name="ssn"
+                        value={formData.ssn}
+                        onChange={handleInputChange}
+                        placeholder="XXX-XX-XXXX"
+                        maxLength="11"
+                        required
+                        data-testid="ssn-input"
+                        className="font-mono"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="date_of_birth">Date of Birth *</Label>
+                      <Input
+                        id="date_of_birth"
+                        name="date_of_birth"
+                        type="date"
+                        value={formData.date_of_birth}
+                        onChange={handleInputChange}
+                        required
+                        data-testid="dob-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="sex">Sex *</Label>
+                      <Select value={formData.sex} onValueChange={(value) => handleSelectChange("sex", value)} required>
+                        <SelectTrigger data-testid="sex-select">
+                          <SelectValue placeholder="Select sex" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Contact Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        data-testid="email-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone Number *</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        placeholder="XXX-XXX-XXXX"
+                        maxLength="12"
+                        required
+                        data-testid="phone-input"
+                        className="font-mono"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="address_street">Street Address *</Label>
+                      <Input
+                        id="address_street"
+                        name="address_street"
+                        value={formData.address_street}
+                        onChange={handleInputChange}
+                        required
+                        data-testid="address-street-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="address_city">City *</Label>
+                      <Input
+                        id="address_city"
+                        name="address_city"
+                        value={formData.address_city}
+                        onChange={handleInputChange}
+                        required
+                        data-testid="city-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="address_state">State *</Label>
+                      <Select value={formData.address_state} onValueChange={(value) => handleSelectChange("address_state", value)} required>
+                        <SelectTrigger data-testid="state-select">
+                          <SelectValue placeholder="State" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {US_STATES.map(state => (
+                            <SelectItem key={state} value={state}>{state}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="address_zip">ZIP Code *</Label>
+                      <Input
+                        id="address_zip"
+                        name="address_zip"
+                        value={formData.address_zip}
+                        onChange={handleInputChange}
+                        maxLength="10"
+                        required
+                        data-testid="zip-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Employment Information */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Employment Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="employee_id">Employee ID</Label>
+                      <Input
+                        id="employee_id"
+                        name="employee_id"
+                        value={formData.employee_id}
+                        onChange={handleInputChange}
+                        placeholder="Auto-generated if left blank"
+                        data-testid="employee-id-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="hire_date">Hire Date *</Label>
+                      <Input
+                        id="hire_date"
+                        name="hire_date"
+                        type="date"
+                        value={formData.hire_date}
+                        onChange={handleInputChange}
+                        required
+                        data-testid="hire-date-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="job_title">Job Title *</Label>
+                      <Input
+                        id="job_title"
+                        name="job_title"
+                        value={formData.job_title}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="e.g., Home Health Aide"
+                        data-testid="job-title-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="department">Department</Label>
+                      <Input
+                        id="department"
+                        name="department"
+                        value={formData.department}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Home Care"
+                        data-testid="department-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="employment_status">Employment Status *</Label>
+                      <Select value={formData.employment_status} onValueChange={(value) => handleSelectChange("employment_status", value)} required>
+                        <SelectTrigger data-testid="employment-status-select">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Full-time">Full-time</SelectItem>
+                          <SelectItem value="Part-time">Part-time</SelectItem>
+                          <SelectItem value="Contract">Contract</SelectItem>
+                          <SelectItem value="Temporary">Temporary</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
+                      <Input
+                        id="hourly_rate"
+                        name="hourly_rate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.hourly_rate}
+                        onChange={handleInputChange}
+                        placeholder="0.00"
+                        data-testid="hourly-rate-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Emergency Contact */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Emergency Contact</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="emergency_contact_name">Name *</Label>
+                      <Input
+                        id="emergency_contact_name"
+                        name="emergency_contact_name"
+                        value={formData.emergency_contact_name}
+                        onChange={handleInputChange}
+                        required
+                        data-testid="emergency-name-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emergency_contact_phone">Phone *</Label>
+                      <Input
+                        id="emergency_contact_phone"
+                        name="emergency_contact_phone"
+                        value={formData.emergency_contact_phone}
+                        onChange={handleInputChange}
+                        placeholder="XXX-XXX-XXXX"
+                        maxLength="12"
+                        required
+                        data-testid="emergency-phone-input"
+                        className="font-mono"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emergency_contact_relation">Relationship *</Label>
+                      <Input
+                        id="emergency_contact_relation"
+                        name="emergency_contact_relation"
+                        value={formData.emergency_contact_relation}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Spouse, Parent"
+                        required
+                        data-testid="emergency-relation-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Certifications & Licenses */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Certifications & Licenses</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Label htmlFor="certifications">Certifications</Label>
+                      <Input
+                        id="certifications"
+                        name="certifications"
+                        value={formData.certifications}
+                        onChange={handleInputChange}
+                        placeholder="e.g., CPR, First Aid, CNA"
+                        data-testid="certifications-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="license_number">License Number</Label>
+                      <Input
+                        id="license_number"
+                        name="license_number"
+                        value={formData.license_number}
+                        onChange={handleInputChange}
+                        placeholder="Professional license number"
+                        data-testid="license-number-input"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="license_expiration">License Expiration</Label>
+                      <Input
+                        id="license_expiration"
+                        name="license_expiration"
+                        type="date"
+                        value={formData.license_expiration}
+                        onChange={handleInputChange}
+                        data-testid="license-expiration-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingEmployee(null); }}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="save-employee-btn">
+                    {editingEmployee ? "Update Employee" : "Create Employee"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Employees List */}
+        <div>
+          {employees.length === 0 ? (
+            <Card className="bg-white/70 backdrop-blur-sm shadow-lg">
+              <CardContent className="py-12 text-center">
+                <UserCheck className="mx-auto text-gray-400 mb-4" size={64} />
+                <p className="text-gray-500 text-lg">No employees added yet</p>
+                <p className="text-gray-400 text-sm mt-2">Create your first employee profile to get started</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4" data-testid="employees-list">
+              {employees.map((employee) => (
+                <Card key={employee.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow" data-testid={`employee-${employee.id}`}>
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 mb-3">
+                            {employee.first_name} {employee.middle_name} {employee.last_name}
+                          </h3>
+                          <div className="space-y-1 text-sm">
+                            <p className="text-gray-600"><span className="font-semibold">DOB:</span> {employee.date_of_birth}</p>
+                            <p className="text-gray-600"><span className="font-semibold">Sex:</span> {employee.sex}</p>
+                            <p className="text-gray-600"><span className="font-semibold">SSN:</span> <span className="font-mono">{maskSSN(employee.ssn)}</span></p>
+                            {employee.email && <p className="text-gray-600 text-xs">{employee.email}</p>}
+                            <p className="text-gray-600 font-mono text-xs">{employee.phone}</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Employment</h4>
+                          <div className="space-y-1 text-sm text-gray-700">
+                            {employee.employee_id && <p><span className="font-semibold">ID:</span> {employee.employee_id}</p>}
+                            <p><span className="font-semibold">Title:</span> {employee.job_title}</p>
+                            {employee.department && <p><span className="font-semibold">Dept:</span> {employee.department}</p>}
+                            <p><span className="font-semibold">Status:</span> {employee.employment_status}</p>
+                            <p><span className="font-semibold">Hired:</span> {employee.hire_date}</p>
+                            {employee.hourly_rate && <p><span className="font-semibold">Rate:</span> ${employee.hourly_rate}/hr</p>}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Emergency Contact</h4>
+                          <div className="space-y-1 text-sm text-gray-700">
+                            <p className="font-semibold">{employee.emergency_contact_name}</p>
+                            <p className="font-mono text-xs">{employee.emergency_contact_phone}</p>
+                            <p className="text-gray-600 text-xs italic">{employee.emergency_contact_relation}</p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Certifications</h4>
+                          <div className="space-y-1 text-sm text-gray-700">
+                            {employee.certifications && <p className="text-xs">{employee.certifications}</p>}
+                            {employee.license_number && (
+                              <>
+                                <p className="text-xs"><span className="font-semibold">License:</span> {employee.license_number}</p>
+                                {employee.license_expiration && <p className="text-xs"><span className="font-semibold">Expires:</span> {employee.license_expiration}</p>}
+                              </>
+                            )}
+                            {!employee.certifications && !employee.license_number && <p className="text-gray-400 text-xs italic">None listed</p>}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2 ml-4">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(employee)} data-testid={`edit-employee-${employee.id}`}>
+                          <Edit className="text-blue-600" size={18} />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(employee.id)} data-testid={`delete-employee-${employee.id}`}>
+                          <Trash2 className="text-red-500" size={18} />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Employees;
