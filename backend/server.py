@@ -449,6 +449,83 @@ async def delete_timesheet(timesheet_id: str):
     
     return {"message": "Timesheet deleted successfully"}
 
+# Patient Profile Endpoints
+@api_router.post("/patients", response_model=PatientProfile)
+async def create_patient(patient: PatientProfile):
+    """Create a new patient profile"""
+    try:
+        doc = patient.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        
+        await db.patients.insert_one(doc)
+        logger.info(f"Patient created: {patient.id}")
+        
+        return patient
+    except Exception as e:
+        logger.error(f"Error creating patient: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/patients", response_model=List[PatientProfile])
+async def get_patients():
+    """Get all patient profiles"""
+    patients = await db.patients.find({}, {"_id": 0}).sort("last_name", 1).to_list(1000)
+    
+    # Convert ISO string timestamps
+    for patient in patients:
+        if isinstance(patient.get('created_at'), str):
+            patient['created_at'] = datetime.fromisoformat(patient['created_at'])
+        if isinstance(patient.get('updated_at'), str):
+            patient['updated_at'] = datetime.fromisoformat(patient['updated_at'])
+    
+    return patients
+
+@api_router.get("/patients/{patient_id}", response_model=PatientProfile)
+async def get_patient(patient_id: str):
+    """Get specific patient by ID"""
+    patient = await db.patients.find_one({"id": patient_id}, {"_id": 0})
+    
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    # Convert ISO string timestamps
+    if isinstance(patient.get('created_at'), str):
+        patient['created_at'] = datetime.fromisoformat(patient['created_at'])
+    if isinstance(patient.get('updated_at'), str):
+        patient['updated_at'] = datetime.fromisoformat(patient['updated_at'])
+    
+    return patient
+
+@api_router.put("/patients/{patient_id}", response_model=PatientProfile)
+async def update_patient(patient_id: str, patient_update: PatientProfile):
+    """Update patient profile"""
+    patient_update.id = patient_id
+    patient_update.updated_at = datetime.now(timezone.utc)
+    
+    doc = patient_update.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    result = await db.patients.update_one(
+        {"id": patient_id},
+        {"$set": doc}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    return patient_update
+
+@api_router.delete("/patients/{patient_id}")
+async def delete_patient(patient_id: str):
+    """Delete a patient profile"""
+    result = await db.patients.delete_one({"id": patient_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    return {"message": "Patient deleted successfully"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
