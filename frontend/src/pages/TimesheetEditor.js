@@ -1,0 +1,427 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Save, X, Plus, Trash2, AlertCircle, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+const TimesheetEditor = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [timesheet, setTimesheet] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchTimesheet();
+  }, [id]);
+
+  const fetchTimesheet = async () => {
+    try {
+      const response = await axios.get(`${API}/timesheets/${id}`);
+      setTimesheet(response.data);
+      setLoading(false);
+    } catch (e) {
+      console.error("Error fetching timesheet:", e);
+      toast.error("Failed to load timesheet");
+      setLoading(false);
+    }
+  };
+
+  const handleClientNameChange = (value) => {
+    setTimesheet(prev => ({
+      ...prev,
+      extracted_data: {
+        ...prev.extracted_data,
+        client_name: value
+      }
+    }));
+  };
+
+  const handleEmployeeFieldChange = (empIndex, field, value) => {
+    setTimesheet(prev => {
+      const newEmployees = [...prev.extracted_data.employee_entries];
+      newEmployees[empIndex] = {
+        ...newEmployees[empIndex],
+        [field]: value
+      };
+      return {
+        ...prev,
+        extracted_data: {
+          ...prev.extracted_data,
+          employee_entries: newEmployees
+        }
+      };
+    });
+  };
+
+  const handleTimeEntryChange = (empIndex, entryIndex, field, value) => {
+    setTimesheet(prev => {
+      const newEmployees = [...prev.extracted_data.employee_entries];
+      const newTimeEntries = [...newEmployees[empIndex].time_entries];
+      newTimeEntries[entryIndex] = {
+        ...newTimeEntries[entryIndex],
+        [field]: value
+      };
+      newEmployees[empIndex] = {
+        ...newEmployees[empIndex],
+        time_entries: newTimeEntries
+      };
+      return {
+        ...prev,
+        extracted_data: {
+          ...prev.extracted_data,
+          employee_entries: newEmployees
+        }
+      };
+    });
+  };
+
+  const addTimeEntry = (empIndex) => {
+    setTimesheet(prev => {
+      const newEmployees = [...prev.extracted_data.employee_entries];
+      newEmployees[empIndex] = {
+        ...newEmployees[empIndex],
+        time_entries: [
+          ...newEmployees[empIndex].time_entries,
+          { date: "", time_in: "", time_out: "", hours_worked: "" }
+        ]
+      };
+      return {
+        ...prev,
+        extracted_data: {
+          ...prev.extracted_data,
+          employee_entries: newEmployees
+        }
+      };
+    });
+  };
+
+  const removeTimeEntry = (empIndex, entryIndex) => {
+    setTimesheet(prev => {
+      const newEmployees = [...prev.extracted_data.employee_entries];
+      const newTimeEntries = newEmployees[empIndex].time_entries.filter((_, idx) => idx !== entryIndex);
+      newEmployees[empIndex] = {
+        ...newEmployees[empIndex],
+        time_entries: newTimeEntries
+      };
+      return {
+        ...prev,
+        extracted_data: {
+          ...prev.extracted_data,
+          employee_entries: newEmployees
+        }
+      };
+    });
+  };
+
+  const addEmployee = () => {
+    setTimesheet(prev => ({
+      ...prev,
+      extracted_data: {
+        ...prev.extracted_data,
+        employee_entries: [
+          ...prev.extracted_data.employee_entries,
+          {
+            employee_name: "",
+            service_code: "",
+            signature: "No",
+            time_entries: [{ date: "", time_in: "", time_out: "", hours_worked: "" }]
+          }
+        ]
+      }
+    }));
+  };
+
+  const removeEmployee = (empIndex) => {
+    setTimesheet(prev => ({
+      ...prev,
+      extracted_data: {
+        ...prev.extracted_data,
+        employee_entries: prev.extracted_data.employee_entries.filter((_, idx) => idx !== empIndex)
+      }
+    }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await axios.put(`${API}/timesheets/${id}`, timesheet);
+      toast.success("Timesheet updated successfully");
+      navigate("/");
+    } catch (e) {
+      console.error("Save error:", e);
+      toast.error("Failed to save timesheet");
+      setSaving(false);
+    }
+  };
+
+  const handleResubmit = async () => {
+    setSaving(true);
+    try {
+      // Update the timesheet first
+      await axios.put(`${API}/timesheets/${id}`, timesheet);
+      
+      // Mark as manually reviewed and resubmit to Sandata
+      const updatedTimesheet = { ...timesheet, status: "completed", sandata_status: "submitted" };
+      await axios.put(`${API}/timesheets/${id}`, updatedTimesheet);
+      
+      toast.success("Timesheet saved and resubmitted to Sandata");
+      navigate("/");
+    } catch (e) {
+      console.error("Resubmit error:", e);
+      toast.error("Failed to resubmit timesheet");
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
+        <p className="text-gray-600">Loading timesheet...</p>
+      </div>
+    );
+  }
+
+  if (!timesheet) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
+        <p className="text-gray-600">Timesheet not found</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Edit Timesheet
+            </h1>
+            <p className="text-gray-600">Review and correct extracted data</p>
+            <p className="text-sm text-gray-500 mt-1">File: {timesheet.filename}</p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => navigate("/")} data-testid="cancel-edit-btn">
+              <X className="mr-2" size={18} />
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700" data-testid="save-timesheet-btn">
+              <Save className="mr-2" size={18} />
+              Save Changes
+            </Button>
+            <Button onClick={handleResubmit} disabled={saving} className="bg-green-600 hover:bg-green-700" data-testid="resubmit-timesheet-btn">
+              <CheckCircle className="mr-2" size={18} />
+              Save & Resubmit
+            </Button>
+          </div>
+        </div>
+
+        {/* Alert */}
+        <Card className="mb-6 border-l-4 border-l-yellow-500 bg-yellow-50">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="text-yellow-600 mt-0.5" size={20} />
+              <div>
+                <p className="font-semibold text-yellow-900">Manual Review Mode</p>
+                <p className="text-sm text-yellow-800">Review all extracted data carefully. Units are automatically calculated from time in/out (1 unit = 15 minutes). Time periods over 35 minutes are rounded up to 3 units.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Patient/Client Name */}
+        <Card className="mb-6 shadow-lg">
+          <CardHeader className="bg-blue-50">
+            <CardTitle>Patient/Client Information</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div>
+              <Label htmlFor="client_name">Patient/Client Name</Label>
+              <Input
+                id="client_name"
+                value={timesheet.extracted_data?.client_name || ""}
+                onChange={(e) => handleClientNameChange(e.target.value)}
+                placeholder="Enter patient name"
+                data-testid="client-name-input"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Employee Entries */}
+        <div className="space-y-6">
+          {timesheet.extracted_data?.employee_entries?.map((employee, empIndex) => (
+            <Card key={empIndex} className="shadow-lg" data-testid={`employee-${empIndex}`}>
+              <CardHeader className="bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg">Employee {empIndex + 1}</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeEmployee(empIndex)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    data-testid={`remove-employee-${empIndex}`}
+                  >
+                    <Trash2 size={18} />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-6">
+                {/* Employee Details */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor={`emp_name_${empIndex}`}>Employee Name</Label>
+                    <Input
+                      id={`emp_name_${empIndex}`}
+                      value={employee.employee_name || ""}
+                      onChange={(e) => handleEmployeeFieldChange(empIndex, "employee_name", e.target.value)}
+                      placeholder="Enter name"
+                      data-testid={`employee-name-${empIndex}`}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`service_code_${empIndex}`}>Service Code</Label>
+                    <Input
+                      id={`service_code_${empIndex}`}
+                      value={employee.service_code || ""}
+                      onChange={(e) => handleEmployeeFieldChange(empIndex, "service_code", e.target.value)}
+                      placeholder="Enter code"
+                      data-testid={`service-code-${empIndex}`}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`signature_${empIndex}`}>Signature</Label>
+                    <select
+                      id={`signature_${empIndex}`}
+                      value={employee.signature || "No"}
+                      onChange={(e) => handleEmployeeFieldChange(empIndex, "signature", e.target.value)}
+                      className="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      data-testid={`signature-${empIndex}`}
+                    >
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Time Entries */}
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-sm font-semibold text-gray-700 uppercase">Time Entries</h4>
+                    <Button
+                      size="sm"
+                      onClick={() => addTimeEntry(empIndex)}
+                      className="bg-green-600 hover:bg-green-700"
+                      data-testid={`add-time-entry-${empIndex}`}
+                    >
+                      <Plus className="mr-1" size={16} />
+                      Add Entry
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {employee.time_entries?.map((entry, entryIndex) => (
+                      <div key={entryIndex} className="border border-gray-200 rounded-lg p-4 bg-gray-50" data-testid={`time-entry-${empIndex}-${entryIndex}`}>
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                          <div>
+                            <Label htmlFor={`date_${empIndex}_${entryIndex}`} className="text-xs">Date</Label>
+                            <Input
+                              id={`date_${empIndex}_${entryIndex}`}
+                              type="date"
+                              value={entry.date || ""}
+                              onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "date", e.target.value)}
+                              data-testid={`date-${empIndex}-${entryIndex}`}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`time_in_${empIndex}_${entryIndex}`} className="text-xs">Time In</Label>
+                            <Input
+                              id={`time_in_${empIndex}_${entryIndex}`}
+                              type="time"
+                              value={entry.time_in || ""}
+                              onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "time_in", e.target.value)}
+                              placeholder="HH:MM AM/PM"
+                              data-testid={`time-in-${empIndex}-${entryIndex}`}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`time_out_${empIndex}_${entryIndex}`} className="text-xs">Time Out</Label>
+                            <Input
+                              id={`time_out_${empIndex}_${entryIndex}`}
+                              type="time"
+                              value={entry.time_out || ""}
+                              onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "time_out", e.target.value)}
+                              placeholder="HH:MM AM/PM"
+                              data-testid={`time-out-${empIndex}-${entryIndex}`}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`hours_${empIndex}_${entryIndex}`} className="text-xs">Hours</Label>
+                            <Input
+                              id={`hours_${empIndex}_${entryIndex}`}
+                              value={entry.hours_worked || ""}
+                              onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "hours_worked", e.target.value)}
+                              placeholder="8.0"
+                              data-testid={`hours-${empIndex}-${entryIndex}`}
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeTimeEntry(empIndex, entryIndex)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              data-testid={`remove-entry-${empIndex}-${entryIndex}`}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {/* Add Employee Button */}
+          <Button
+            onClick={addEmployee}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+            data-testid="add-employee-btn"
+          >
+            <Plus className="mr-2" size={18} />
+            Add Another Employee
+          </Button>
+        </div>
+
+        {/* Action Buttons at Bottom */}
+        <div className="flex justify-end gap-3 mt-8 pt-6 border-t">
+          <Button variant="outline" onClick={() => navigate("/")} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+            <Save className="mr-2" size={18} />
+            Save Changes
+          </Button>
+          <Button onClick={handleResubmit} disabled={saving} className="bg-green-600 hover:bg-green-700">
+            <CheckCircle className="mr-2" size={18} />
+            Save & Resubmit to Sandata
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TimesheetEditor;
