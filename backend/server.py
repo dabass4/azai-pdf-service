@@ -128,6 +128,59 @@ class InsuranceContract(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class ClaimLineItem(BaseModel):
+    """Individual service line item in a claim"""
+    date_of_service: str  # YYYY-MM-DD
+    employee_name: str
+    employee_id: Optional[str] = None
+    service_code: str
+    service_name: str
+    units: int  # Billable units
+    rate_per_unit: Optional[float] = None
+    amount: Optional[float] = None  # Total amount (units * rate)
+
+class MedicaidClaim(BaseModel):
+    """Ohio Medicaid Claim"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    claim_number: str  # Auto-generated claim number
+    
+    # Patient Information
+    patient_id: str
+    patient_name: str
+    patient_medicaid_number: str
+    
+    # Payer Information
+    payer_id: str
+    payer_name: str
+    contract_number: Optional[str] = None
+    
+    # Service Information
+    service_period_start: str  # YYYY-MM-DD
+    service_period_end: str  # YYYY-MM-DD
+    line_items: List[ClaimLineItem] = []
+    
+    # Financial
+    total_units: int = 0
+    total_amount: float = 0.0
+    
+    # Status
+    status: str = "draft"  # draft, submitted, pending, approved, denied, paid
+    submission_date: Optional[str] = None
+    approval_date: Optional[str] = None
+    payment_date: Optional[str] = None
+    
+    # Additional Information
+    notes: Optional[str] = None
+    denial_reason: Optional[str] = None
+    
+    # Linked Records
+    timesheet_ids: List[str] = []  # Source timesheets
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class TimeEntry(BaseModel):
     """Single time entry for a specific date"""
     date: Optional[str] = None
