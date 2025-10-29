@@ -480,6 +480,27 @@ async def get_timesheet(timesheet_id: str):
     
     return timesheet
 
+@api_router.put("/timesheets/{timesheet_id}", response_model=Timesheet)
+async def update_timesheet(timesheet_id: str, timesheet_update: Timesheet):
+    """Update timesheet data (for manual corrections)"""
+    timesheet_update.id = timesheet_id
+    timesheet_update.updated_at = datetime.now(timezone.utc)
+    
+    doc = timesheet_update.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat() if isinstance(doc['created_at'], datetime) else doc['created_at']
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    result = await db.timesheets.update_one(
+        {"id": timesheet_id},
+        {"$set": doc}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+    
+    logger.info(f"Timesheet updated manually: {timesheet_id}")
+    return timesheet_update
+
 @api_router.delete("/timesheets/{timesheet_id}")
 async def delete_timesheet(timesheet_id: str):
     """Delete a timesheet"""
