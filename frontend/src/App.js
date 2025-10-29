@@ -423,6 +423,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/patients" element={<Patients />} />
           <Route path="/employees" element={<Employees />} />
+          <Route path="/timesheet/edit/:id" element={<TimesheetEditor />} />
         </Routes>
       </BrowserRouter>
     </div>
