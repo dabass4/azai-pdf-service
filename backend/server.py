@@ -821,6 +821,131 @@ async def delete_contract(contract_id: str):
     
     return {"message": "Contract deleted successfully"}
 
+# Medicaid Claims Endpoints
+@api_router.post("/claims", response_model=MedicaidClaim)
+async def create_claim(claim: MedicaidClaim):
+    """Create a new Medicaid claim"""
+    try:
+        # Auto-generate claim number if not provided
+        if not claim.claim_number:
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+            claim.claim_number = f"ODM-{timestamp}"
+        
+        doc = claim.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        
+        await db.claims.insert_one(doc)
+        logger.info(f"Claim created: {claim.id}")
+        
+        return claim
+    except Exception as e:
+        logger.error(f"Error creating claim: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/claims", response_model=List[MedicaidClaim])
+async def get_claims():
+    """Get all claims"""
+    claims = await db.claims.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Convert ISO string timestamps
+    for claim in claims:
+        if isinstance(claim.get('created_at'), str):
+            claim['created_at'] = datetime.fromisoformat(claim['created_at'])
+        if isinstance(claim.get('updated_at'), str):
+            claim['updated_at'] = datetime.fromisoformat(claim['updated_at'])
+    
+    return claims
+
+@api_router.get("/claims/{claim_id}", response_model=MedicaidClaim)
+async def get_claim(claim_id: str):
+    """Get specific claim by ID"""
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+    
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    
+    # Convert ISO string timestamps
+    if isinstance(claim.get('created_at'), str):
+        claim['created_at'] = datetime.fromisoformat(claim['created_at'])
+    if isinstance(claim.get('updated_at'), str):
+        claim['updated_at'] = datetime.fromisoformat(claim['updated_at'])
+    
+    return claim
+
+@api_router.put("/claims/{claim_id}", response_model=MedicaidClaim)
+async def update_claim(claim_id: str, claim_update: MedicaidClaim):
+    """Update claim"""
+    claim_update.id = claim_id
+    claim_update.updated_at = datetime.now(timezone.utc)
+    
+    doc = claim_update.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat() if isinstance(doc['created_at'], datetime) else doc['created_at']
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    result = await db.claims.update_one(
+        {"id": claim_id},
+        {"$set": doc}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    
+    return claim_update
+
+@api_router.post("/claims/{claim_id}/submit")
+async def submit_claim(claim_id: str):
+    """Submit claim to Ohio Medicaid (mocked)"""
+    try:
+        claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+        
+        if not claim:
+            raise HTTPException(status_code=404, detail="Claim not found")
+        
+        # Mock submission
+        submission_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        
+        logger.info(f"[MOCK] Submitting claim to Ohio Medicaid:")
+        logger.info(f"  Claim Number: {claim['claim_number']}")
+        logger.info(f"  Patient: {claim['patient_name']} (Medicaid: {claim['patient_medicaid_number']})")
+        logger.info(f"  Total Amount: ${claim['total_amount']:.2f}")
+        logger.info(f"  Total Units: {claim['total_units']}")
+        logger.info(f"  Line Items: {len(claim['line_items'])}")
+        
+        # Update claim status
+        await db.claims.update_one(
+            {"id": claim_id},
+            {"$set": {
+                "status": "submitted",
+                "submission_date": submission_date,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        return {
+            "status": "success",
+            "message": "Claim submitted successfully (MOCKED)",
+            "claim_number": claim['claim_number'],
+            "submission_date": submission_date,
+            "reference_id": f"REF-{claim_id[:8].upper()}"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Claim submission error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/claims/{claim_id}")
+async def delete_claim(claim_id: str):
+    """Delete a claim"""
+    result = await db.claims.delete_one({"id": claim_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    
+    return {"message": "Claim deleted successfully"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
