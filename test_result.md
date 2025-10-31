@@ -120,87 +120,108 @@ user_problem_statement: |
 backend:
   - task: "Ohio Medicaid EVV utilities module"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/evv_utils.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Created EVV utilities with sequence management, date/time conversion, coordinate validation, payer/program validation, and Ohio-specific reference lists"
+      - working: true
+        agent: "testing"
+        comment: "Tested EVV utilities through API endpoints. Sequence generation, coordinate validation, and payer/program validation all working correctly. Reference data endpoints returning proper Ohio-specific lists."
 
   - task: "Extended patient profile with EVV fields"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Added geographic coordinates, phone numbers, responsible party, timezone, and EVV IDs to PatientProfile model"
+      - working: true
+        agent: "testing"
+        comment: "Successfully created patient with EVV fields including coordinates (39.9612, -82.9988), phone numbers, and timezone. All EVV-specific fields properly stored and retrieved."
 
   - task: "Extended employee profile with DCW fields"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Added staff PIN, staff position, and external ID fields to EmployeeProfile for EVV compliance"
+      - working: true
+        agent: "testing"
+        comment: "Successfully created employee with DCW fields including staff_pin (123456789), staff_other_id (STAFF001), and staff_position (HHA). All DCW-specific fields working correctly."
 
   - task: "EVV visit, call, exception, and change models"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Created comprehensive EVV models: EVVVisit, EVVCall, EVVException, EVVVisitChange, BusinessEntityConfig, EVVTransmission"
+      - working: true
+        agent: "testing"
+        comment: "Fixed sequence_id field to be optional with auto-generation. Successfully created, retrieved, updated, and deleted EVV visits with calls, coordinates, and all required fields. CRUD operations working perfectly."
 
   - task: "EVV export module"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/evv_export.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Created EVV export module with exporters for Individual, DirectCareWorker, and Visit records in Ohio-compliant JSON format"
+      - working: true
+        agent: "testing"
+        comment: "All export endpoints working correctly. Successfully exported Individuals (1 record), DirectCareWorkers (1 record), and Visits (1 record) in proper Ohio EVV JSON format with all required fields."
 
   - task: "EVV submission module with mock aggregator"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/evv_submission.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Created mock Ohio EVV Aggregator with validation, transaction ID generation, acknowledgment, and rejection handling"
+      - working: true
+        agent: "testing"
+        comment: "Mock aggregator working perfectly. Successfully submitted Individuals, DirectCareWorkers, and Visits. Transaction IDs generated correctly (format: TXN-YYYYMMDDHHMMSS-XXXXXXXX). Status queries working with proper acknowledgments."
 
   - task: "EVV API endpoints"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Added comprehensive EVV endpoints: business entity config, visit CRUD, export (individuals/DCW/visits), submit (individuals/DCW/visits), transmission history, reference data"
+      - working: true
+        agent: "testing"
+        comment: "All 25 EVV API endpoints tested successfully: Business Entity (3/3), Visit Management (5/5), Export (3/3), Submission (3/3), Status & Reference (11/11). Complete EVV workflow from configuration to submission working correctly."
 
 frontend:
   - task: "EVV Management page"
