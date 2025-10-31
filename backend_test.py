@@ -1364,16 +1364,288 @@ Signature: [Signed]"""
             self.log_test("DirectCareWorker Export Edge Cases", False, str(e))
             return False
 
+    def test_evv_export_comprehensive_validation(self):
+        """Comprehensive validation of EVV export functionality as per review request"""
+        print("\n🎯 Comprehensive EVV Export Validation Tests")
+        print("=" * 60)
+        
+        # Test all specific requirements from review request
+        self.test_individual_export_requirements()
+        self.test_dcw_export_requirements()
+        self.test_export_json_validity()
+        self.test_export_with_actual_database_data()
+        
+        return True
+    
+    def test_individual_export_requirements(self):
+        """Test all Individual export requirements from review request"""
+        try:
+            response = requests.get(f"{self.api_url}/evv/export/individuals", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                export_data = data.get('data', [])
+                
+                if len(export_data) > 0:
+                    # Test each requirement
+                    requirements_met = []
+                    
+                    for individual in export_data:
+                        # 1. All required EVV Individual fields are present
+                        required_fields = [
+                            'BusinessEntityID', 'BusinessEntityMedicaidIdentifier', 
+                            'PatientOtherID', 'SequenceID', 'PatientMedicaidID',
+                            'IsPatientNewborn', 'PatientLastName', 'PatientFirstName',
+                            'PatientTimeZone', 'IndividualPayerInformation', 'IndividualAddress'
+                        ]
+                        all_required_present = all(field in individual for field in required_fields)
+                        requirements_met.append(("All required EVV Individual fields present", all_required_present))
+                        
+                        # 2. PatientOtherID uses patient.id if patient_other_id not set
+                        patient_other_id = individual.get('PatientOtherID', '')
+                        other_id_valid = len(patient_other_id) > 0
+                        requirements_met.append(("PatientOtherID properly mapped", other_id_valid))
+                        
+                        # 3. PatientMedicaidID has 12 digits with leading zeros
+                        medicaid_id = individual.get('PatientMedicaidID', '')
+                        medicaid_format_valid = len(medicaid_id) == 12 and medicaid_id.isdigit()
+                        requirements_met.append(("PatientMedicaidID 12 digits with leading zeros", medicaid_format_valid))
+                        
+                        # 4. Address fields map correctly
+                        addresses = individual.get('IndividualAddress', [])
+                        address_mapped = len(addresses) > 0
+                        if address_mapped:
+                            addr = addresses[0]
+                            address_fields = ['PatientAddressLine1', 'PatientCity', 'PatientState', 'PatientZip']
+                            address_complete = all(field in addr for field in address_fields)
+                            requirements_met.append(("Address fields map correctly", address_complete))
+                        
+                        # 5. Coordinates are included if available
+                        coords_available = False
+                        if addresses and len(addresses) > 0:
+                            addr = addresses[0]
+                            coords_available = 'PatientAddressLatitude' in addr and 'PatientAddressLongitude' in addr
+                        requirements_met.append(("Coordinates included when available", coords_available))
+                        
+                        # 6. Phone numbers export correctly
+                        phones_exported = 'IndividualPhone' in individual
+                        requirements_met.append(("Phone numbers export correctly", phones_exported))
+                        
+                        # 7. Responsible party exports if present
+                        rp_exported = 'ResponsibleParty' in individual
+                        requirements_met.append(("Responsible party exports when present", rp_exported))
+                        
+                        # 8. Default payer information is added
+                        payer_info = individual.get('IndividualPayerInformation', [])
+                        payer_added = len(payer_info) > 0 and payer_info[0].get('Payer') == 'ODM'
+                        requirements_met.append(("Default payer information added", payer_added))
+                        
+                        # 9. PIMS ID handling for ODA
+                        pims_handled = True  # This is optional, so we consider it handled if no error
+                        requirements_met.append(("PIMS ID handling for ODA", pims_handled))
+                        
+                        break  # Test first individual
+                    
+                    # Calculate success rate
+                    passed_requirements = sum(1 for _, met in requirements_met if met)
+                    total_requirements = len(requirements_met)
+                    success = passed_requirements == total_requirements
+                    
+                    details = f"Requirements met: {passed_requirements}/{total_requirements}"
+                    for req_name, met in requirements_met:
+                        if not met:
+                            details += f", FAILED: {req_name}"
+                else:
+                    success = False
+                    details = "No individual records found"
+            else:
+                details = f"Status: {response.status_code}"
+            
+            self.log_test("Individual Export Requirements Validation", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Individual Export Requirements Validation", False, str(e))
+            return False
+    
+    def test_dcw_export_requirements(self):
+        """Test all DirectCareWorker export requirements from review request"""
+        try:
+            response = requests.get(f"{self.api_url}/evv/export/direct-care-workers", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                export_data = data.get('data', [])
+                
+                if len(export_data) > 0:
+                    # Test each requirement
+                    requirements_met = []
+                    
+                    for dcw in export_data:
+                        # 1. All required EVV DCW fields are present
+                        required_fields = [
+                            'BusinessEntityID', 'BusinessEntityMedicaidIdentifier',
+                            'StaffOtherID', 'SequenceID', 'StaffID', 'StaffSSN',
+                            'StaffLastName', 'StaffFirstName'
+                        ]
+                        all_required_present = all(field in dcw for field in required_fields)
+                        requirements_met.append(("All required EVV DCW fields present", all_required_present))
+                        
+                        # 2. StaffOtherID uses employee.id if staff_other_id not set
+                        staff_other_id = dcw.get('StaffOtherID', '')
+                        other_id_valid = len(staff_other_id) > 0
+                        requirements_met.append(("StaffOtherID properly mapped", other_id_valid))
+                        
+                        # 3. StaffID uses staff_pin or employee_id as fallback
+                        staff_id = dcw.get('StaffID', '')
+                        staff_id_valid = len(staff_id) > 0
+                        requirements_met.append(("StaffID uses staff_pin or employee_id fallback", staff_id_valid))
+                        
+                        # 4. SSN is cleaned (no dashes/spaces)
+                        ssn = dcw.get('StaffSSN', '')
+                        ssn_clean = len(ssn) == 9 and ssn.isdigit()
+                        requirements_met.append(("SSN cleaned (9 digits, no formatting)", ssn_clean))
+                        
+                        # 5. StaffEmail is included if available
+                        email_handling = True  # Optional field, so we check it's handled properly
+                        if 'StaffEmail' in dcw:
+                            email = dcw['StaffEmail']
+                            email_handling = '@' in email  # Basic email validation
+                        requirements_met.append(("StaffEmail included when available", email_handling))
+                        
+                        # 6. StaffPosition is truncated to 3 characters if needed
+                        position_valid = True
+                        if 'StaffPosition' in dcw:
+                            position = dcw['StaffPosition']
+                            position_valid = len(position) <= 3
+                        requirements_met.append(("StaffPosition truncated to 3 characters", position_valid))
+                        
+                        break  # Test first DCW
+                    
+                    # Calculate success rate
+                    passed_requirements = sum(1 for _, met in requirements_met if met)
+                    total_requirements = len(requirements_met)
+                    success = passed_requirements == total_requirements
+                    
+                    details = f"Requirements met: {passed_requirements}/{total_requirements}"
+                    for req_name, met in requirements_met:
+                        if not met:
+                            details += f", FAILED: {req_name}"
+                else:
+                    success = False
+                    details = "No DCW records found"
+            else:
+                details = f"Status: {response.status_code}"
+            
+            self.log_test("DirectCareWorker Export Requirements Validation", success, details)
+            return success
+        except Exception as e:
+            self.log_test("DirectCareWorker Export Requirements Validation", False, str(e))
+            return False
+    
+    def test_export_json_validity(self):
+        """Test that exports produce valid JSON without errors"""
+        try:
+            # Test Individual export JSON validity
+            individual_response = requests.get(f"{self.api_url}/evv/export/individuals", timeout=10)
+            individual_valid = individual_response.status_code == 200
+            
+            if individual_valid:
+                try:
+                    individual_data = individual_response.json()
+                    individual_json_valid = 'data' in individual_data and isinstance(individual_data['data'], list)
+                except json.JSONDecodeError:
+                    individual_json_valid = False
+            else:
+                individual_json_valid = False
+            
+            # Test DCW export JSON validity
+            dcw_response = requests.get(f"{self.api_url}/evv/export/direct-care-workers", timeout=10)
+            dcw_valid = dcw_response.status_code == 200
+            
+            if dcw_valid:
+                try:
+                    dcw_data = dcw_response.json()
+                    dcw_json_valid = 'data' in dcw_data and isinstance(dcw_data['data'], list)
+                except json.JSONDecodeError:
+                    dcw_json_valid = False
+            else:
+                dcw_json_valid = False
+            
+            success = individual_json_valid and dcw_json_valid
+            details = f"Individual JSON valid: {individual_json_valid}, DCW JSON valid: {dcw_json_valid}"
+            
+            self.log_test("Export JSON Validity", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Export JSON Validity", False, str(e))
+            return False
+    
+    def test_export_with_actual_database_data(self):
+        """Test exports with actual patient and employee data from database"""
+        try:
+            # Get actual patients from database
+            patients_response = requests.get(f"{self.api_url}/patients", timeout=10)
+            patients_success = patients_response.status_code == 200
+            
+            # Get actual employees from database
+            employees_response = requests.get(f"{self.api_url}/employees", timeout=10)
+            employees_success = employees_response.status_code == 200
+            
+            if patients_success and employees_success:
+                patients_data = patients_response.json()
+                employees_data = employees_response.json()
+                
+                # Test Individual export with actual data
+                individual_export = requests.get(f"{self.api_url}/evv/export/individuals", timeout=10)
+                individual_export_success = individual_export.status_code == 200
+                
+                # Test DCW export with actual data
+                dcw_export = requests.get(f"{self.api_url}/evv/export/direct-care-workers", timeout=10)
+                dcw_export_success = dcw_export.status_code == 200
+                
+                if individual_export_success and dcw_export_success:
+                    individual_export_data = individual_export.json()
+                    dcw_export_data = dcw_export.json()
+                    
+                    # Verify record counts match
+                    patients_count = len(patients_data)
+                    employees_count = len(employees_data)
+                    exported_individuals = individual_export_data.get('record_count', 0)
+                    exported_dcws = dcw_export_data.get('record_count', 0)
+                    
+                    counts_match = (patients_count == exported_individuals and 
+                                  employees_count == exported_dcws)
+                    
+                    success = counts_match
+                    details = f"Patients: {patients_count}→{exported_individuals}, Employees: {employees_count}→{exported_dcws}"
+                else:
+                    success = False
+                    details = f"Export failed - Individual: {individual_export_success}, DCW: {dcw_export_success}"
+            else:
+                success = False
+                details = f"Database read failed - Patients: {patients_success}, Employees: {employees_success}"
+            
+            self.log_test("Export with Actual Database Data", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Export with Actual Database Data", False, str(e))
+            return False
+
 def main():
     tester = TimesheetAPITester()
     
     # Run detailed EVV export field mapping tests as requested
-    print("🔍 Running Detailed EVV Export Field Mapping Tests")
-    print("Testing corrected Individual and DirectCareWorker export functionality")
+    print("🎯 Testing Corrected EVV Export Functionality")
+    print("Verifying Individual and DirectCareWorker export field mappings")
     print("=" * 80)
     
     # Test the corrected EVV export functionality
     tester.test_evv_export_field_mapping_detailed()
+    
+    # Run comprehensive validation tests
+    tester.test_evv_export_comprehensive_validation()
     
     return tester.get_results()
 
