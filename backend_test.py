@@ -2,9 +2,10 @@ import requests
 import sys
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
+import uuid
 
 class TimesheetAPITester:
     def __init__(self, base_url="https://timescan-app.preview.emergentagent.com"):
