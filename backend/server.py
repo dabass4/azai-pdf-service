@@ -546,12 +546,33 @@ Return ONLY the JSON object, no additional text or explanation."""
                         if isinstance(time_entries_data, list):
                             for entry in time_entries_data:
                                 if isinstance(entry, dict):
-                                    time_entries.append(TimeEntry(
+                                    # Get original times
+                                    time_in = entry.get("time_in", "")
+                                    time_out = entry.get("time_out", "")
+                                    
+                                    # Normalize AM/PM using system logic
+                                    normalized_time_in = normalize_am_pm(time_in) if time_in else ""
+                                    normalized_time_out = normalize_am_pm(time_out) if time_out else ""
+                                    
+                                    # Calculate units and hours from time difference
+                                    units, calculated_hours = calculate_units_from_times(normalized_time_in, normalized_time_out)
+                                    
+                                    # Use calculated hours if available, otherwise use extracted value
+                                    hours_worked = str(calculated_hours) if calculated_hours is not None else entry.get("hours_worked")
+                                    
+                                    # Create TimeEntry with normalized times and calculated units
+                                    time_entry = TimeEntry(
                                         date=entry.get("date"),
-                                        time_in=entry.get("time_in"),
-                                        time_out=entry.get("time_out"),
-                                        hours_worked=entry.get("hours_worked")
-                                    ))
+                                        time_in=normalized_time_in,
+                                        time_out=normalized_time_out,
+                                        hours_worked=hours_worked
+                                    )
+                                    
+                                    # Add units as custom attribute (will be used for billing)
+                                    if units is not None:
+                                        time_entry.units = units
+                                    
+                                    time_entries.append(time_entry)
                         
                         # Create employee entry
                         employee_entries.append(EmployeeEntry(
