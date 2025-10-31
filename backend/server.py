@@ -40,19 +40,21 @@ logger = logging.getLogger(__name__)
 
 # Define Models
 class EmployeeProfile(BaseModel):
-    """Employee profile with all required information"""
+    """Employee profile with all required information including EVV DCW fields"""
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Basic Information
     first_name: str
     last_name: str
     middle_name: Optional[str] = None
-    ssn: str  # Social Security Number (9 digits)
+    ssn: str  # Social Security Number (9 digits) - EVV Required
     date_of_birth: str  # YYYY-MM-DD format
     sex: str  # Male, Female, Other
     
     # Contact Information
-    email: Optional[str] = None
+    email: Optional[str] = None  # EVV: Must be unique if provided
     phone: str
     address_street: str
     address_city: str
@@ -67,6 +69,11 @@ class EmployeeProfile(BaseModel):
     hourly_rate: Optional[float] = None
     employment_status: str  # Full-time, Part-time, Contract
     
+    # EVV DCW Fields
+    staff_pin: Optional[str] = None  # EVV: Staff PIN for telephony (9 digits)
+    staff_other_id: Optional[str] = None  # EVV: External system ID
+    staff_position: Optional[str] = None  # EVV: Position code (3 characters)
+    
     # Emergency Contact
     emergency_contact_name: str
     emergency_contact_phone: str
@@ -76,6 +83,9 @@ class EmployeeProfile(BaseModel):
     certifications: Optional[str] = None  # Comma-separated or free text
     license_number: Optional[str] = None
     license_expiration: Optional[str] = None
+    
+    # Sequence Management (EVV)
+    sequence_id: Optional[str] = None
     
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
