@@ -469,21 +469,8 @@ Return ONLY a valid JSON object with this exact structure:
       "time_entries": [
         {
           "date": "YYYY-MM-DD",
-          "time_in": "HH:MM AM/PM",
-          "time_out": "HH:MM AM/PM",
-          "hours_worked": "number of hours"
-        }
-      ]
-    },
-    {
-      "employee_name": "second employee's full name",
-      "service_code": "service or billing code for this employee",
-      "signature": "Yes if signature is present, No if not",
-      "time_entries": [
-        {
-          "date": "YYYY-MM-DD",
-          "time_in": "HH:MM AM/PM",
-          "time_out": "HH:MM AM/PM",
+          "time_in": "HH:MM",
+          "time_out": "HH:MM",
           "hours_worked": "number of hours"
         }
       ]
@@ -491,12 +478,19 @@ Return ONLY a valid JSON object with this exact structure:
   ]
 }
 
-IMPORTANT:
+IMPORTANT INSTRUCTIONS:
 - Extract ALL employees from the timesheet
 - If there's only one employee, the employee_entries array should have one object
 - Extract ALL date/time entries for each employee
 - Group time entries by employee
 - If the timesheet has the same service code for all employees, repeat it for each
+
+TIME FORMAT RULES (CRITICAL):
+- Extract times in 24-hour format (HH:MM) OR 12-hour format without spaces
+- If you see "8:30 AM", extract as "8:30" (we'll determine AM/PM automatically)
+- If you see "5:45 PM", extract as "17:45" OR "5:45" (system will normalize)
+- DO NOT include AM/PM in the extracted time - just the numbers
+- Examples: "8:30", "17:45", "14:30", "9:00"
 
 Return ONLY the JSON object, no additional text or explanation."""
         
