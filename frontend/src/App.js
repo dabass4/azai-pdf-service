@@ -26,6 +26,7 @@ const Navigation = () => {
     { to: "/employees", icon: UserCheck, label: "Employees" },
     { to: "/payers", icon: DollarSign, label: "Payers" },
     { to: "/claims", icon: ClipboardCheck, label: "Claims" },
+    { to: "/evv", icon: Activity, label: "EVV" },
   ];
   
   return (
