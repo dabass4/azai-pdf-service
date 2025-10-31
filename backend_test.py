@@ -1456,7 +1456,7 @@ Signature: [Signed]"""
                         pims_handled = True  # This is optional, so we consider it handled if no error
                         requirements_met.append(("PIMS ID handling for ODA", pims_handled))
                         
-                        break  # Test first individual
+                    # End of requirements testing for our test individual
                     
                     # Calculate success rate
                     passed_requirements = sum(1 for _, met in requirements_met if met)
