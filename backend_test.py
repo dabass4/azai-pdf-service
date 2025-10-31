@@ -267,6 +267,75 @@ Signature: [Signed]"""
         
         return self.get_results()
 
+    def run_evv_tests(self):
+        """Run comprehensive EVV API tests"""
+        print("\n🏥 Starting Ohio Medicaid EVV Backend Tests")
+        print(f"Testing against: {self.api_url}")
+        print("=" * 60)
+        
+        # Test basic connectivity first
+        if not self.test_root_endpoint():
+            print("❌ Root endpoint failed - stopping EVV tests")
+            return self.get_results()
+        
+        # Step 1: Create business entity (required for other operations)
+        business_entity_id = self.test_create_business_entity()
+        if not business_entity_id:
+            print("❌ Business entity creation failed - stopping EVV tests")
+            return self.get_results()
+        
+        # Step 2: Test business entity endpoints
+        self.test_get_business_entities()
+        self.test_get_active_business_entity()
+        
+        # Step 3: Create sample patient with EVV fields
+        patient_id = self.test_create_patient_with_evv_fields()
+        
+        # Step 4: Create sample employee with DCW fields  
+        employee_id = self.test_create_employee_with_dcw_fields()
+        
+        # Step 5: Create sample EVV visit
+        visit_id = self.test_create_evv_visit(patient_id, employee_id)
+        
+        # Step 6: Test EVV visit management
+        if visit_id:
+            self.test_get_evv_visits()
+            self.test_get_specific_evv_visit(visit_id)
+            self.test_update_evv_visit(visit_id)
+        
+        # Step 7: Test export functionality
+        self.test_export_individuals()
+        self.test_export_direct_care_workers()
+        self.test_export_visits()
+        
+        # Step 8: Test submission to mock aggregator
+        individual_txn_id = self.test_submit_individuals()
+        dcw_txn_id = self.test_submit_direct_care_workers()
+        visit_txn_id = self.test_submit_visits()
+        
+        # Step 9: Query submission status
+        if individual_txn_id:
+            self.test_query_evv_status(individual_txn_id)
+        if dcw_txn_id:
+            self.test_query_evv_status(dcw_txn_id)
+        if visit_txn_id:
+            self.test_query_evv_status(visit_txn_id)
+        
+        # Step 10: Test transmission history
+        self.test_get_evv_transmissions()
+        
+        # Step 11: Test reference data endpoints
+        self.test_get_evv_payers()
+        self.test_get_evv_programs()
+        self.test_get_evv_procedure_codes()
+        self.test_get_evv_exception_codes()
+        
+        # Step 12: Cleanup - delete test visit
+        if visit_id:
+            self.test_delete_evv_visit(visit_id)
+        
+        return self.get_results()
+
     def get_results(self):
         """Get test results summary"""
         print("\n" + "=" * 60)
