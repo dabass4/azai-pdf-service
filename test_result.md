@@ -226,6 +226,21 @@ backend:
         agent: "testing"
         comment: "All 25 EVV API endpoints tested successfully: Business Entity (3/3), Visit Management (5/5), Export (3/3), Submission (3/3), Status & Reference (11/11). Complete EVV workflow from configuration to submission working correctly."
 
+  - task: "Time calculation and unit conversion functionality"
+    implemented: true
+    working: true
+    file: "/app/backend/time_utils.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented time normalization (AM/PM system logic), unit calculation from time differences, and special rounding rule (> 35 minutes rounds to 3 units). Integrated with timesheet extraction process."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE TIME CALCULATION TESTING COMPLETE - All functionality working perfectly: (1) Time Normalization: AM/PM system logic correctly determines times 7:00-11:59 as AM, 1:00-6:59 as PM, ignores scanned AM/PM indicators. (2) Unit Calculation: 1 unit = 15 minutes with proper rounding (0-7min=0 units, 8-22min=1 unit, etc.). (3) Special Rounding Rule: Times >35min and <60min correctly round to 3 units (tested 36min, 37min, 45min, 59min all = 3 units). (4) Integration: time_utils properly integrated into timesheet extraction process in server.py lines 555-575, normalizes times and calculates units for new timesheets. (5) Edge Cases: Boundary conditions tested (35min=2 units, 60min=4 units). All 5/5 core time calculation tests passed. Existing timesheets show units=None because they were processed before this functionality was added, but new timesheets will have units calculated correctly."
+
 frontend:
   - task: "EVV Management page"
     implemented: true
