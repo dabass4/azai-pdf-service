@@ -1142,6 +1142,501 @@ async def delete_claim(claim_id: str):
     
     return {"message": "Claim deleted successfully"}
 
+# ========================================
+# EVV (Electronic Visit Verification) Endpoints
+# ========================================
+
+from evv_utils import (
+    SequenceManager, PayerProgramValidator, CoordinateValidator,
+    OHIO_PAYERS, OHIO_PAYER_PROGRAMS, OHIO_PROCEDURE_CODES, OHIO_EXCEPTION_CODES
+)
+from evv_export import EVVExportOrchestrator
+from evv_submission import EVVSubmissionService
+
+# Business Entity Configuration Endpoints
+@api_router.post("/evv/business-entity", response_model=BusinessEntityConfig)
+async def create_business_entity(entity: BusinessEntityConfig):
+    """Create business entity configuration for EVV"""
+    try:
+        doc = entity.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        
+        await db.business_entities.insert_one(doc)
+        logger.info(f"Business entity created: {entity.id}")
+        
+        return entity
+    except Exception as e:
+        logger.error(f"Error creating business entity: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/evv/business-entity", response_model=List[BusinessEntityConfig])
+async def get_business_entities():
+    """Get all business entity configurations"""
+    entities = await db.business_entities.find({}, {"_id": 0}).to_list(100)
+    
+    for entity in entities:
+        if isinstance(entity.get('created_at'), str):
+            entity['created_at'] = datetime.fromisoformat(entity['created_at'])
+        if isinstance(entity.get('updated_at'), str):
+            entity['updated_at'] = datetime.fromisoformat(entity['updated_at'])
+    
+    return entities
+
+@api_router.get("/evv/business-entity/active", response_model=BusinessEntityConfig)
+async def get_active_business_entity():
+    """Get active business entity for EVV submissions"""
+    entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+    
+    if not entity:
+        raise HTTPException(status_code=404, detail="No active business entity found")
+    
+    if isinstance(entity.get('created_at'), str):
+        entity['created_at'] = datetime.fromisoformat(entity['created_at'])
+    if isinstance(entity.get('updated_at'), str):
+        entity['updated_at'] = datetime.fromisoformat(entity['updated_at'])
+    
+    return entity
+
+# EVV Visit Endpoints
+@api_router.post("/evv/visits", response_model=EVVVisit)
+async def create_evv_visit(visit: EVVVisit):
+    """Create a new EVV visit record"""
+    try:
+        # Generate sequence ID if not provided
+        if not visit.sequence_id:
+            visit.sequence_id = SequenceManager.generate_sequence_id()
+        
+        # Validate payer/program/procedure combination
+        validation = PayerProgramValidator.validate_combination(
+            visit.payer, visit.payer_program, visit.procedure_code
+        )
+        
+        if not validation["all_valid"]:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid payer/program/procedure combination: {validation}"
+            )
+        
+        # Validate coordinates if provided
+        if visit.start_latitude and visit.start_longitude:
+            if not CoordinateValidator.validate_coordinates(visit.start_latitude, visit.start_longitude):
+                raise HTTPException(status_code=400, detail="Invalid start coordinates")
+        
+        if visit.end_latitude and visit.end_longitude:
+            if not CoordinateValidator.validate_coordinates(visit.end_latitude, visit.end_longitude):
+                raise HTTPException(status_code=400, detail="Invalid end coordinates")
+        
+        doc = visit.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        
+        await db.evv_visits.insert_one(doc)
+        logger.info(f"EVV visit created: {visit.id}")
+        
+        return visit
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating EVV visit: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/evv/visits", response_model=List[EVVVisit])
+async def get_evv_visits():
+    """Get all EVV visit records"""
+    visits = await db.evv_visits.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    for visit in visits:
+        if isinstance(visit.get('created_at'), str):
+            visit['created_at'] = datetime.fromisoformat(visit['created_at'])
+        if isinstance(visit.get('updated_at'), str):
+            visit['updated_at'] = datetime.fromisoformat(visit['updated_at'])
+    
+    return visits
+
+@api_router.get("/evv/visits/{visit_id}", response_model=EVVVisit)
+async def get_evv_visit(visit_id: str):
+    """Get specific EVV visit by ID"""
+    visit = await db.evv_visits.find_one({"id": visit_id}, {"_id": 0})
+    
+    if not visit:
+        raise HTTPException(status_code=404, detail="EVV visit not found")
+    
+    if isinstance(visit.get('created_at'), str):
+        visit['created_at'] = datetime.fromisoformat(visit['created_at'])
+    if isinstance(visit.get('updated_at'), str):
+        visit['updated_at'] = datetime.fromisoformat(visit['updated_at'])
+    
+    return visit
+
+@api_router.put("/evv/visits/{visit_id}", response_model=EVVVisit)
+async def update_evv_visit(visit_id: str, visit_update: EVVVisit):
+    """Update EVV visit record"""
+    # Increment sequence ID for update
+    if visit_update.sequence_id:
+        visit_update.sequence_id = SequenceManager.generate_sequence_id()
+    
+    visit_update.id = visit_id
+    visit_update.updated_at = datetime.now(timezone.utc)
+    
+    doc = visit_update.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat() if isinstance(doc['created_at'], datetime) else doc['created_at']
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    result = await db.evv_visits.update_one(
+        {"id": visit_id},
+        {"$set": doc}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="EVV visit not found")
+    
+    return visit_update
+
+@api_router.delete("/evv/visits/{visit_id}")
+async def delete_evv_visit(visit_id: str):
+    """Delete an EVV visit"""
+    result = await db.evv_visits.delete_one({"id": visit_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="EVV visit not found")
+    
+    return {"message": "EVV visit deleted successfully"}
+
+# EVV Export Endpoints
+@api_router.get("/evv/export/individuals")
+async def export_individuals():
+    """Export patients as EVV Individual records"""
+    try:
+        # Get active business entity
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        # Get all patients
+        patients = await db.patients.find({}, {"_id": 0}).to_list(1000)
+        
+        # Export to EVV format
+        exporter = EVVExportOrchestrator()
+        json_export = exporter.export_individuals(
+            patients,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        return {
+            "status": "success",
+            "record_type": "Individual",
+            "record_count": len(patients),
+            "data": json.loads(json_export)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting individuals: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/evv/export/direct-care-workers")
+async def export_direct_care_workers():
+    """Export employees as EVV DirectCareWorker records"""
+    try:
+        # Get active business entity
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        # Get all employees
+        employees = await db.employees.find({}, {"_id": 0}).to_list(1000)
+        
+        # Export to EVV format
+        exporter = EVVExportOrchestrator()
+        json_export = exporter.export_direct_care_workers(
+            employees,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        return {
+            "status": "success",
+            "record_type": "DirectCareWorker",
+            "record_count": len(employees),
+            "data": json.loads(json_export)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting DCWs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/evv/export/visits")
+async def export_visits():
+    """Export EVV visit records"""
+    try:
+        # Get active business entity
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        # Get all ready/draft visits
+        visits = await db.evv_visits.find(
+            {"evv_status": {"$in": ["draft", "ready"]}},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        # Export to EVV format
+        exporter = EVVExportOrchestrator()
+        json_export = exporter.export_visits(
+            visits,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        return {
+            "status": "success",
+            "record_type": "Visit",
+            "record_count": len(visits),
+            "data": json.loads(json_export)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting visits: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# EVV Submission Endpoints
+@api_router.post("/evv/submit/individuals")
+async def submit_individuals():
+    """Submit Individual records to Ohio EVV Aggregator"""
+    try:
+        # Get active business entity
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        # Get all patients
+        patients = await db.patients.find({}, {"_id": 0}).to_list(1000)
+        
+        # Export to EVV format
+        exporter = EVVExportOrchestrator()
+        json_export = exporter.export_individuals(
+            patients,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        # Submit to aggregator
+        submission_service = EVVSubmissionService()
+        result = submission_service.submit_individuals(
+            json_export,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        # Save transmission record
+        if result.get("status") == "success":
+            transmission = EVVTransmission(
+                transaction_id=result['transaction_id'],
+                record_type="Individual",
+                record_count=len(patients),
+                business_entity_id=entity['business_entity_id'],
+                business_entity_medicaid_id=entity['business_entity_medicaid_id'],
+                transmission_datetime=datetime.now(timezone.utc).isoformat(),
+                status="accepted" if not result.get('has_rejections') else "partial",
+                acknowledgement=json.dumps(result.get('acknowledgment', {}))
+            )
+            
+            doc = transmission.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            await db.evv_transmissions.insert_one(doc)
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting individuals: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/evv/submit/direct-care-workers")
+async def submit_direct_care_workers():
+    """Submit DirectCareWorker records to Ohio EVV Aggregator"""
+    try:
+        # Get active business entity
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        # Get all employees
+        employees = await db.employees.find({}, {"_id": 0}).to_list(1000)
+        
+        # Export to EVV format
+        exporter = EVVExportOrchestrator()
+        json_export = exporter.export_direct_care_workers(
+            employees,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        # Submit to aggregator
+        submission_service = EVVSubmissionService()
+        result = submission_service.submit_direct_care_workers(
+            json_export,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        # Save transmission record
+        if result.get("status") == "success":
+            transmission = EVVTransmission(
+                transaction_id=result['transaction_id'],
+                record_type="Staff",
+                record_count=len(employees),
+                business_entity_id=entity['business_entity_id'],
+                business_entity_medicaid_id=entity['business_entity_medicaid_id'],
+                transmission_datetime=datetime.now(timezone.utc).isoformat(),
+                status="accepted" if not result.get('has_rejections') else "partial",
+                acknowledgement=json.dumps(result.get('acknowledgment', {}))
+            )
+            
+            doc = transmission.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            await db.evv_transmissions.insert_one(doc)
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting DCWs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/evv/submit/visits")
+async def submit_visits():
+    """Submit Visit records to Ohio EVV Aggregator"""
+    try:
+        # Get active business entity
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        # Get ready visits
+        visits = await db.evv_visits.find(
+            {"evv_status": {"$in": ["draft", "ready"]}},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        if not visits:
+            return {
+                "status": "success",
+                "message": "No visits ready for submission",
+                "record_count": 0
+            }
+        
+        # Export to EVV format
+        exporter = EVVExportOrchestrator()
+        json_export = exporter.export_visits(
+            visits,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        # Submit to aggregator
+        submission_service = EVVSubmissionService()
+        result = submission_service.submit_visits(
+            json_export,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        # Save transmission record and update visit statuses
+        if result.get("status") == "success":
+            transmission = EVVTransmission(
+                transaction_id=result['transaction_id'],
+                record_type="Visit",
+                record_count=len(visits),
+                business_entity_id=entity['business_entity_id'],
+                business_entity_medicaid_id=entity['business_entity_medicaid_id'],
+                transmission_datetime=datetime.now(timezone.utc).isoformat(),
+                status="accepted" if not result.get('has_rejections') else "partial",
+                acknowledgement=json.dumps(result.get('acknowledgment', {}))
+            )
+            
+            doc = transmission.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            await db.evv_transmissions.insert_one(doc)
+            
+            # Update visit statuses
+            visit_ids = [v['id'] for v in visits]
+            await db.evv_visits.update_many(
+                {"id": {"$in": visit_ids}},
+                {"$set": {
+                    "evv_status": "submitted",
+                    "transaction_id": result['transaction_id'],
+                    "submission_date": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting visits: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/evv/status/{transaction_id}")
+async def query_evv_status(transaction_id: str):
+    """Query status of EVV submission"""
+    try:
+        # Get active business entity
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        # Query aggregator
+        submission_service = EVVSubmissionService()
+        result = submission_service.query_status(
+            transaction_id,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error querying EVV status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/evv/transmissions", response_model=List[EVVTransmission])
+async def get_evv_transmissions():
+    """Get all EVV transmission records"""
+    transmissions = await db.evv_transmissions.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    for trans in transmissions:
+        if isinstance(trans.get('created_at'), str):
+            trans['created_at'] = datetime.fromisoformat(trans['created_at'])
+    
+    return transmissions
+
+# EVV Reference Data Endpoints
+@api_router.get("/evv/reference/payers")
+async def get_evv_payers():
+    """Get list of valid Ohio EVV payers"""
+    return {"payers": OHIO_PAYERS}
+
+@api_router.get("/evv/reference/programs")
+async def get_evv_programs():
+    """Get list of valid Ohio EVV payer programs"""
+    return {"programs": OHIO_PAYER_PROGRAMS}
+
+@api_router.get("/evv/reference/procedure-codes")
+async def get_evv_procedure_codes():
+    """Get list of valid Ohio EVV procedure codes"""
+    return {"procedure_codes": OHIO_PROCEDURE_CODES}
+
+@api_router.get("/evv/reference/exception-codes")
+async def get_evv_exception_codes():
+    """Get list of valid Ohio EVV exception codes"""
+    return {"exception_codes": OHIO_EXCEPTION_CODES}
+
 # Include the router in the main app
 app.include_router(api_router)
 
