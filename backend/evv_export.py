@@ -25,9 +25,10 @@ class EVVIndividualExporter:
                          business_entity_medicaid_id: str) -> Dict:
         """
         Export single patient to EVV Individual format
+        Maps PatientProfile fields to Ohio EVV Individual specification
         
         Args:
-            patient_data: Patient profile dictionary
+            patient_data: Patient profile dictionary from PatientProfile model
             business_entity_id: Business entity ID
             business_entity_medicaid_id: Business entity Medicaid ID
             
@@ -37,82 +38,85 @@ class EVVIndividualExporter:
         # Generate sequence ID if not present
         sequence_id = patient_data.get('sequence_id') or SequenceManager.generate_sequence_id()
         
-        # Build Individual record
+        # Build Individual record - all required EVV fields
         individual = {
             "BusinessEntityID": business_entity_id,
             "BusinessEntityMedicaidIdentifier": business_entity_medicaid_id,
-            "PatientOtherID": patient_data.get('patient_other_id') or patient_data['id'],
+            "PatientOtherID": patient_data.get('patient_other_id') or patient_data.get('id', ''),
             "SequenceID": sequence_id,
-            "PatientMedicaidID": patient_data.get('medicaid_number', ''),
+            "PatientMedicaidID": patient_data.get('medicaid_number', '').zfill(12),  # Ensure 12 digits with leading zeros
             "IsPatientNewborn": patient_data.get('is_newborn', False),
-            "PatientLastName": patient_data['last_name'],
-            "PatientFirstName": patient_data['first_name'],
+            "PatientLastName": patient_data.get('last_name', ''),
+            "PatientFirstName": patient_data.get('first_name', ''),
             "PatientTimeZone": patient_data.get('timezone', 'America/New_York')
         }
         
-        # Add payer information if available
+        # Add default payer information for Ohio Medicaid if not provided
+        # In production, this would link to patient's insurance contracts
         payer_info_list = []
-        # This would typically come from patient's insurance contracts
-        # For now, we'll add a placeholder structure
-        if patient_data.get('payer_info'):
-            for payer_info in patient_data['payer_info']:
-                payer_item = {
-                    "Payer": payer_info.get('payer', 'ODM'),
-                    "PayerProgram": payer_info.get('payer_program', 'Medicaid Fee-For-Service'),
-                    "ProcedureCode": payer_info.get('procedure_code', 'T1019')
-                }
-                if payer_info.get('payer_client_id'):
-                    payer_item["PayerClientIdentifier"] = payer_info['payer_client_id']
-                payer_info_list.append(payer_item)
+        default_payer = {
+            "Payer": "ODM",  # Ohio Department of Medicaid
+            "PayerProgram": "Medicaid Fee-For-Service",
+            "ProcedureCode": "T1019"  # Personal Care Services
+        }
         
-        if payer_info_list:
-            individual["IndividualPayerInformation"] = payer_info_list
+        # Add PIMS ID for ODA payers if available
+        if patient_data.get('pims_id'):
+            default_payer["PayerClientIdentifier"] = patient_data['pims_id']
         
-        # Add address with coordinates
+        payer_info_list.append(default_payer)
+        individual["IndividualPayerInformation"] = payer_info_list
+        
+        # Build address with coordinates - REQUIRED for EVV
         address = {
             "PatientAddressType": patient_data.get('address_type', 'Home'),
             "PatientAddressIsPrimary": True,
-            "PatientAddressLine1": patient_data['address_street'],
-            "PatientCity": patient_data['address_city'],
-            "PatientState": patient_data['address_state'],
-            "PatientZip": patient_data['address_zip'],
+            "PatientAddressLine1": patient_data.get('address_street', ''),
+            "PatientCity": patient_data.get('address_city', ''),
+            "PatientState": patient_data.get('address_state', ''),
+            "PatientZip": patient_data.get('address_zip', ''),
             "PatientTimeZone": patient_data.get('timezone', 'America/New_York')
         }
         
-        # Add coordinates if available
-        if patient_data.get('address_latitude') and patient_data.get('address_longitude'):
-            lat = float(patient_data['address_latitude'])
-            lon = float(patient_data['address_longitude'])
-            if CoordinateValidator.validate_coordinates(lat, lon):
-                address["PatientAddressLatitude"] = lat
-                address["PatientAddressLongitude"] = lon
+        # Add coordinates if available (REQUIRED by Ohio EVV)
+        if patient_data.get('address_latitude') is not None and patient_data.get('address_longitude') is not None:
+            try:
+                lat = float(patient_data['address_latitude'])
+                lon = float(patient_data['address_longitude'])
+                if CoordinateValidator.validate_coordinates(lat, lon):
+                    address["PatientAddressLatitude"] = lat
+                    address["PatientAddressLongitude"] = lon
+            except (ValueError, TypeError):
+                # Skip invalid coordinates
+                pass
         
         individual["IndividualAddress"] = [address]
         
-        # Add phone numbers if available
-        if patient_data.get('phone_numbers'):
+        # Add phone numbers if available (optional but recommended)
+        if patient_data.get('phone_numbers') and len(patient_data['phone_numbers']) > 0:
             phone_list = []
             for phone in patient_data['phone_numbers']:
                 phone_item = {
                     "PatientPhoneType": phone.get('phone_type', 'Mobile'),
-                    "PatientPhoneNumber": phone['phone_number']
+                    "PatientPhoneNumber": phone.get('phone_number', '')
                 }
                 phone_list.append(phone_item)
             if phone_list:
                 individual["IndividualPhone"] = phone_list
         
-        # Add responsible party if available
+        # Add responsible party if available (required for minors/guardianship)
         if patient_data.get('responsible_party'):
             rp = patient_data['responsible_party']
-            responsible_party = {
-                "PatientResponsiblePartyLastName": rp['last_name'],
-                "PatientResponsiblePartyFirstName": rp['first_name']
-            }
-            if rp.get('phone_number'):
-                responsible_party["PatientResponsiblePartyPhone"] = rp['phone_number']
-            if rp.get('email'):
-                responsible_party["PatientResponsiblePartyEmail"] = rp['email']
-            individual["ResponsibleParty"] = responsible_party
+            if isinstance(rp, dict):
+                responsible_party = {
+                    "PatientResponsiblePartyLastName": rp.get('last_name', ''),
+                    "PatientResponsiblePartyFirstName": rp.get('first_name', '')
+                }
+                if rp.get('phone_number'):
+                    responsible_party["PatientResponsiblePartyPhone"] = rp['phone_number']
+                if rp.get('email'):
+                    responsible_party["PatientResponsiblePartyEmail"] = rp['email']
+                individual["ResponsibleParty"] = responsible_party
         
         return individual
 
