@@ -1404,7 +1404,7 @@ Signature: [Signed]"""
                     
                     # Test requirements on our comprehensive test patient
                     # 1. All required EVV Individual fields are present
-                        required_fields = [
+                    required_fields = [
                             'BusinessEntityID', 'BusinessEntityMedicaidIdentifier', 
                             'PatientOtherID', 'SequenceID', 'PatientMedicaidID',
                             'IsPatientNewborn', 'PatientLastName', 'PatientFirstName',
