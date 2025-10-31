@@ -1506,7 +1506,7 @@ Signature: [Signed]"""
                     
                     # Test requirements on our comprehensive test employee
                     # 1. All required EVV DCW fields are present
-                        required_fields = [
+                    required_fields = [
                             'BusinessEntityID', 'BusinessEntityMedicaidIdentifier',
                             'StaffOtherID', 'SequenceID', 'StaffID', 'StaffSSN',
                             'StaffLastName', 'StaffFirstName'
