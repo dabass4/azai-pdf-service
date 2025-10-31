@@ -129,7 +129,14 @@ const Home = () => {
       const response = await axios.post(`${API}/timesheets/upload`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      toast.success("Timesheet uploaded and processing!");
+      
+      // Check if it's a batch upload response
+      if (response.data.message && response.data.total_pages > 1) {
+        toast.success(`Batch upload complete! ${response.data.total_pages} pages processed as separate timesheets.`);
+      } else {
+        toast.success("Timesheet uploaded and processing!");
+      }
+      
       await fetchTimesheets();
     } catch (e) {
       console.error("Upload error:", e);
