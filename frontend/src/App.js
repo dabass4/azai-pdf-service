@@ -11,6 +11,7 @@ import Employees from "@/pages/Employees";
 import TimesheetEditor from "@/pages/TimesheetEditor";
 import Payers from "@/pages/Payers";
 import Claims from "@/pages/Claims";
+import EVVManagement from "@/pages/EVVManagement";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
