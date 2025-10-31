@@ -341,11 +341,14 @@ const Home = () => {
                             }
                           };
                           
+                          // Build entries in SCAN ORDER (maintain document order)
+                          // Don't sort - preserve the order they were extracted
+                          let entryIndex = 0;
                           timesheet.extracted_data.employee_entries.forEach(employee => {
                             if (employee.time_entries) {
                               employee.time_entries.forEach(entry => {
-                                // Calculate units from time in/out
-                                const units = calculateUnits(entry.time_in, entry.time_out, entry.date);
+                                // Use units from backend if available, otherwise calculate
+                                const units = entry.units || calculateUnits(entry.time_in, entry.time_out, entry.date);
                                 totalUnits += units;
                                 
                                 allEntries.push({
@@ -353,18 +356,15 @@ const Home = () => {
                                   employee_name: employee.employee_name,
                                   service_code: employee.service_code,
                                   signature: employee.signature,
-                                  units: units
+                                  units: units,
+                                  scan_order: entryIndex++ // Track original order
                                 });
                               });
                             }
                           });
                           
-                          // Sort by date and time
-                          allEntries.sort((a, b) => {
-                            const dateA = new Date(a.date + ' ' + a.time_in);
-                            const dateB = new Date(b.date + ' ' + b.time_in);
-                            return dateA - dateB;
-                          });
+                          // DO NOT SORT - maintain scan order from document
+                          // Entries are already in the order they were extracted
 
                           return allEntries.length > 0 && (
                             <div data-testid={`chronological-entries-${timesheet.id}`}>
