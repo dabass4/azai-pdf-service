@@ -129,9 +129,10 @@ class EVVDirectCareWorkerExporter:
                    business_entity_medicaid_id: str) -> Dict:
         """
         Export single employee to EVV DirectCareWorker format
+        Maps EmployeeProfile fields to Ohio EVV DirectCareWorker specification
         
         Args:
-            employee_data: Employee profile dictionary
+            employee_data: Employee profile dictionary from EmployeeProfile model
             business_entity_id: Business entity ID
             business_entity_medicaid_id: Business entity Medicaid ID
             
@@ -141,24 +142,31 @@ class EVVDirectCareWorkerExporter:
         # Generate sequence ID if not present
         sequence_id = employee_data.get('sequence_id') or SequenceManager.generate_sequence_id()
         
-        # Build DirectCareWorker record
+        # Clean SSN - remove any formatting characters
+        ssn = employee_data.get('ssn', '')
+        clean_ssn = ssn.replace('-', '').replace(' ', '').replace('.', '')
+        
+        # StaffID can be staff_pin (preferred) or employee_id as fallback
+        staff_id = employee_data.get('staff_pin') or employee_data.get('employee_id') or employee_data.get('id', '')[:9]
+        
+        # Build DirectCareWorker record - all required EVV fields
         dcw = {
             "BusinessEntityID": business_entity_id,
             "BusinessEntityMedicaidIdentifier": business_entity_medicaid_id,
-            "StaffOtherID": employee_data.get('staff_other_id') or employee_data['id'],
+            "StaffOtherID": employee_data.get('staff_other_id') or employee_data.get('id', ''),
             "SequenceID": sequence_id,
-            "StaffID": employee_data.get('staff_pin') or employee_data.get('employee_id', ''),
-            "StaffSSN": employee_data['ssn'].replace('-', '').replace(' ', ''),  # 9 digits
-            "StaffLastName": employee_data['last_name'],
-            "StaffFirstName": employee_data['first_name']
+            "StaffID": str(staff_id),  # Staff PIN or employee ID (max 9 chars)
+            "StaffSSN": clean_ssn,  # Must be 9 digits
+            "StaffLastName": employee_data.get('last_name', ''),
+            "StaffFirstName": employee_data.get('first_name', '')
         }
         
-        # Add optional fields
+        # Add optional EVV fields if available
         if employee_data.get('email'):
             dcw["StaffEmail"] = employee_data['email']
         
         if employee_data.get('staff_position'):
-            dcw["StaffPosition"] = employee_data['staff_position']
+            dcw["StaffPosition"] = employee_data['staff_position'][:3]  # Max 3 characters
         
         return dcw
 
