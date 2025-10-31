@@ -13,12 +13,13 @@ logger = logging.getLogger(__name__)
 def normalize_am_pm(time_str: str) -> str:
     """
     Normalize AM/PM in time string using system logic
-    Ignores scanned AM/PM and infers based on time value
+    Handles military time format (e.g., 1800 → 6:00 PM)
     
     Rules:
     - Times 7:00-11:59 without AM/PM are assumed AM
     - Times 12:00-6:59 without clear indicator use context
     - Times 1:00-6:59 are typically PM for end times
+    - Military time (e.g., 1800) converted to 12-hour with AM/PM
     """
     if not time_str:
         return time_str
@@ -26,7 +27,38 @@ def normalize_am_pm(time_str: str) -> str:
     # Remove extra spaces
     time_str = time_str.strip()
     
-    # Extract hour and minute
+    # Check for military time format (4 digits without colon)
+    if re.match(r'^\d{4}$', time_str):
+        hour = int(time_str[:2])
+        minute = int(time_str[2:])
+        
+        # Convert 24-hour to 12-hour with AM/PM
+        if hour == 0:
+            return f"12:{minute:02d} AM"
+        elif hour < 12:
+            return f"{hour}:{minute:02d} AM"
+        elif hour == 12:
+            return f"12:{minute:02d} PM"
+        else:
+            return f"{hour-12}:{minute:02d} PM"
+    
+    # Check for 24-hour format with colon (e.g., "18:00")
+    match_24hr = re.match(r'^(\d{1,2}):(\d{2})$', time_str)
+    if match_24hr:
+        hour = int(match_24hr.group(1))
+        minute = int(match_24hr.group(2))
+        
+        if hour >= 13 or hour == 0:  # Definitely 24-hour format
+            if hour == 0:
+                return f"12:{minute:02d} AM"
+            elif hour < 12:
+                return f"{hour}:{minute:02d} AM"
+            elif hour == 12:
+                return f"12:{minute:02d} PM"
+            else:
+                return f"{hour-12}:{minute:02d} PM"
+    
+    # Extract hour and minute from 12-hour format
     # Match patterns like "8:30", "08:30", "8:30AM", "8:30 AM", etc.
     match = re.match(r'(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?', time_str, re.IGNORECASE)
     
