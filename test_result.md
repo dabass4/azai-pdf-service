@@ -192,6 +192,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "All export endpoints working correctly. Successfully exported Individuals (1 record), DirectCareWorkers (1 record), and Visits (1 record) in proper Ohio EVV JSON format with all required fields."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE EVV EXPORT FIELD MAPPING VALIDATION COMPLETE - Tested corrected Individual and DirectCareWorker export functionality with detailed field mapping verification. Individual Export: All required EVV fields present, PatientOtherID properly mapped (uses patient.id fallback), PatientMedicaidID correctly formatted with 12 digits and leading zeros, address fields map correctly, coordinates included when available, phone numbers export properly, responsible party exports when present, default payer information (ODM) added correctly, PIMS ID handling for ODA working. DirectCareWorker Export: All required EVV DCW fields present, StaffOtherID properly mapped (uses employee.id fallback), StaffID uses staff_pin or employee_id as fallback, SSN cleaned (9 digits, no formatting), StaffEmail included when available, StaffPosition truncated to 3 characters when needed. Edge cases tested: missing optional fields handled gracefully, proper defaults for missing data, coordinates only included when available, clean SSN format validation. JSON validity confirmed for both exports. All 11/11 comprehensive validation tests passed successfully."
 
   - task: "EVV submission module with mock aggregator"
     implemented: true
