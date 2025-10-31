@@ -39,6 +39,151 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Define Models
+
+# Business Entity Configuration (EVV Required)
+class BusinessEntityConfig(BaseModel):
+    """Business entity configuration for EVV submissions"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    business_entity_id: str  # Max 10 characters
+    business_entity_medicaid_id: str  # 7 digits for Ohio
+    agency_name: str
+    contact_name: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# EVV Call Record
+class EVVCall(BaseModel):
+    """EVV Call record - telephony or mobile check-in/check-out"""
+    call_external_id: str  # Unique identifier
+    call_datetime: str  # UTC: YYYY-MM-DDTHH:MM:SSZ
+    call_assignment: str  # "Call In", "Call Out", "Interim"
+    call_type: str  # "Telephony", "Mobile", "Manual", "Other"
+    procedure_code: Optional[str] = None
+    patient_identifier_on_call: Optional[str] = None
+    mobile_login: Optional[str] = None
+    call_latitude: Optional[float] = None
+    call_longitude: Optional[float] = None
+    telephony_pin: Optional[str] = None  # 9 digits
+    originating_phone_number: Optional[str] = None  # 10 digits
+    timezone: str = "America/New_York"
+
+# EVV Exception Acknowledgement
+class EVVException(BaseModel):
+    """EVV Exception acknowledgement"""
+    exception_id: str  # "15", "28", "39", "40" for Ohio
+    exception_acknowledged: bool
+    exception_description: Optional[str] = None
+
+# EVV Visit Change Record
+class EVVVisitChange(BaseModel):
+    """EVV Visit change audit record"""
+    sequence_id: str  # Unique sequence for this change
+    change_made_by_email: str
+    change_datetime: str  # UTC: YYYY-MM-DDTHH:MM:SSZ
+    reason_code: str  # Change reason code (4 characters)
+    change_reason_memo: str  # Description (max 256 chars)
+    resolution_code: str = "A"  # Only "A" for ODM (Approved)
+
+# EVV Visit Record (Core)
+class EVVVisit(BaseModel):
+    """
+    Complete EVV Visit record compliant with Ohio Medicaid specifications
+    """
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # External IDs (Required)
+    visit_other_id: str  # External visit ID (max 50 chars)
+    staff_other_id: str  # External staff/employee ID (max 64 chars)
+    patient_other_id: str  # External patient ID (max 64 chars)
+    
+    # Sequence Management (EVV Required)
+    sequence_id: str  # Unique sequence ID for this visit record
+    
+    # Patient Information (EVV Required)
+    patient_medicaid_id: str  # 12 digits for Ohio (with leading zeros)
+    patient_alternate_id: Optional[str] = None
+    client_payer_id: Optional[str] = None  # Required if Payer is ODA (7 digits)
+    
+    # Visit Status
+    visit_cancelled_indicator: bool = False
+    
+    # Payer/Program/Service (EVV Required)
+    payer: str  # "ODM" or "ODA"
+    payer_program: str  # Program name from approved list
+    procedure_code: str  # Service code from approved list
+    
+    # Visit Times (EVV Required - UTC)
+    timezone: str = "America/New_York"
+    adj_in_datetime: Optional[str] = None  # Adjusted check-in: YYYY-MM-DDTHH:MM:SSZ
+    adj_out_datetime: Optional[str] = None  # Adjusted check-out: YYYY-MM-DDTHH:MM:SSZ
+    
+    # Geographic Location (EVV Required if GPS available)
+    start_latitude: Optional[float] = None
+    start_longitude: Optional[float] = None
+    end_latitude: Optional[float] = None
+    end_longitude: Optional[float] = None
+    
+    # Billing Information
+    bill_visit: bool = True
+    hours_to_bill: Optional[float] = None
+    units_to_bill: Optional[int] = None  # 15-minute units
+    
+    # Verification (EVV Required)
+    member_verified_times: bool = False
+    member_verified_service: bool = False
+    member_signature_available: bool = False
+    member_voice_recording: bool = False
+    
+    # Call Records (EVV Required)
+    calls: List[EVVCall] = []
+    
+    # Exception Acknowledgements (EVV - if applicable)
+    exceptions: List[EVVException] = []
+    
+    # Visit Change History (EVV - if applicable)
+    visit_changes: List[EVVVisitChange] = []
+    
+    # Additional Information
+    visit_memo: Optional[str] = None  # Max 1024 characters
+    
+    # Linked Records
+    timesheet_id: Optional[str] = None  # Source timesheet
+    claim_id: Optional[str] = None  # Associated claim
+    
+    # Submission Tracking
+    evv_status: str = "draft"  # draft, ready, submitted, accepted, rejected
+    transaction_id: Optional[str] = None
+    submission_date: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# EVV Transmission Record
+class EVVTransmission(BaseModel):
+    """EVV Transmission tracking"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    transaction_id: str  # Unique transaction ID
+    record_type: str  # "Individual", "Staff", "Visit"
+    record_count: int
+    business_entity_id: str
+    business_entity_medicaid_id: str
+    transmission_datetime: str  # UTC
+    status: str  # "pending", "accepted", "rejected", "partial"
+    acknowledgement: Optional[str] = None
+    rejection_details: Optional[List[Dict]] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Define Models
 class EmployeeProfile(BaseModel):
     """Employee profile with all required information including EVV DCW fields"""
     model_config = ConfigDict(extra="ignore")
