@@ -1409,52 +1409,52 @@ Signature: [Signed]"""
                             'PatientOtherID', 'SequenceID', 'PatientMedicaidID',
                             'IsPatientNewborn', 'PatientLastName', 'PatientFirstName',
                             'PatientTimeZone', 'IndividualPayerInformation', 'IndividualAddress'
-                        ]
-                        all_required_present = all(field in individual for field in required_fields)
-                        requirements_met.append(("All required EVV Individual fields present", all_required_present))
-                        
-                        # 2. PatientOtherID uses patient.id if patient_other_id not set
-                        patient_other_id = individual.get('PatientOtherID', '')
-                        other_id_valid = len(patient_other_id) > 0
-                        requirements_met.append(("PatientOtherID properly mapped", other_id_valid))
-                        
-                        # 3. PatientMedicaidID has 12 digits with leading zeros
-                        medicaid_id = individual.get('PatientMedicaidID', '')
-                        medicaid_format_valid = len(medicaid_id) == 12 and medicaid_id.isdigit()
-                        requirements_met.append(("PatientMedicaidID 12 digits with leading zeros", medicaid_format_valid))
-                        
-                        # 4. Address fields map correctly
-                        addresses = individual.get('IndividualAddress', [])
-                        address_mapped = len(addresses) > 0
-                        if address_mapped:
-                            addr = addresses[0]
-                            address_fields = ['PatientAddressLine1', 'PatientCity', 'PatientState', 'PatientZip']
-                            address_complete = all(field in addr for field in address_fields)
-                            requirements_met.append(("Address fields map correctly", address_complete))
-                        
-                        # 5. Coordinates are included if available
-                        coords_available = False
-                        if addresses and len(addresses) > 0:
-                            addr = addresses[0]
-                            coords_available = 'PatientAddressLatitude' in addr and 'PatientAddressLongitude' in addr
-                        requirements_met.append(("Coordinates included when available", coords_available))
-                        
-                        # 6. Phone numbers export correctly
-                        phones_exported = 'IndividualPhone' in individual
-                        requirements_met.append(("Phone numbers export correctly", phones_exported))
-                        
-                        # 7. Responsible party exports if present
-                        rp_exported = 'ResponsibleParty' in individual
-                        requirements_met.append(("Responsible party exports when present", rp_exported))
-                        
-                        # 8. Default payer information is added
-                        payer_info = individual.get('IndividualPayerInformation', [])
-                        payer_added = len(payer_info) > 0 and payer_info[0].get('Payer') == 'ODM'
-                        requirements_met.append(("Default payer information added", payer_added))
-                        
-                        # 9. PIMS ID handling for ODA
-                        pims_handled = True  # This is optional, so we consider it handled if no error
-                        requirements_met.append(("PIMS ID handling for ODA", pims_handled))
+                    ]
+                    all_required_present = all(field in individual for field in required_fields)
+                    requirements_met.append(("All required EVV Individual fields present", all_required_present))
+                    
+                    # 2. PatientOtherID uses patient.id if patient_other_id not set
+                    patient_other_id = individual.get('PatientOtherID', '')
+                    other_id_valid = len(patient_other_id) > 0
+                    requirements_met.append(("PatientOtherID properly mapped", other_id_valid))
+                    
+                    # 3. PatientMedicaidID has 12 digits with leading zeros
+                    medicaid_id = individual.get('PatientMedicaidID', '')
+                    medicaid_format_valid = len(medicaid_id) == 12 and medicaid_id.isdigit()
+                    requirements_met.append(("PatientMedicaidID 12 digits with leading zeros", medicaid_format_valid))
+                    
+                    # 4. Address fields map correctly
+                    addresses = individual.get('IndividualAddress', [])
+                    address_mapped = len(addresses) > 0
+                    if address_mapped:
+                        addr = addresses[0]
+                        address_fields = ['PatientAddressLine1', 'PatientCity', 'PatientState', 'PatientZip']
+                        address_complete = all(field in addr for field in address_fields)
+                        requirements_met.append(("Address fields map correctly", address_complete))
+                    
+                    # 5. Coordinates are included if available
+                    coords_available = False
+                    if addresses and len(addresses) > 0:
+                        addr = addresses[0]
+                        coords_available = 'PatientAddressLatitude' in addr and 'PatientAddressLongitude' in addr
+                    requirements_met.append(("Coordinates included when available", coords_available))
+                    
+                    # 6. Phone numbers export correctly
+                    phones_exported = 'IndividualPhone' in individual
+                    requirements_met.append(("Phone numbers export correctly", phones_exported))
+                    
+                    # 7. Responsible party exports if present
+                    rp_exported = 'ResponsibleParty' in individual
+                    requirements_met.append(("Responsible party exports when present", rp_exported))
+                    
+                    # 8. Default payer information is added
+                    payer_info = individual.get('IndividualPayerInformation', [])
+                    payer_added = len(payer_info) > 0 and payer_info[0].get('Payer') == 'ODM'
+                    requirements_met.append(("Default payer information added", payer_added))
+                    
+                    # 9. PIMS ID handling for ODA
+                    pims_handled = True  # This is optional, so we consider it handled if no error
+                    requirements_met.append(("PIMS ID handling for ODA", pims_handled))
                         
                     # End of requirements testing for our test individual
                     
