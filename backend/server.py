@@ -384,6 +384,7 @@ class TimeEntry(BaseModel):
     time_in: Optional[str] = None
     time_out: Optional[str] = None
     hours_worked: Optional[str] = None
+    units: Optional[int] = None  # Calculated 15-minute units
     
 
 class EmployeeEntry(BaseModel):
