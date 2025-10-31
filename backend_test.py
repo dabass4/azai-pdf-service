@@ -1376,6 +1376,293 @@ Signature: [Signed]"""
         self.test_export_with_actual_database_data()
         
         return True
+
+    def test_time_calculation_and_units(self):
+        """Test time normalization and unit calculation functionality"""
+        print("\n⏰ Starting Time Calculation and Unit Conversion Tests")
+        print("=" * 60)
+        
+        # Test time normalization (AM/PM system logic)
+        self.test_time_normalization()
+        
+        # Test unit calculation from time differences
+        self.test_unit_calculation_logic()
+        
+        # Test special rounding rule (> 35 minutes rounds to 3 units)
+        self.test_special_rounding_rule()
+        
+        # Test with existing timesheets to see calculated units
+        self.test_existing_timesheets_units()
+        
+        # Test timesheet upload with time calculation
+        self.test_timesheet_upload_with_time_calculation()
+        
+        return True
+    
+    def test_time_normalization(self):
+        """Test AM/PM normalization using system logic"""
+        try:
+            # Import time_utils to test directly
+            import sys
+            sys.path.append('/app/backend')
+            from time_utils import normalize_am_pm
+            
+            test_cases = [
+                # Morning times (7:00-11:59 assumed AM)
+                ("8:30", "8:30 AM"),
+                ("9:00", "9:00 AM"),
+                ("11:45", "11:45 AM"),
+                
+                # Afternoon times (1:00-6:59 assumed PM)
+                ("1:30", "1:30 PM"),
+                ("5:45", "5:45 PM"),
+                ("6:00", "6:00 PM"),
+                
+                # Edge cases
+                ("12:00", "12:00 PM"),  # Noon
+                ("7:00", "7:00 AM"),    # Start of AM range
+                
+                # Times with existing AM/PM (should be normalized)
+                ("8:30 AM", "8:30 AM"),
+                ("5:45 PM", "5:45 PM"),
+            ]
+            
+            all_passed = True
+            failed_cases = []
+            
+            for input_time, expected in test_cases:
+                result = normalize_am_pm(input_time)
+                if result != expected:
+                    all_passed = False
+                    failed_cases.append(f"{input_time} -> {result} (expected {expected})")
+            
+            details = f"Tested {len(test_cases)} cases. Failed: {len(failed_cases)}"
+            if failed_cases:
+                details += f". Failures: {', '.join(failed_cases[:3])}"
+            
+            self.log_test("Time Normalization (AM/PM Logic)", all_passed, details)
+            return all_passed
+        except Exception as e:
+            self.log_test("Time Normalization (AM/PM Logic)", False, str(e))
+            return False
+    
+    def test_unit_calculation_logic(self):
+        """Test unit calculation from time differences"""
+        try:
+            import sys
+            sys.path.append('/app/backend')
+            from time_utils import calculate_units_from_times, minutes_to_units_with_rounding
+            
+            # Test basic unit calculation (1 unit = 15 minutes)
+            test_cases = [
+                # Basic cases
+                ("8:00 AM", "8:15 AM", 1),  # 15 minutes = 1 unit
+                ("8:00 AM", "8:30 AM", 2),  # 30 minutes = 2 units
+                ("8:00 AM", "9:00 AM", 4),  # 60 minutes = 4 units
+                ("8:00 AM", "10:00 AM", 8), # 120 minutes = 8 units
+                
+                # Rounding cases
+                ("8:00 AM", "8:07 AM", 0),  # 7 minutes rounds to 0 units
+                ("8:00 AM", "8:08 AM", 1),  # 8 minutes rounds to 1 unit
+                ("8:00 AM", "8:22 AM", 1),  # 22 minutes rounds to 1 unit
+                ("8:00 AM", "8:23 AM", 2),  # 23 minutes rounds to 2 units
+            ]
+            
+            all_passed = True
+            failed_cases = []
+            
+            for time_in, time_out, expected_units in test_cases:
+                units, hours = calculate_units_from_times(time_in, time_out)
+                if units != expected_units:
+                    all_passed = False
+                    failed_cases.append(f"{time_in}-{time_out}: {units} units (expected {expected_units})")
+            
+            details = f"Tested {len(test_cases)} cases. Failed: {len(failed_cases)}"
+            if failed_cases:
+                details += f". Failures: {', '.join(failed_cases[:3])}"
+            
+            self.log_test("Unit Calculation Logic", all_passed, details)
+            return all_passed
+        except Exception as e:
+            self.log_test("Unit Calculation Logic", False, str(e))
+            return False
+    
+    def test_special_rounding_rule(self):
+        """Test special rounding rule: > 35 minutes and < 60 minutes rounds to 3 units"""
+        try:
+            import sys
+            sys.path.append('/app/backend')
+            from time_utils import minutes_to_units_with_rounding, calculate_units_from_times
+            
+            # Test the special rounding rule directly
+            special_cases = [
+                # Times that should trigger special rounding (> 35 min, < 60 min)
+                ("8:00 AM", "8:37 AM", 3),  # 37 minutes -> 3 units (special rule)
+                ("8:00 AM", "8:40 AM", 3),  # 40 minutes -> 3 units (special rule)
+                ("8:00 AM", "8:45 AM", 3),  # 45 minutes -> 3 units (special rule)
+                ("8:00 AM", "8:50 AM", 3),  # 50 minutes -> 3 units (special rule)
+                ("8:00 AM", "8:55 AM", 3),  # 55 minutes -> 3 units (special rule)
+                
+                # Edge cases around the special rule
+                ("8:00 AM", "8:35 AM", 2),  # 35 minutes -> 2 units (normal rounding)
+                ("8:00 AM", "9:00 AM", 4),  # 60 minutes -> 4 units (normal rounding)
+                ("8:00 AM", "8:30 AM", 2),  # 30 minutes -> 2 units (normal rounding)
+            ]
+            
+            all_passed = True
+            failed_cases = []
+            
+            for time_in, time_out, expected_units in special_cases:
+                units, hours = calculate_units_from_times(time_in, time_out)
+                if units != expected_units:
+                    all_passed = False
+                    failed_cases.append(f"{time_in}-{time_out}: {units} units (expected {expected_units})")
+            
+            # Also test the minutes_to_units_with_rounding function directly
+            direct_test_cases = [
+                (30, 2),   # 30 minutes = 2 units
+                (35, 2),   # 35 minutes = 2 units (boundary)
+                (36, 3),   # 36 minutes = 3 units (special rule)
+                (37, 3),   # 37 minutes = 3 units (special rule)
+                (45, 3),   # 45 minutes = 3 units (special rule)
+                (59, 3),   # 59 minutes = 3 units (special rule)
+                (60, 4),   # 60 minutes = 4 units (normal)
+            ]
+            
+            for minutes, expected_units in direct_test_cases:
+                units = minutes_to_units_with_rounding(minutes)
+                if units != expected_units:
+                    all_passed = False
+                    failed_cases.append(f"{minutes} min: {units} units (expected {expected_units})")
+            
+            details = f"Tested {len(special_cases + direct_test_cases)} cases. Failed: {len(failed_cases)}"
+            if failed_cases:
+                details += f". Failures: {', '.join(failed_cases[:3])}"
+            
+            self.log_test("Special Rounding Rule (>35min <60min = 3 units)", all_passed, details)
+            return all_passed
+        except Exception as e:
+            self.log_test("Special Rounding Rule (>35min <60min = 3 units)", False, str(e))
+            return False
+    
+    def test_existing_timesheets_units(self):
+        """Test that existing timesheets have units calculated correctly"""
+        try:
+            response = requests.get(f"{self.api_url}/timesheets", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                timesheets = response.json()
+                
+                # Check if any timesheets have units calculated
+                timesheets_with_units = 0
+                total_entries_checked = 0
+                entries_with_units = 0
+                
+                for timesheet in timesheets[:5]:  # Check first 5 timesheets
+                    if timesheet.get('extracted_data') and timesheet['extracted_data'].get('employee_entries'):
+                        for emp_entry in timesheet['extracted_data']['employee_entries']:
+                            if emp_entry.get('time_entries'):
+                                for time_entry in emp_entry['time_entries']:
+                                    total_entries_checked += 1
+                                    if time_entry.get('units') is not None:
+                                        entries_with_units += 1
+                
+                # Success if we found some entries with units calculated
+                success = entries_with_units > 0
+                details = f"Checked {total_entries_checked} time entries, {entries_with_units} have units calculated"
+                
+                if not success and total_entries_checked > 0:
+                    details += " - Units field missing from existing timesheets"
+                elif total_entries_checked == 0:
+                    details = "No time entries found in existing timesheets"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Existing Timesheets Units Verification", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Existing Timesheets Units Verification", False, str(e))
+            return False
+    
+    def test_timesheet_upload_with_time_calculation(self):
+        """Test uploading a timesheet and verify time calculation integration"""
+        try:
+            # Create a test timesheet with specific times to test calculations
+            test_content = """TIMESHEET
+Employee: Jane Smith
+Client: Test Patient
+Service Code: HHA001
+
+Date: 2024-01-15
+Time In: 8:00 AM
+Time Out: 8:37 AM
+Signature: [Signed]
+
+Date: 2024-01-16  
+Time In: 9:00 AM
+Time Out: 9:45 AM
+Signature: [Signed]
+
+Date: 2024-01-17
+Time In: 2:00 PM
+Time Out: 3:00 PM
+Signature: [Signed]"""
+            
+            # Create temporary file
+            import tempfile
+            import os
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf', mode='w')
+            temp_file.write(test_content)
+            temp_file.close()
+            
+            # Upload the timesheet
+            with open(temp_file.name, 'rb') as f:
+                files = {'file': ('time_calc_test.pdf', f, 'application/pdf')}
+                response = requests.post(f"{self.api_url}/timesheets/upload", files=files, timeout=60)
+            
+            success = response.status_code == 200
+            timesheet_id = None
+            
+            if success:
+                data = response.json()
+                timesheet_id = data.get('id')
+                
+                # Check if the timesheet has extracted data with calculated units
+                if data.get('extracted_data') and data['extracted_data'].get('employee_entries'):
+                    emp_entries = data['extracted_data']['employee_entries']
+                    units_calculated = False
+                    
+                    for emp_entry in emp_entries:
+                        if emp_entry.get('time_entries'):
+                            for time_entry in emp_entry['time_entries']:
+                                if time_entry.get('units') is not None:
+                                    units_calculated = True
+                                    break
+                    
+                    success = units_calculated
+                    details = f"Status: {response.status_code}, ID: {timesheet_id}, Units calculated: {units_calculated}"
+                else:
+                    success = False
+                    details = f"Status: {response.status_code}, No extracted data found"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            # Cleanup
+            os.unlink(temp_file.name)
+            
+            # If we created a timesheet, clean it up
+            if timesheet_id:
+                try:
+                    requests.delete(f"{self.api_url}/timesheets/{timesheet_id}", timeout=10)
+                except:
+                    pass
+            
+            self.log_test("Timesheet Upload with Time Calculation", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Timesheet Upload with Time Calculation", False, str(e))
+            return False
     
     def test_individual_export_requirements(self):
         """Test all Individual export requirements from review request"""
