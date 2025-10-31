@@ -1945,18 +1945,29 @@ Signature: [Signed]"""
 def main():
     tester = TimesheetAPITester()
     
-    # Run detailed EVV export field mapping tests as requested
-    print("🎯 Testing Corrected EVV Export Functionality")
-    print("Verifying Individual and DirectCareWorker export field mappings")
-    print("=" * 80)
-    
-    # Test the corrected EVV export functionality
-    tester.test_evv_export_field_mapping_detailed()
-    
-    # Run comprehensive validation tests
-    tester.test_evv_export_comprehensive_validation()
-    
-    return tester.get_results()
+    if len(sys.argv) > 1 and sys.argv[1] == "time_calc":
+        # Run time calculation and unit conversion tests
+        tester.test_time_calculation_and_units()
+        return tester.get_results()
+    elif len(sys.argv) > 1 and sys.argv[1] == "evv":
+        # Run EVV tests
+        return tester.run_evv_tests()
+    elif len(sys.argv) > 1 and sys.argv[1] == "basic":
+        # Run basic timesheet tests
+        return tester.run_all_tests()
+    else:
+        # Run detailed EVV export field mapping tests as requested
+        print("🎯 Testing Corrected EVV Export Functionality")
+        print("Verifying Individual and DirectCareWorker export field mappings")
+        print("=" * 80)
+        
+        # Test the corrected EVV export functionality
+        tester.test_evv_export_field_mapping_detailed()
+        
+        # Run comprehensive validation tests
+        tester.test_evv_export_comprehensive_validation()
+        
+        return tester.get_results()
 
 if __name__ == "__main__":
     sys.exit(main())
