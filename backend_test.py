@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 
 class TimesheetAPITester:
-    def __init__(self, base_url="https://sandata-upload.preview.emergentagent.com"):
+    def __init__(self, base_url="https://timescan-app.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
