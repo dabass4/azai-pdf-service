@@ -452,22 +452,31 @@ async def extract_timesheet_data(file_path: str, file_type: str, page_number: in
         # Convert PDF to image if needed (Gemini works better with images)
         processing_file_path = file_path
         mime_type = "image/jpeg"
+        temp_image_created = False
         
         if file_type == 'pdf':
             try:
                 logger.info(f"Converting PDF page {page_number} to image: {file_path}")
                 # Convert specific PDF page to image
-                images = convert_from_path(file_path, first_page=page_number, last_page=page_number)
+                images = convert_from_path(file_path, first_page=page_number, last_page=page_number, dpi=200)
                 if images:
                     # Save as JPEG
                     image_path = file_path.replace('.pdf', f'_page{page_number}.jpg')
-                    images[0].save(image_path, 'JPEG')
+                    images[0].save(image_path, 'JPEG', quality=95)
                     processing_file_path = image_path
+                    temp_image_created = True
                     logger.info(f"PDF page {page_number} converted to image: {image_path}")
+                else:
+                    raise Exception("No images returned from PDF conversion")
             except Exception as e:
-                logger.error(f"PDF conversion error: {e}")
-                # Try with original PDF anyway
-                mime_type = "application/pdf"
+                logger.error(f"PDF conversion error for page {page_number}: {e}")
+                logger.warning(f"Cannot process individual pages - PDF conversion failed")
+                # If conversion fails, we can't process individual pages properly
+                # Return empty data with error
+                return ExtractedData(
+                    client_name="Error: PDF conversion failed",
+                    employee_entries=[]
+                )
         elif file_type in ['jpg', 'jpeg', 'png']:
             mime_type = f"image/{file_type if file_type != 'jpg' else 'jpeg'}"
         
