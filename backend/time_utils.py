@@ -59,29 +59,52 @@ def normalize_am_pm(time_str: str) -> str:
 def parse_time_string(time_str: str) -> Optional[time]:
     """
     Parse time string to time object
-    Handles various formats: "8:30 AM", "08:30AM", "8:30", etc.
+    Handles various formats:
+    - "8:30 AM", "08:30AM", "8:30"
+    - Military time: "1800", "0830", "1345"
+    - "18:00", "08:30" (24-hour with colon)
     """
     if not time_str:
         return None
     
     try:
-        # Normalize the time string first
+        # Clean the input
+        time_str = time_str.strip()
+        
+        # Check for military time format (4 digits without colon)
+        # Examples: "1800", "0830", "1345"
+        if re.match(r'^\d{4}$', time_str):
+            hour = int(time_str[:2])
+            minute = int(time_str[2:])
+            if 0 <= hour <= 23 and 0 <= minute <= 59:
+                return time(hour=hour, minute=minute)
+        
+        # Normalize the time string first (adds AM/PM if needed)
         normalized = normalize_am_pm(time_str)
         
-        # Try parsing with AM/PM
-        for fmt in ["%I:%M %p", "%I:%M%p", "%H:%M"]:
+        # Try parsing with various formats
+        for fmt in ["%I:%M %p", "%I:%M%p", "%H:%M", "%H:%M:%S"]:
             try:
                 dt = datetime.strptime(normalized, fmt)
                 return dt.time()
             except ValueError:
                 continue
         
-        # If all formats fail, try without AM/PM
+        # Try 24-hour format without normalization
+        for fmt in ["%H:%M", "%H:%M:%S"]:
+            try:
+                dt = datetime.strptime(time_str, fmt)
+                return dt.time()
+            except ValueError:
+                continue
+        
+        # If all formats fail, try extracting hour and minute
         match = re.match(r'(\d{1,2}):(\d{2})', time_str)
         if match:
             hour = int(match.group(1))
             minute = int(match.group(2))
-            return time(hour=hour, minute=minute)
+            if 0 <= hour <= 23 and 0 <= minute <= 59:
+                return time(hour=hour, minute=minute)
         
         return None
     except Exception as e:
