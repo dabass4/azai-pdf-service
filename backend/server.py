@@ -419,8 +419,29 @@ class TimesheetCreate(BaseModel):
 # Initialize LLM Chat
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
-async def extract_timesheet_data(file_path: str, file_type: str) -> ExtractedData:
-    """Extract data from timesheet using Gemini Vision API"""
+async def get_pdf_page_count(file_path: str) -> int:
+    """Get the number of pages in a PDF file"""
+    try:
+        from PyPDF2 import PdfReader
+        reader = PdfReader(file_path)
+        return len(reader.pages)
+    except Exception as e:
+        logger.error(f"Error getting PDF page count: {e}")
+        # Fallback to pdf2image
+        try:
+            images = convert_from_path(file_path)
+            return len(images)
+        except:
+            return 1
+
+async def extract_timesheet_data(file_path: str, file_type: str, page_number: int = 1) -> ExtractedData:
+    """Extract data from timesheet using Gemini Vision API
+    
+    Args:
+        file_path: Path to the file
+        file_type: Type of file (pdf, jpg, jpeg, png)
+        page_number: Page number to extract (for multi-page PDFs)
+    """
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
@@ -434,15 +455,15 @@ async def extract_timesheet_data(file_path: str, file_type: str) -> ExtractedDat
         
         if file_type == 'pdf':
             try:
-                logger.info(f"Converting PDF to image: {file_path}")
-                # Convert PDF first page to image
-                images = convert_from_path(file_path, first_page=1, last_page=1)
+                logger.info(f"Converting PDF page {page_number} to image: {file_path}")
+                # Convert specific PDF page to image
+                images = convert_from_path(file_path, first_page=page_number, last_page=page_number)
                 if images:
                     # Save as JPEG
-                    image_path = file_path.replace('.pdf', '_page1.jpg')
+                    image_path = file_path.replace('.pdf', f'_page{page_number}.jpg')
                     images[0].save(image_path, 'JPEG')
                     processing_file_path = image_path
-                    logger.info(f"PDF converted to image: {image_path}")
+                    logger.info(f"PDF page {page_number} converted to image: {image_path}")
             except Exception as e:
                 logger.error(f"PDF conversion error: {e}")
                 # Try with original PDF anyway
@@ -450,7 +471,7 @@ async def extract_timesheet_data(file_path: str, file_type: str) -> ExtractedDat
         elif file_type in ['jpg', 'jpeg', 'png']:
             mime_type = f"image/{file_type if file_type != 'jpg' else 'jpeg'}"
         
-        logger.info(f"Processing file: {processing_file_path}, type: {file_type}, mime: {mime_type}")
+        logger.info(f"Processing file: {processing_file_path}, type: {file_type}, mime: {mime_type}, page: {page_number}")
         
         file_content = FileContentWithMimeType(
             file_path=processing_file_path,
