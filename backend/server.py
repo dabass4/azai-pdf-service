@@ -459,6 +459,8 @@ async def extract_timesheet_data(file_path: str, file_type: str) -> ExtractedDat
         
         extraction_prompt = """Analyze this timesheet document carefully. It may contain ONE patient/client with MULTIPLE employees who worked with that patient.
 
+IMPORTANT: Extract entries in the EXACT ORDER they appear in the document, from top to bottom.
+
 Return ONLY a valid JSON object with this exact structure:
 
 {
@@ -471,8 +473,8 @@ Return ONLY a valid JSON object with this exact structure:
       "time_entries": [
         {
           "date": "YYYY-MM-DD",
-          "time_in": "HH:MM",
-          "time_out": "HH:MM",
+          "time_in": "time format as shown",
+          "time_out": "time format as shown",
           "hours_worked": "number of hours"
         }
       ]
@@ -480,19 +482,24 @@ Return ONLY a valid JSON object with this exact structure:
   ]
 }
 
-IMPORTANT INSTRUCTIONS:
-- Extract ALL employees from the timesheet
-- If there's only one employee, the employee_entries array should have one object
-- Extract ALL date/time entries for each employee
-- Group time entries by employee
-- If the timesheet has the same service code for all employees, repeat it for each
+CRITICAL INSTRUCTIONS:
+- Extract entries in SCAN ORDER (top to bottom as they appear)
+- Do NOT group by employee - maintain document order
+- Extract ALL employees and ALL their time entries
+- Group time entries by employee, but keep employees in order they appear
 
-TIME FORMAT RULES (CRITICAL):
-- Extract times in 24-hour format (HH:MM) OR 12-hour format without spaces
-- If you see "8:30 AM", extract as "8:30" (we'll determine AM/PM automatically)
-- If you see "5:45 PM", extract as "17:45" OR "5:45" (system will normalize)
-- DO NOT include AM/PM in the extracted time - just the numbers
-- Examples: "8:30", "17:45", "14:30", "9:00"
+TIME FORMAT RULES:
+- Extract times EXACTLY as shown in the document
+- Military time examples: "1800", "0830", "1345" (4 digits)
+- 24-hour with colon: "18:00", "08:30", "13:45"
+- 12-hour format: "8:30 AM", "5:45 PM", "8:30", "5:45"
+- DO NOT convert - extract as-is, system will normalize
+- Examples: "1800", "18:00", "6:00 PM", "8:30" all acceptable
+
+ORDERING:
+- Maintain the exact order entries appear in the document
+- If John's entry appears before Mary's, list John first
+- Within each employee, list time entries in document order
 
 Return ONLY the JSON object, no additional text or explanation."""
         
