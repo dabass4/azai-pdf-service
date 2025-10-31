@@ -50,7 +50,7 @@ def test_time_calculation_integration():
             "name": "Time normalization test",
             "time_in": "8:30",  # Should be normalized to 8:30 AM
             "time_out": "5:45",  # Should be normalized to 5:45 PM
-            "expected_units": 38,  # 9 hours 15 minutes = 555 minutes = 37 units (rounded)
+            "expected_units": 37,  # 9 hours 15 minutes = 555 minutes = 37 units (rounded)
             "expected_hours": 9.25
         }
     ]
