@@ -80,25 +80,66 @@ class EmployeeProfile(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class PatientPhone(BaseModel):
+    """Patient phone number"""
+    phone_type: str  # Mobile, Home, Work, Emergency
+    phone_number: str  # 10 digits
+    is_primary: bool = False
+
+class PatientResponsibleParty(BaseModel):
+    """Responsible party information for patient"""
+    first_name: str
+    last_name: str
+    relationship: Optional[str] = None
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+
 class PatientProfile(BaseModel):
-    """Patient profile with all required information"""
+    """Patient profile with all required information including EVV compliance"""
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Basic Information
     first_name: str
     last_name: str
     sex: str  # Male, Female, Other
     date_of_birth: str  # YYYY-MM-DD format
+    is_newborn: bool = False  # EVV: Newborn indicator
+    
+    # Address with Geographic Coordinates (EVV Required)
     address_street: str
     address_city: str
     address_state: str
     address_zip: str
+    address_latitude: Optional[float] = None  # EVV: Required for primary address
+    address_longitude: Optional[float] = None  # EVV: Required for primary address
+    address_type: str = "Home"  # Home, Service, Billing
+    
+    # Timezone (EVV Required)
+    timezone: str = "America/New_York"  # Default to Eastern for Ohio
+    
+    # Medical Information
     prior_auth_number: str  # Alphanumeric with special characters
     icd10_code: str
     icd10_description: Optional[str] = None
     physician_name: str
     physician_npi: str  # 10-digit NPI
-    medicaid_number: str  # 12 characters max
+    medicaid_number: str  # 12 characters max (Ohio: 12 digits with leading zeros)
+    
+    # EVV: Alternate IDs
+    patient_other_id: Optional[str] = None  # External system ID
+    pims_id: Optional[str] = None  # For ODA services (7 digits)
+    
+    # Phone Numbers (EVV: Optional but recommended)
+    phone_numbers: List[PatientPhone] = []
+    
+    # Responsible Party (EVV: Required if patient is minor or has guardian)
+    responsible_party: Optional[PatientResponsibleParty] = None
+    
+    # Sequence Management (EVV)
+    sequence_id: Optional[str] = None
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
