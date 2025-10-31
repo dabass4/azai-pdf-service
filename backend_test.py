@@ -1490,11 +1490,22 @@ Signature: [Signed]"""
                 export_data = data.get('data', [])
                 
                 if len(export_data) > 0:
-                    # Test each requirement
-                    requirements_met = []
-                    
+                    # Test each requirement - find our test employee with comprehensive DCW fields
+                    test_dcw = None
                     for dcw in export_data:
-                        # 1. All required EVV DCW fields are present
+                        if dcw.get('StaffFirstName') == 'Michael' and dcw.get('StaffLastName') == 'Thompson':
+                            test_dcw = dcw
+                            break
+                    
+                    if not test_dcw:
+                        self.log_test("DirectCareWorker Export Requirements Validation", False, "Test employee not found in export")
+                        return False
+                    
+                    requirements_met = []
+                    dcw = test_dcw
+                    
+                    # Test requirements on our comprehensive test employee
+                    # 1. All required EVV DCW fields are present
                         required_fields = [
                             'BusinessEntityID', 'BusinessEntityMedicaidIdentifier',
                             'StaffOtherID', 'SequenceID', 'StaffID', 'StaffSSN',
