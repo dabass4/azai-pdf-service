@@ -1543,7 +1543,7 @@ Signature: [Signed]"""
                             position_valid = len(position) <= 3
                         requirements_met.append(("StaffPosition truncated to 3 characters", position_valid))
                         
-                        break  # Test first DCW
+                    # End of requirements testing for our test DCW
                     
                     # Calculate success rate
                     passed_requirements = sum(1 for _, met in requirements_met if met)
