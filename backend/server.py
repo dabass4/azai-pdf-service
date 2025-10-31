@@ -104,7 +104,7 @@ class EVVVisit(BaseModel):
     patient_other_id: str  # External patient ID (max 64 chars)
     
     # Sequence Management (EVV Required)
-    sequence_id: str = Field(default_factory=lambda: SequenceManager.generate_sequence_id())  # Unique sequence ID for this visit record
+    sequence_id: Optional[str] = None  # Unique sequence ID for this visit record
     
     # Patient Information (EVV Required)
     patient_medicaid_id: str  # 12 digits for Ohio (with leading zeros)
