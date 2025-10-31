@@ -693,7 +693,7 @@ async def root():
 
 @api_router.post("/timesheets/upload")
 async def upload_timesheet(file: UploadFile = File(...)):
-    """Upload and process a timesheet file"""
+    """Upload and process a timesheet file (handles multi-page PDFs as batch)"""
     try:
         # Validate file type
         file_extension = file.filename.split('.')[-1].lower()
@@ -713,56 +713,84 @@ async def upload_timesheet(file: UploadFile = File(...)):
         
         logger.info(f"File saved: {file_path}")
         
-        # Create timesheet record
-        timesheet = Timesheet(
-            filename=file.filename,
-            file_type=file_extension,
-            status="processing"
-        )
+        # Check if PDF has multiple pages (batch processing)
+        page_count = 1
+        if file_extension == 'pdf':
+            page_count = await get_pdf_page_count(str(file_path))
+            logger.info(f"PDF has {page_count} page(s)")
         
-        # Save to database
-        doc = timesheet.model_dump()
-        doc['created_at'] = doc['created_at'].isoformat()
-        doc['updated_at'] = doc['updated_at'].isoformat()
-        await db.timesheets.insert_one(doc)
+        created_timesheets = []
         
-        # Extract data in background (for now, doing it synchronously)
-        try:
-            extracted_data = await extract_timesheet_data(str(file_path), file_extension)
-            timesheet.extracted_data = extracted_data
-            timesheet.status = "completed"
+        # Process each page as a separate timesheet entry
+        for page_num in range(1, page_count + 1):
+            # Create timesheet record for this page
+            page_suffix = f" (Page {page_num}/{page_count})" if page_count > 1 else ""
+            timesheet = Timesheet(
+                filename=f"{file.filename}{page_suffix}",
+                file_type=file_extension,
+                status="processing"
+            )
             
-            # Auto-submit to Sandata
-            submission_result = await submit_to_sandata(timesheet)
-            if submission_result["status"] == "success":
-                timesheet.sandata_status = "submitted"
-            else:
-                timesheet.sandata_status = "error"
-                timesheet.error_message = submission_result.get("message", "Unknown error")
+            # Save to database
+            doc = timesheet.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            doc['updated_at'] = doc['updated_at'].isoformat()
+            await db.timesheets.insert_one(doc)
             
-        except Exception as e:
-            logger.error(f"Processing error: {e}")
-            timesheet.status = "failed"
-            timesheet.error_message = str(e)
+            # Extract data for this specific page
+            try:
+                extracted_data = await extract_timesheet_data(str(file_path), file_extension, page_num)
+                timesheet.extracted_data = extracted_data
+                timesheet.status = "completed"
+                
+                # Auto-submit to Sandata
+                submission_result = await submit_to_sandata(timesheet)
+                if submission_result["status"] == "success":
+                    timesheet.sandata_status = "submitted"
+                else:
+                    timesheet.sandata_status = "error"
+                    timesheet.error_message = submission_result.get("message", "Unknown error")
+                
+            except Exception as e:
+                logger.error(f"Processing error for page {page_num}: {e}")
+                timesheet.status = "failed"
+                timesheet.error_message = str(e)
+            
+            # Update database
+            timesheet.updated_at = datetime.now(timezone.utc)
+            update_doc = timesheet.model_dump()
+            update_doc['created_at'] = update_doc['created_at'].isoformat()
+            update_doc['updated_at'] = update_doc['updated_at'].isoformat()
+            
+            await db.timesheets.update_one(
+                {"id": timesheet.id},
+                {"$set": update_doc}
+            )
+            
+            created_timesheets.append(timesheet)
+            
+            # Clean up temp page image if created
+            try:
+                page_image_path = str(file_path).replace('.pdf', f'_page{page_num}.jpg')
+                Path(page_image_path).unlink(missing_ok=True)
+            except:
+                pass
         
-        # Update database
-        timesheet.updated_at = datetime.now(timezone.utc)
-        update_doc = timesheet.model_dump()
-        update_doc['created_at'] = update_doc['created_at'].isoformat()
-        update_doc['updated_at'] = update_doc['updated_at'].isoformat()
-        
-        await db.timesheets.update_one(
-            {"id": timesheet.id},
-            {"$set": update_doc}
-        )
-        
-        # Clean up temp file
+        # Clean up original temp file
         try:
             file_path.unlink()
         except:
             pass
         
-        return timesheet
+        # Return result based on number of pages processed
+        if len(created_timesheets) == 1:
+            return created_timesheets[0]
+        else:
+            return {
+                "message": f"Batch processing complete: {len(created_timesheets)} timesheets created",
+                "total_pages": page_count,
+                "timesheets": created_timesheets
+            }
         
     except HTTPException:
         raise
