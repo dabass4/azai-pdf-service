@@ -944,9 +944,19 @@ Signature: [Signed]"""
 def main():
     tester = TimesheetAPITester()
     
-    # Run EVV tests as requested
-    print("Running comprehensive Ohio Medicaid EVV backend tests...")
-    return tester.run_evv_tests()
+    # Run both basic timesheet tests and EVV tests
+    print("Running basic timesheet backend tests...")
+    basic_result = tester.run_all_tests()
+    
+    # Reset test counters for EVV tests
+    tester.tests_run = 0
+    tester.tests_passed = 0
+    tester.test_results = []
+    
+    print("\nRunning comprehensive Ohio Medicaid EVV backend tests...")
+    evv_result = tester.run_evv_tests()
+    
+    return evv_result
 
 if __name__ == "__main__":
     sys.exit(main())
