@@ -1510,38 +1510,38 @@ Signature: [Signed]"""
                             'BusinessEntityID', 'BusinessEntityMedicaidIdentifier',
                             'StaffOtherID', 'SequenceID', 'StaffID', 'StaffSSN',
                             'StaffLastName', 'StaffFirstName'
-                        ]
-                        all_required_present = all(field in dcw for field in required_fields)
-                        requirements_met.append(("All required EVV DCW fields present", all_required_present))
-                        
-                        # 2. StaffOtherID uses employee.id if staff_other_id not set
-                        staff_other_id = dcw.get('StaffOtherID', '')
-                        other_id_valid = len(staff_other_id) > 0
-                        requirements_met.append(("StaffOtherID properly mapped", other_id_valid))
-                        
-                        # 3. StaffID uses staff_pin or employee_id as fallback
-                        staff_id = dcw.get('StaffID', '')
-                        staff_id_valid = len(staff_id) > 0
-                        requirements_met.append(("StaffID uses staff_pin or employee_id fallback", staff_id_valid))
-                        
-                        # 4. SSN is cleaned (no dashes/spaces)
-                        ssn = dcw.get('StaffSSN', '')
-                        ssn_clean = len(ssn) == 9 and ssn.isdigit()
-                        requirements_met.append(("SSN cleaned (9 digits, no formatting)", ssn_clean))
-                        
-                        # 5. StaffEmail is included if available
-                        email_handling = True  # Optional field, so we check it's handled properly
-                        if 'StaffEmail' in dcw:
-                            email = dcw['StaffEmail']
-                            email_handling = '@' in email  # Basic email validation
-                        requirements_met.append(("StaffEmail included when available", email_handling))
-                        
-                        # 6. StaffPosition is truncated to 3 characters if needed
-                        position_valid = True
-                        if 'StaffPosition' in dcw:
-                            position = dcw['StaffPosition']
-                            position_valid = len(position) <= 3
-                        requirements_met.append(("StaffPosition truncated to 3 characters", position_valid))
+                    ]
+                    all_required_present = all(field in dcw for field in required_fields)
+                    requirements_met.append(("All required EVV DCW fields present", all_required_present))
+                    
+                    # 2. StaffOtherID uses employee.id if staff_other_id not set
+                    staff_other_id = dcw.get('StaffOtherID', '')
+                    other_id_valid = len(staff_other_id) > 0
+                    requirements_met.append(("StaffOtherID properly mapped", other_id_valid))
+                    
+                    # 3. StaffID uses staff_pin or employee_id as fallback
+                    staff_id = dcw.get('StaffID', '')
+                    staff_id_valid = len(staff_id) > 0
+                    requirements_met.append(("StaffID uses staff_pin or employee_id fallback", staff_id_valid))
+                    
+                    # 4. SSN is cleaned (no dashes/spaces)
+                    ssn = dcw.get('StaffSSN', '')
+                    ssn_clean = len(ssn) == 9 and ssn.isdigit()
+                    requirements_met.append(("SSN cleaned (9 digits, no formatting)", ssn_clean))
+                    
+                    # 5. StaffEmail is included if available
+                    email_handling = True  # Optional field, so we check it's handled properly
+                    if 'StaffEmail' in dcw:
+                        email = dcw['StaffEmail']
+                        email_handling = '@' in email  # Basic email validation
+                    requirements_met.append(("StaffEmail included when available", email_handling))
+                    
+                    # 6. StaffPosition is truncated to 3 characters if needed
+                    position_valid = True
+                    if 'StaffPosition' in dcw:
+                        position = dcw['StaffPosition']
+                        position_valid = len(position) <= 3
+                    requirements_met.append(("StaffPosition truncated to 3 characters", position_valid))
                         
                     # End of requirements testing for our test DCW
                     
