@@ -941,22 +941,441 @@ Signature: [Signed]"""
             self.log_test("Delete EVV Visit", False, str(e))
             return False
 
+    def test_evv_export_field_mapping_detailed(self):
+        """Test detailed EVV export field mapping for Individual and DirectCareWorker exports"""
+        print("\n🔍 Starting Detailed EVV Export Field Mapping Tests")
+        print("=" * 60)
+        
+        # Ensure we have business entity
+        business_entity_id = self.test_create_business_entity()
+        if not business_entity_id:
+            print("❌ Business entity creation failed - stopping detailed export tests")
+            return False
+        
+        # Test Individual Export Field Mapping
+        patient_id = self.test_create_patient_with_comprehensive_evv_fields()
+        if patient_id:
+            self.test_individual_export_field_mapping()
+            self.test_individual_export_edge_cases()
+        
+        # Test DirectCareWorker Export Field Mapping  
+        employee_id = self.test_create_employee_with_comprehensive_dcw_fields()
+        if employee_id:
+            self.test_dcw_export_field_mapping()
+            self.test_dcw_export_edge_cases()
+        
+        return True
+    
+    def test_create_patient_with_comprehensive_evv_fields(self):
+        """Create patient with all EVV fields for comprehensive testing"""
+        try:
+            patient_data = {
+                "first_name": "Isabella",
+                "last_name": "Martinez",
+                "sex": "Female",
+                "date_of_birth": "1978-08-22",
+                "is_newborn": False,
+                "address_street": "789 Elm Street Apt 4B",
+                "address_city": "Cleveland",
+                "address_state": "OH",
+                "address_zip": "44115",
+                "address_latitude": 41.4993,
+                "address_longitude": -81.6944,
+                "address_type": "Home",
+                "timezone": "America/New_York",
+                "prior_auth_number": "PA987654321",
+                "icd10_code": "M79.3",
+                "icd10_description": "Panniculitis, unspecified",
+                "physician_name": "Dr. Jennifer Wilson",
+                "physician_npi": "9876543210",
+                "medicaid_number": "987654321098",
+                "patient_other_id": "PAT002",
+                "pims_id": "1234567",
+                "phone_numbers": [
+                    {
+                        "phone_type": "Mobile",
+                        "phone_number": "2165551234",
+                        "is_primary": True
+                    },
+                    {
+                        "phone_type": "Home", 
+                        "phone_number": "2165555678",
+                        "is_primary": False
+                    }
+                ],
+                "responsible_party": {
+                    "first_name": "Carlos",
+                    "last_name": "Martinez",
+                    "relationship": "Spouse",
+                    "phone_number": "2165559999",
+                    "email": "carlos.martinez@email.com"
+                }
+            }
+            
+            response = requests.post(f"{self.api_url}/patients", 
+                                   json=patient_data, timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                patient_id = data.get('id')
+                details = f"Status: {response.status_code}, Patient ID: {patient_id}"
+                self.log_test("Create Patient with Comprehensive EVV Fields", success, details)
+                return patient_id
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+                self.log_test("Create Patient with Comprehensive EVV Fields", success, details)
+                return None
+        except Exception as e:
+            self.log_test("Create Patient with Comprehensive EVV Fields", False, str(e))
+            return None
+    
+    def test_create_employee_with_comprehensive_dcw_fields(self):
+        """Create employee with all DCW fields for comprehensive testing"""
+        try:
+            employee_data = {
+                "first_name": "Michael",
+                "last_name": "Thompson",
+                "middle_name": "James",
+                "ssn": "987-65-4321",  # Test SSN cleaning
+                "date_of_birth": "1985-12-10",
+                "sex": "Male",
+                "email": "michael.thompson@ohiotest.com",
+                "phone": "4195551234",
+                "address_street": "321 Pine Street",
+                "address_city": "Toledo",
+                "address_state": "OH",
+                "address_zip": "43604",
+                "employee_id": "EMP002",
+                "hire_date": "2022-06-01",
+                "job_title": "Personal Care Assistant",
+                "employment_status": "Part-time",
+                "staff_pin": "987654321",
+                "staff_other_id": "STAFF002",
+                "staff_position": "PCA",  # Test 3-char truncation
+                "emergency_contact_name": "Sarah Thompson",
+                "emergency_contact_phone": "4195555555",
+                "emergency_contact_relation": "Sister"
+            }
+            
+            response = requests.post(f"{self.api_url}/employees", 
+                                   json=employee_data, timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                employee_id = data.get('id')
+                details = f"Status: {response.status_code}, Employee ID: {employee_id}"
+                self.log_test("Create Employee with Comprehensive DCW Fields", success, details)
+                return employee_id
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+                self.log_test("Create Employee with Comprehensive DCW Fields", success, details)
+                return None
+        except Exception as e:
+            self.log_test("Create Employee with Comprehensive DCW Fields", False, str(e))
+            return None
+    
+    def test_individual_export_field_mapping(self):
+        """Test Individual export field mapping in detail"""
+        try:
+            response = requests.get(f"{self.api_url}/evv/export/individuals", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                export_data = data.get('data', [])
+                
+                if len(export_data) > 0:
+                    individual = export_data[-1]  # Get the latest patient we created
+                    
+                    # Test required EVV Individual fields
+                    required_fields = [
+                        'BusinessEntityID', 'BusinessEntityMedicaidIdentifier', 
+                        'PatientOtherID', 'SequenceID', 'PatientMedicaidID',
+                        'IsPatientNewborn', 'PatientLastName', 'PatientFirstName',
+                        'PatientTimeZone', 'IndividualPayerInformation', 'IndividualAddress'
+                    ]
+                    
+                    missing_fields = [field for field in required_fields if field not in individual]
+                    
+                    # Test PatientMedicaidID has 12 digits with leading zeros
+                    medicaid_id = individual.get('PatientMedicaidID', '')
+                    medicaid_valid = len(medicaid_id) == 12 and medicaid_id.isdigit()
+                    
+                    # Test PatientOtherID uses patient.id if patient_other_id not set
+                    patient_other_id = individual.get('PatientOtherID', '')
+                    other_id_valid = len(patient_other_id) > 0
+                    
+                    # Test address coordinates are included
+                    addresses = individual.get('IndividualAddress', [])
+                    coords_included = False
+                    if addresses and len(addresses) > 0:
+                        addr = addresses[0]
+                        coords_included = 'PatientAddressLatitude' in addr and 'PatientAddressLongitude' in addr
+                    
+                    # Test phone numbers export
+                    phones_included = 'IndividualPhone' in individual
+                    
+                    # Test responsible party export
+                    rp_included = 'ResponsibleParty' in individual
+                    
+                    # Test default payer information
+                    payer_info = individual.get('IndividualPayerInformation', [])
+                    payer_valid = len(payer_info) > 0 and payer_info[0].get('Payer') == 'ODM'
+                    
+                    # Test PIMS ID for ODA
+                    pims_included = False
+                    if payer_info and len(payer_info) > 0:
+                        pims_included = 'PayerClientIdentifier' in payer_info[0]
+                    
+                    success = (len(missing_fields) == 0 and medicaid_valid and other_id_valid and 
+                             coords_included and phones_included and rp_included and payer_valid)
+                    
+                    details = f"Missing fields: {missing_fields}, Medicaid ID valid: {medicaid_valid}, " \
+                             f"Coords: {coords_included}, Phones: {phones_included}, RP: {rp_included}, " \
+                             f"Payer: {payer_valid}, PIMS: {pims_included}"
+                else:
+                    success = False
+                    details = "No individual records in export"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Individual Export Field Mapping", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Individual Export Field Mapping", False, str(e))
+            return False
+    
+    def test_individual_export_edge_cases(self):
+        """Test Individual export edge cases"""
+        try:
+            # Create patient without optional fields
+            minimal_patient = {
+                "first_name": "Jane",
+                "last_name": "Doe",
+                "sex": "Female",
+                "date_of_birth": "1990-01-01",
+                "address_street": "123 Test St",
+                "address_city": "Columbus",
+                "address_state": "OH",
+                "address_zip": "43215",
+                "prior_auth_number": "PA123",
+                "icd10_code": "Z00.00",
+                "physician_name": "Dr. Test",
+                "physician_npi": "1234567890",
+                "medicaid_number": "123456789"  # Test leading zero padding
+            }
+            
+            response = requests.post(f"{self.api_url}/patients", json=minimal_patient, timeout=10)
+            if response.status_code != 200:
+                self.log_test("Individual Export Edge Cases", False, "Could not create minimal patient")
+                return False
+            
+            # Test export with minimal patient
+            export_response = requests.get(f"{self.api_url}/evv/export/individuals", timeout=10)
+            success = export_response.status_code == 200
+            
+            if success:
+                data = export_response.json()
+                export_data = data.get('data', [])
+                
+                # Find our minimal patient (should be last)
+                minimal_export = None
+                for individual in export_data:
+                    if individual.get('PatientFirstName') == 'Jane' and individual.get('PatientLastName') == 'Doe':
+                        minimal_export = individual
+                        break
+                
+                if minimal_export:
+                    # Test Medicaid ID padding (should be 000000123456789)
+                    medicaid_id = minimal_export.get('PatientMedicaidID', '')
+                    padding_correct = medicaid_id == '000123456789'
+                    
+                    # Test PatientOtherID uses patient.id when patient_other_id not set
+                    other_id = minimal_export.get('PatientOtherID', '')
+                    other_id_fallback = len(other_id) > 0
+                    
+                    # Test no coordinates when not provided
+                    addresses = minimal_export.get('IndividualAddress', [])
+                    no_coords = True
+                    if addresses and len(addresses) > 0:
+                        addr = addresses[0]
+                        no_coords = 'PatientAddressLatitude' not in addr and 'PatientAddressLongitude' not in addr
+                    
+                    # Test no phone numbers when not provided
+                    no_phones = 'IndividualPhone' not in minimal_export
+                    
+                    # Test no responsible party when not provided
+                    no_rp = 'ResponsibleParty' not in minimal_export
+                    
+                    success = padding_correct and other_id_fallback and no_coords and no_phones and no_rp
+                    details = f"Padding: {padding_correct}, Fallback ID: {other_id_fallback}, " \
+                             f"No coords: {no_coords}, No phones: {no_phones}, No RP: {no_rp}"
+                else:
+                    success = False
+                    details = "Could not find minimal patient in export"
+            else:
+                details = f"Status: {export_response.status_code}"
+            
+            self.log_test("Individual Export Edge Cases", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Individual Export Edge Cases", False, str(e))
+            return False
+    
+    def test_dcw_export_field_mapping(self):
+        """Test DirectCareWorker export field mapping in detail"""
+        try:
+            response = requests.get(f"{self.api_url}/evv/export/direct-care-workers", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                export_data = data.get('data', [])
+                
+                if len(export_data) > 0:
+                    dcw = export_data[-1]  # Get the latest employee we created
+                    
+                    # Test required EVV DirectCareWorker fields
+                    required_fields = [
+                        'BusinessEntityID', 'BusinessEntityMedicaidIdentifier',
+                        'StaffOtherID', 'SequenceID', 'StaffID', 'StaffSSN',
+                        'StaffLastName', 'StaffFirstName'
+                    ]
+                    
+                    missing_fields = [field for field in required_fields if field not in dcw]
+                    
+                    # Test StaffOtherID uses employee.id if staff_other_id not set
+                    staff_other_id = dcw.get('StaffOtherID', '')
+                    other_id_valid = len(staff_other_id) > 0
+                    
+                    # Test StaffID uses staff_pin or employee_id as fallback
+                    staff_id = dcw.get('StaffID', '')
+                    staff_id_valid = len(staff_id) > 0
+                    
+                    # Test SSN is cleaned (no dashes/spaces)
+                    ssn = dcw.get('StaffSSN', '')
+                    ssn_clean = len(ssn) == 9 and ssn.isdigit()
+                    
+                    # Test StaffEmail is included if available
+                    email_included = 'StaffEmail' in dcw
+                    
+                    # Test StaffPosition is truncated to 3 characters if needed
+                    position_valid = True
+                    if 'StaffPosition' in dcw:
+                        position = dcw['StaffPosition']
+                        position_valid = len(position) <= 3
+                    
+                    success = (len(missing_fields) == 0 and other_id_valid and staff_id_valid and 
+                             ssn_clean and email_included and position_valid)
+                    
+                    details = f"Missing fields: {missing_fields}, Other ID: {other_id_valid}, " \
+                             f"Staff ID: {staff_id_valid}, SSN clean: {ssn_clean}, " \
+                             f"Email: {email_included}, Position: {position_valid}"
+                else:
+                    success = False
+                    details = "No DCW records in export"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("DirectCareWorker Export Field Mapping", success, details)
+            return success
+        except Exception as e:
+            self.log_test("DirectCareWorker Export Field Mapping", False, str(e))
+            return False
+    
+    def test_dcw_export_edge_cases(self):
+        """Test DirectCareWorker export edge cases"""
+        try:
+            # Create employee without staff_pin (should use employee_id)
+            minimal_employee = {
+                "first_name": "Bob",
+                "last_name": "Wilson",
+                "ssn": "111 22 3333",  # Test SSN cleaning with spaces
+                "date_of_birth": "1988-03-15",
+                "sex": "Male",
+                "phone": "5135551234",
+                "address_street": "456 Test Ave",
+                "address_city": "Cincinnati",
+                "address_state": "OH",
+                "address_zip": "45202",
+                "employee_id": "EMP003",
+                "hire_date": "2023-01-01",
+                "job_title": "Aide",
+                "employment_status": "Full-time",
+                "emergency_contact_name": "Alice Wilson",
+                "emergency_contact_phone": "5135555555",
+                "emergency_contact_relation": "Wife"
+                # No staff_pin, staff_other_id, or staff_position
+            }
+            
+            response = requests.post(f"{self.api_url}/employees", json=minimal_employee, timeout=10)
+            if response.status_code != 200:
+                self.log_test("DirectCareWorker Export Edge Cases", False, "Could not create minimal employee")
+                return False
+            
+            # Test export with minimal employee
+            export_response = requests.get(f"{self.api_url}/evv/export/direct-care-workers", timeout=10)
+            success = export_response.status_code == 200
+            
+            if success:
+                data = export_response.json()
+                export_data = data.get('data', [])
+                
+                # Find our minimal employee
+                minimal_export = None
+                for dcw in export_data:
+                    if dcw.get('StaffFirstName') == 'Bob' and dcw.get('StaffLastName') == 'Wilson':
+                        minimal_export = dcw
+                        break
+                
+                if minimal_export:
+                    # Test StaffOtherID uses employee.id when staff_other_id not set
+                    other_id = minimal_export.get('StaffOtherID', '')
+                    other_id_fallback = len(other_id) > 0
+                    
+                    # Test StaffID uses employee_id when staff_pin not available
+                    staff_id = minimal_export.get('StaffID', '')
+                    staff_id_fallback = staff_id == 'EMP003'
+                    
+                    # Test SSN cleaning (spaces removed)
+                    ssn = minimal_export.get('StaffSSN', '')
+                    ssn_cleaned = ssn == '111223333'
+                    
+                    # Test no email when not provided
+                    no_email = 'StaffEmail' not in minimal_export
+                    
+                    # Test no position when not provided
+                    no_position = 'StaffPosition' not in minimal_export
+                    
+                    success = other_id_fallback and staff_id_fallback and ssn_cleaned and no_email and no_position
+                    details = f"Fallback ID: {other_id_fallback}, Staff ID fallback: {staff_id_fallback}, " \
+                             f"SSN cleaned: {ssn_cleaned}, No email: {no_email}, No position: {no_position}"
+                else:
+                    success = False
+                    details = "Could not find minimal employee in export"
+            else:
+                details = f"Status: {export_response.status_code}"
+            
+            self.log_test("DirectCareWorker Export Edge Cases", success, details)
+            return success
+        except Exception as e:
+            self.log_test("DirectCareWorker Export Edge Cases", False, str(e))
+            return False
+
 def main():
     tester = TimesheetAPITester()
     
-    # Run both basic timesheet tests and EVV tests
-    print("Running basic timesheet backend tests...")
-    basic_result = tester.run_all_tests()
+    # Run detailed EVV export field mapping tests as requested
+    print("🔍 Running Detailed EVV Export Field Mapping Tests")
+    print("Testing corrected Individual and DirectCareWorker export functionality")
+    print("=" * 80)
     
-    # Reset test counters for EVV tests
-    tester.tests_run = 0
-    tester.tests_passed = 0
-    tester.test_results = []
+    # Test the corrected EVV export functionality
+    tester.test_evv_export_field_mapping_detailed()
     
-    print("\nRunning comprehensive Ohio Medicaid EVV backend tests...")
-    evv_result = tester.run_evv_tests()
-    
-    return evv_result
+    return tester.get_results()
 
 if __name__ == "__main__":
     sys.exit(main())
