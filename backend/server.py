@@ -90,6 +90,46 @@ class EVVVisitChange(BaseModel):
     change_reason_memo: str  # Description (max 256 chars)
     resolution_code: str = "A"  # Only "A" for ODM (Approved)
 
+# Service Code Configuration Model
+class ServiceCodeConfig(BaseModel):
+    """Service code configuration for Sandata/EVV submission"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Service identification
+    service_name: str  # Display name: "Home Health Aide - State Plan"
+    service_code_internal: str  # Internal code/abbreviation
+    
+    # Sandata/EVV required fields (3-part combination)
+    payer: str  # "ODM" or "ODA"
+    payer_program: str  # "SP", "OHCW", "MYCARE", "PASSPORT"
+    procedure_code: str  # HCPCS code: "G0156", "T1019", etc.
+    
+    # Optional modifiers
+    modifier1: Optional[str] = None
+    modifier2: Optional[str] = None
+    modifier3: Optional[str] = None
+    modifier4: Optional[str] = None
+    
+    # Service details
+    service_description: str
+    service_category: str  # "Personal Care", "Nursing", "Therapy", etc.
+    
+    # Billing information
+    billable_unit_type: str = "15_minutes"  # 1 unit = 15 minutes
+    requires_evv: bool = True
+    
+    # Status and dates
+    is_active: bool = True
+    effective_start_date: str  # YYYY-MM-DD
+    effective_end_date: Optional[str] = None  # YYYY-MM-DD
+    
+    # Metadata
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # EVV Visit Record (Core)
 class EVVVisit(BaseModel):
     """
