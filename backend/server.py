@@ -235,25 +235,29 @@ class EmployeeProfile(BaseModel):
     first_name: str
     last_name: str
     middle_name: Optional[str] = None
-    ssn: str  # Social Security Number (9 digits) - EVV Required
-    date_of_birth: str  # YYYY-MM-DD format
-    sex: str  # Male, Female, Other
+    ssn: str = "000-00-0000"  # Default for incomplete, must be updated
+    date_of_birth: str = "1900-01-01"  # YYYY-MM-DD format, default for incomplete
+    sex: str = "Unknown"  # Male, Female, Other, Unknown
+    
+    # Registration status
+    is_complete: bool = False  # False if auto-created from timesheet
+    auto_created_from_timesheet: bool = False  # Flag for auto-creation
     
     # Contact Information
     email: Optional[str] = None  # EVV: Must be unique if provided
-    phone: str
-    address_street: str
-    address_city: str
-    address_state: str
-    address_zip: str
+    phone: str = ""
+    address_street: str = ""
+    address_city: str = ""
+    address_state: str = "OH"  # Default to Ohio
+    address_zip: str = ""
     
     # Employment Information
     employee_id: Optional[str] = None  # Internal employee ID
-    hire_date: str  # YYYY-MM-DD format
-    job_title: str
+    hire_date: str = "1900-01-01"  # YYYY-MM-DD format, default for incomplete
+    job_title: str = "Direct Care Worker"  # Default title
     department: Optional[str] = None
     hourly_rate: Optional[float] = None
-    employment_status: str  # Full-time, Part-time, Contract
+    employment_status: str = "Active"  # Full-time, Part-time, Contract, Active
     
     # EVV DCW Fields
     staff_pin: Optional[str] = None  # EVV: Staff PIN for telephony (9 digits)
@@ -261,9 +265,9 @@ class EmployeeProfile(BaseModel):
     staff_position: Optional[str] = None  # EVV: Position code (3 characters)
     
     # Emergency Contact
-    emergency_contact_name: str
-    emergency_contact_phone: str
-    emergency_contact_relation: str
+    emergency_contact_name: str = ""
+    emergency_contact_phone: str = ""
+    emergency_contact_relation: str = ""
     
     # Certifications & Licenses
     certifications: Optional[str] = None  # Comma-separated or free text
