@@ -107,20 +107,20 @@ const Patients = () => {
   const handleEdit = (patient) => {
     setEditingPatient(patient);
     setFormData({
-      first_name: patient.first_name,
-      last_name: patient.last_name,
-      sex: patient.sex,
-      date_of_birth: patient.date_of_birth,
-      address_street: patient.address_street,
-      address_city: patient.address_city,
-      address_state: patient.address_state,
-      address_zip: patient.address_zip,
-      prior_auth_number: patient.prior_auth_number,
-      icd10_code: patient.icd10_code,
+      first_name: patient.first_name || "",
+      last_name: patient.last_name || "",
+      sex: patient.sex || "Male",
+      date_of_birth: patient.date_of_birth || "1900-01-01",
+      address_street: patient.address_street || "",
+      address_city: patient.address_city || "",
+      address_state: patient.address_state || "OH",
+      address_zip: patient.address_zip || "",
+      prior_auth_number: patient.prior_auth_number || "",
+      icd10_code: patient.icd10_code || "",
       icd10_description: patient.icd10_description || "",
-      physician_name: patient.physician_name,
-      physician_npi: patient.physician_npi,
-      medicaid_number: patient.medicaid_number
+      physician_name: patient.physician_name || "",
+      physician_npi: patient.physician_npi || "",
+      medicaid_number: patient.medicaid_number || ""
     });
     setShowForm(true);
   };
