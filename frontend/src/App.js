@@ -468,6 +468,7 @@ function App() {
           <Route path="/payers" element={<Payers />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/evv" element={<EVVManagement />} />
+          <Route path="/service-codes" element={<ServiceCodes />} />
           <Route path="/timesheet/edit/:id" element={<TimesheetEditor />} />
         </Routes>
       </BrowserRouter>
