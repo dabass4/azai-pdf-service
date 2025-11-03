@@ -79,11 +79,18 @@ const Patients = () => {
     }
 
     try {
+      // Mark as complete when manually saving
+      const submitData = {
+        ...formData,
+        is_complete: true,
+        auto_created_from_timesheet: false
+      };
+
       if (editingPatient) {
-        await axios.put(`${API}/patients/${editingPatient.id}`, formData);
+        await axios.put(`${API}/patients/${editingPatient.id}`, submitData);
         toast.success("Patient updated successfully");
       } else {
-        await axios.post(`${API}/patients`, formData);
+        await axios.post(`${API}/patients`, submitData);
         toast.success("Patient created successfully");
       }
       
