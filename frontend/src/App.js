@@ -183,6 +183,7 @@ const Home = () => {
     if (status === "failed") return <XCircle className="text-red-500" size={20} />;
     if (status === "processing") return <Clock className="text-blue-500 animate-pulse" size={20} />;
     if (sandataStatus === "submitted") return <CheckCircle className="text-green-500" size={20} />;
+    if (sandataStatus === "blocked") return <XCircle className="text-amber-500" size={20} />;
     return <CheckCircle className="text-yellow-500" size={20} />;
   };
 
