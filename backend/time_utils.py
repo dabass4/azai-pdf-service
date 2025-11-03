@@ -95,6 +95,7 @@ def parse_time_string(time_str: str) -> Optional[time]:
     - "8:30 AM", "08:30AM", "8:30"
     - Military time: "1800", "0830", "1345"
     - "18:00", "08:30" (24-hour with colon)
+    - Malformed: "830am", "540pm", "6am" (missing colons)
     """
     if not time_str:
         return None
@@ -102,6 +103,44 @@ def parse_time_string(time_str: str) -> Optional[time]:
     try:
         # Clean the input
         time_str = time_str.strip()
+        
+        # Handle malformed times without colons
+        # Examples: "830am", "540pm", "6am", "1645"
+        
+        # Check for formats like "540pm", "830am", "6pm"
+        match_no_colon = re.match(r'^(\d{1,4})\s*(am|pm|AM|PM)?$', time_str, re.IGNORECASE)
+        if match_no_colon:
+            digits = match_no_colon.group(1)
+            am_pm = match_no_colon.group(2)
+            
+            # Parse based on digit count
+            if len(digits) == 3:  # e.g., "540" or "830"
+                hour = int(digits[0])
+                minute = int(digits[1:])
+            elif len(digits) == 4:  # e.g., "1645" or "0830"
+                hour = int(digits[:2])
+                minute = int(digits[2:])
+            elif len(digits) == 1 or len(digits) == 2:  # e.g., "6" or "11"
+                hour = int(digits)
+                minute = 0
+            else:
+                return None
+            
+            # Apply AM/PM if provided, otherwise use smart logic
+            if am_pm:
+                if am_pm.upper() == 'PM' and hour < 12:
+                    hour += 12
+                elif am_pm.upper() == 'AM' and hour == 12:
+                    hour = 0
+            else:
+                # Smart AM/PM logic for times without indicator
+                if 7 <= hour <= 11:
+                    pass  # Morning
+                elif 1 <= hour <= 6:
+                    hour += 12  # Afternoon/evening
+            
+            if 0 <= hour <= 23 and 0 <= minute <= 59:
+                return time(hour=hour, minute=minute)
         
         # Check for military time format (4 digits without colon)
         # Examples: "1800", "0830", "1345"
