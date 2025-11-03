@@ -28,6 +28,7 @@ const Navigation = () => {
     { to: "/payers", icon: DollarSign, label: "Payers" },
     { to: "/claims", icon: ClipboardCheck, label: "Claims" },
     { to: "/evv", icon: Activity, label: "EVV" },
+    { to: "/service-codes", icon: Code, label: "Service Codes" },
   ];
   
   return (
