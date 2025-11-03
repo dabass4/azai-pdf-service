@@ -1229,6 +1229,26 @@ async def delete_employee(employee_id: str):
     
     return {"message": "Employee deleted successfully"}
 
+# Get incomplete profiles endpoint
+@api_router.get("/profiles/incomplete")
+async def get_incomplete_profiles():
+    """Get all incomplete patient and employee profiles"""
+    incomplete_patients = await db.patients.find(
+        {"is_complete": False},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    incomplete_employees = await db.employees.find(
+        {"is_complete": False},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    return {
+        "patients": incomplete_patients,
+        "employees": incomplete_employees,
+        "total_incomplete": len(incomplete_patients) + len(incomplete_employees)
+    }
+
 # Insurance Contract / Payer Endpoints
 @api_router.post("/insurance-contracts", response_model=InsuranceContract)
 async def create_contract(contract: InsuranceContract):
