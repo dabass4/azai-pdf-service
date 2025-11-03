@@ -456,7 +456,13 @@ class Timesheet(BaseModel):
     status: str = "processing"  # processing, completed, failed, submitted
     sandata_status: Optional[str] = None  # pending, submitted, error
     error_message: Optional[str] = None
+    
+    # Linked patient
     patient_id: Optional[str] = None  # Link to patient profile
+    
+    # Auto-registration results
+    registration_results: Optional[Dict] = None  # Patient and employee registration info
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
