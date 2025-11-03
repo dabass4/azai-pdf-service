@@ -482,6 +482,122 @@ async def get_pdf_page_count(file_path: str) -> int:
         except:
             return 1
 
+async def check_or_create_patient(client_name: str) -> Dict[str, Any]:
+    """
+    Check if patient exists by name, create if not found
+    Returns patient info with is_complete flag
+    """
+    if not client_name or client_name.strip() == "":
+        return None
+    
+    # Parse name (assume "FirstName LastName" format)
+    name_parts = client_name.strip().split()
+    if len(name_parts) < 2:
+        # If only one name, use it as last name
+        first_name = ""
+        last_name = name_parts[0] if name_parts else "Unknown"
+    else:
+        first_name = name_parts[0]
+        last_name = " ".join(name_parts[1:])
+    
+    # Search for existing patient (case-insensitive)
+    existing_patient = await db.patients.find_one({
+        "first_name": {"$regex": f"^{first_name}$", "$options": "i"},
+        "last_name": {"$regex": f"^{last_name}$", "$options": "i"}
+    }, {"_id": 0})
+    
+    if existing_patient:
+        logger.info(f"Found existing patient: {first_name} {last_name}")
+        return {
+            "id": existing_patient["id"],
+            "first_name": existing_patient["first_name"],
+            "last_name": existing_patient["last_name"],
+            "is_complete": existing_patient.get("is_complete", True),
+            "exists": True
+        }
+    
+    # Create new incomplete patient profile
+    logger.info(f"Auto-creating patient: {first_name} {last_name}")
+    new_patient = PatientProfile(
+        first_name=first_name,
+        last_name=last_name,
+        is_complete=False,
+        auto_created_from_timesheet=True
+    )
+    
+    doc = new_patient.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    await db.patients.insert_one(doc)
+    
+    return {
+        "id": new_patient.id,
+        "first_name": first_name,
+        "last_name": last_name,
+        "is_complete": False,
+        "exists": False,
+        "message": "Auto-created incomplete profile - please update"
+    }
+
+async def check_or_create_employee(employee_name: str) -> Dict[str, Any]:
+    """
+    Check if employee exists by name, create if not found
+    Returns employee info with is_complete flag
+    """
+    if not employee_name or employee_name.strip() == "":
+        return None
+    
+    # Parse name (assume "FirstName LastName" format)
+    name_parts = employee_name.strip().split()
+    if len(name_parts) < 2:
+        # If only one name, use it as last name
+        first_name = ""
+        last_name = name_parts[0] if name_parts else "Unknown"
+    else:
+        first_name = name_parts[0]
+        last_name = " ".join(name_parts[1:])
+    
+    # Search for existing employee (case-insensitive)
+    existing_employee = await db.employees.find_one({
+        "first_name": {"$regex": f"^{first_name}$", "$options": "i"},
+        "last_name": {"$regex": f"^{last_name}$", "$options": "i"}
+    }, {"_id": 0})
+    
+    if existing_employee:
+        logger.info(f"Found existing employee: {first_name} {last_name}")
+        return {
+            "id": existing_employee["id"],
+            "first_name": existing_employee["first_name"],
+            "last_name": existing_employee["last_name"],
+            "is_complete": existing_employee.get("is_complete", True),
+            "exists": True
+        }
+    
+    # Create new incomplete employee profile
+    logger.info(f"Auto-creating employee: {first_name} {last_name}")
+    new_employee = EmployeeProfile(
+        first_name=first_name,
+        last_name=last_name,
+        is_complete=False,
+        auto_created_from_timesheet=True
+    )
+    
+    doc = new_employee.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    await db.employees.insert_one(doc)
+    
+    return {
+        "id": new_employee.id,
+        "first_name": first_name,
+        "last_name": last_name,
+        "is_complete": False,
+        "exists": False,
+        "message": "Auto-created incomplete profile - please update"
+    }
+
 async def extract_timesheet_data(file_path: str, file_type: str, page_number: int = 1) -> ExtractedData:
     """Extract data from timesheet using Gemini Vision API
     
