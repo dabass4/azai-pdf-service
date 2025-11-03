@@ -1130,6 +1130,64 @@ async def delete_timesheet(timesheet_id: str):
     
     return {"message": "Timesheet deleted successfully"}
 
+@api_router.post("/timesheets/{timesheet_id}/resubmit")
+async def resubmit_timesheet(timesheet_id: str):
+    """Manually resubmit timesheet to Sandata with validation"""
+    try:
+        # Get the timesheet
+        timesheet_doc = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+        
+        if not timesheet_doc:
+            raise HTTPException(status_code=404, detail="Timesheet not found")
+        
+        # Convert to Timesheet object
+        if isinstance(timesheet_doc.get('created_at'), str):
+            timesheet_doc['created_at'] = datetime.fromisoformat(timesheet_doc['created_at'])
+        if isinstance(timesheet_doc.get('updated_at'), str):
+            timesheet_doc['updated_at'] = datetime.fromisoformat(timesheet_doc['updated_at'])
+        
+        timesheet = Timesheet(**timesheet_doc)
+        
+        # Attempt resubmission with validation
+        submission_result = await submit_to_sandata(timesheet)
+        
+        # Update timesheet based on result
+        if submission_result["status"] == "success":
+            timesheet.sandata_status = "submitted"
+            timesheet.error_message = None
+        elif submission_result["status"] == "blocked":
+            timesheet.sandata_status = "blocked"
+            timesheet.error_message = submission_result.get("message", "Submission blocked due to incomplete profiles")
+        else:
+            timesheet.sandata_status = "error"
+            timesheet.error_message = submission_result.get("message", "Unknown error")
+        
+        timesheet.updated_at = datetime.now(timezone.utc)
+        
+        # Update database
+        update_doc = timesheet.model_dump()
+        update_doc['created_at'] = update_doc['created_at'].isoformat()
+        update_doc['updated_at'] = update_doc['updated_at'].isoformat()
+        
+        await db.timesheets.update_one(
+            {"id": timesheet_id},
+            {"$set": update_doc}
+        )
+        
+        logger.info(f"Timesheet resubmitted: {timesheet_id}, result: {submission_result['status']}")
+        
+        return {
+            "status": submission_result["status"],
+            "message": submission_result.get("message", ""),
+            "timesheet": timesheet
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Resubmission error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Patient Profile Endpoints
 @api_router.post("/patients", response_model=PatientProfile)
 async def create_patient(patient: PatientProfile):
