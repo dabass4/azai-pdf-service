@@ -454,7 +454,7 @@ class Timesheet(BaseModel):
     file_type: str
     extracted_data: Optional[ExtractedData] = None
     status: str = "processing"  # processing, completed, failed, submitted
-    sandata_status: Optional[str] = None  # pending, submitted, error
+    sandata_status: Optional[str] = None  # pending, submitted, error, blocked
     error_message: Optional[str] = None
     
     # Linked patient
