@@ -191,6 +191,7 @@ const Home = () => {
     if (status === "failed") return "Failed";
     if (status === "processing") return "Processing...";
     if (sandataStatus === "submitted") return "Submitted to Sandata";
+    if (sandataStatus === "blocked") return "Blocked - Incomplete Profiles";
     return "Extracted";
   };
 
