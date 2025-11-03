@@ -1015,6 +1015,9 @@ async def upload_timesheet(file: UploadFile = File(...)):
                 submission_result = await submit_to_sandata(timesheet)
                 if submission_result["status"] == "success":
                     timesheet.sandata_status = "submitted"
+                elif submission_result["status"] == "blocked":
+                    timesheet.sandata_status = "blocked"
+                    timesheet.error_message = submission_result.get("message", "Submission blocked due to incomplete profiles")
                 else:
                     timesheet.sandata_status = "error"
                     timesheet.error_message = submission_result.get("message", "Unknown error")
