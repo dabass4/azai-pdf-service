@@ -107,11 +107,18 @@ const Employees = () => {
     }
 
     try {
+      // Mark as complete when manually saving
+      const submitData = {
+        ...formData,
+        is_complete: true,
+        auto_created_from_timesheet: false
+      };
+
       if (editingEmployee) {
-        await axios.put(`${API}/employees/${editingEmployee.id}`, formData);
+        await axios.put(`${API}/employees/${editingEmployee.id}`, submitData);
         toast.success("Employee updated successfully");
       } else {
-        await axios.post(`${API}/employees`, formData);
+        await axios.post(`${API}/employees`, submitData);
         toast.success("Employee created successfully");
       }
       
