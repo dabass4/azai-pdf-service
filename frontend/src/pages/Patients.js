@@ -424,8 +424,18 @@ const Patients = () => {
                     <div className="flex justify-between items-start">
                       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                          <h3 className="text-lg font-bold text-gray-900 mb-3">
+                          <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                             {patient.first_name} {patient.last_name}
+                            {patient.is_complete === false && (
+                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
+                                INCOMPLETE
+                              </span>
+                            )}
+                            {patient.auto_created_from_timesheet && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
+                                AUTO-CREATED
+                              </span>
+                            )}
                           </h3>
                           <div className="space-y-1 text-sm">
                             <p className="text-gray-600"><span className="font-semibold">DOB:</span> {patient.date_of_birth}</p>
