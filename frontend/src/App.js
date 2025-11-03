@@ -443,8 +443,16 @@ const Home = () => {
                   
                   {timesheet.error_message && (
                     <CardContent>
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg" data-testid={`error-message-${timesheet.id}`}>
-                        <p className="text-sm text-red-700">{timesheet.error_message}</p>
+                      <div className={`p-3 rounded-lg ${
+                        timesheet.sandata_status === "blocked" 
+                          ? "bg-amber-50 border border-amber-200" 
+                          : "bg-red-50 border border-red-200"
+                      }`} data-testid={`error-message-${timesheet.id}`}>
+                        <p className={`text-sm ${
+                          timesheet.sandata_status === "blocked" 
+                            ? "text-amber-700" 
+                            : "text-red-700"
+                        }`}>{timesheet.error_message}</p>
                       </div>
                     </CardContent>
                   )}
