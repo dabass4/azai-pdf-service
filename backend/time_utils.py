@@ -107,11 +107,19 @@ def parse_time_string(time_str: str) -> Optional[time]:
         # Handle malformed times without colons
         # Examples: "830am", "540pm", "6am", "1645"
         
-        # Check for formats like "540pm", "830am", "6pm"
-        match_no_colon = re.match(r'^(\d{1,4})\s*(am|pm|AM|PM)?$', time_str, re.IGNORECASE)
+        # Check for formats like "540pm", "830am", "6pm", "705p" (with or without 'm')
+        match_no_colon = re.match(r'^(\d{1,4})\s*(a|p|am|pm|AM|PM)?$', time_str, re.IGNORECASE)
         if match_no_colon:
             digits = match_no_colon.group(1)
             am_pm = match_no_colon.group(2)
+            
+            # Normalize am_pm (handle 'a' and 'p' without 'm')
+            if am_pm:
+                am_pm = am_pm.upper()
+                if am_pm == 'A':
+                    am_pm = 'AM'
+                elif am_pm == 'P':
+                    am_pm = 'PM'
             
             # Parse based on digit count
             if len(digits) == 3:  # e.g., "540" or "830"
@@ -128,9 +136,9 @@ def parse_time_string(time_str: str) -> Optional[time]:
             
             # Apply AM/PM if provided, otherwise use smart logic
             if am_pm:
-                if am_pm.upper() == 'PM' and hour < 12:
+                if am_pm == 'PM' and hour < 12:
                     hour += 12
-                elif am_pm.upper() == 'AM' and hour == 12:
+                elif am_pm == 'AM' and hour == 12:
                     hour = 0
             else:
                 # Smart AM/PM logic for times without indicator
