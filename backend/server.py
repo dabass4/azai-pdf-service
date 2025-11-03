@@ -1759,6 +1759,288 @@ async def get_evv_exception_codes():
     """Get list of valid Ohio EVV exception codes"""
     return {"exception_codes": OHIO_EXCEPTION_CODES}
 
+# ========================================
+# Service Code Configuration Endpoints
+# ========================================
+
+@api_router.post("/service-codes", response_model=ServiceCodeConfig)
+async def create_service_code(service_code: ServiceCodeConfig):
+    """Create a new service code configuration"""
+    try:
+        doc = service_code.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        
+        await db.service_codes.insert_one(doc)
+        logger.info(f"Service code created: {service_code.id}")
+        
+        return service_code
+    except Exception as e:
+        logger.error(f"Error creating service code: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/service-codes", response_model=List[ServiceCodeConfig])
+async def get_service_codes(active_only: bool = False):
+    """Get all service code configurations"""
+    query = {"is_active": True} if active_only else {}
+    service_codes = await db.service_codes.find(query, {"_id": 0}).to_list(1000)
+    
+    for sc in service_codes:
+        if isinstance(sc.get('created_at'), str):
+            sc['created_at'] = datetime.fromisoformat(sc['created_at'])
+        if isinstance(sc.get('updated_at'), str):
+            sc['updated_at'] = datetime.fromisoformat(sc['updated_at'])
+    
+    return service_codes
+
+@api_router.get("/service-codes/{service_code_id}", response_model=ServiceCodeConfig)
+async def get_service_code(service_code_id: str):
+    """Get specific service code by ID"""
+    service_code = await db.service_codes.find_one({"id": service_code_id}, {"_id": 0})
+    
+    if not service_code:
+        raise HTTPException(status_code=404, detail="Service code not found")
+    
+    if isinstance(service_code.get('created_at'), str):
+        service_code['created_at'] = datetime.fromisoformat(service_code['created_at'])
+    if isinstance(service_code.get('updated_at'), str):
+        service_code['updated_at'] = datetime.fromisoformat(service_code['updated_at'])
+    
+    return service_code
+
+@api_router.put("/service-codes/{service_code_id}", response_model=ServiceCodeConfig)
+async def update_service_code(service_code_id: str, service_code_update: ServiceCodeConfig):
+    """Update a service code configuration"""
+    service_code_update.id = service_code_id
+    service_code_update.updated_at = datetime.now(timezone.utc)
+    
+    doc = service_code_update.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat() if isinstance(doc['created_at'], datetime) else doc['created_at']
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    result = await db.service_codes.update_one(
+        {"id": service_code_id},
+        {"$set": doc}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Service code not found")
+    
+    return service_code_update
+
+@api_router.delete("/service-codes/{service_code_id}")
+async def delete_service_code(service_code_id: str):
+    """Delete a service code configuration"""
+    result = await db.service_codes.delete_one({"id": service_code_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Service code not found")
+    
+    return {"message": "Service code deleted successfully"}
+
+@api_router.post("/service-codes/validate")
+async def validate_service_code_combination(
+    payer: str,
+    payer_program: str,
+    procedure_code: str
+):
+    """Validate that payer/program/procedure code combination is valid"""
+    service_code = await db.service_codes.find_one({
+        "payer": payer,
+        "payer_program": payer_program,
+        "procedure_code": procedure_code,
+        "is_active": True
+    }, {"_id": 0})
+    
+    if not service_code:
+        return {
+            "valid": False,
+            "error": f"Invalid combination: {payer}/{payer_program}/{procedure_code}",
+            "message": "This service code combination is not configured or is inactive"
+        }
+    
+    return {
+        "valid": True,
+        "service_name": service_code.get("service_name"),
+        "service_code_id": service_code.get("id"),
+        "service_description": service_code.get("service_description")
+    }
+
+@api_router.get("/service-codes/by-payer/{payer}")
+async def get_service_codes_by_payer(payer: str):
+    """Get all active service codes for a specific payer"""
+    service_codes = await db.service_codes.find({
+        "payer": payer,
+        "is_active": True
+    }, {"_id": 0}).to_list(1000)
+    
+    return {"payer": payer, "service_codes": service_codes}
+
+@api_router.post("/service-codes/initialize-ohio")
+async def initialize_ohio_service_codes():
+    """Initialize Ohio Medicaid service codes (for setup)"""
+    ohio_codes = [
+        # State Plan Home Health
+        {
+            "service_name": "Home Health Aide - State Plan",
+            "service_code_internal": "HHA_SP",
+            "payer": "ODM",
+            "payer_program": "SP",
+            "procedure_code": "G0156",
+            "service_description": "Home Health Aide services under State Plan Home Health",
+            "service_category": "Personal Care",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        {
+            "service_name": "Physical Therapy - State Plan",
+            "service_code_internal": "PT_SP",
+            "payer": "ODM",
+            "payer_program": "SP",
+            "procedure_code": "G0151",
+            "service_description": "Physical Therapy services under State Plan",
+            "service_category": "Therapy",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        {
+            "service_name": "Occupational Therapy - State Plan",
+            "service_code_internal": "OT_SP",
+            "payer": "ODM",
+            "payer_program": "SP",
+            "procedure_code": "G0152",
+            "service_description": "Occupational Therapy services under State Plan",
+            "service_category": "Therapy",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        {
+            "service_name": "Speech Therapy - State Plan",
+            "service_code_internal": "ST_SP",
+            "payer": "ODM",
+            "payer_program": "SP",
+            "procedure_code": "G0153",
+            "service_description": "Speech Language Pathology services under State Plan",
+            "service_category": "Therapy",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        {
+            "service_name": "RN Services - State Plan",
+            "service_code_internal": "RN_SP",
+            "payer": "ODM",
+            "payer_program": "SP",
+            "procedure_code": "G0299",
+            "service_description": "Registered Nurse services under State Plan",
+            "service_category": "Nursing",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        {
+            "service_name": "LPN Services - State Plan",
+            "service_code_internal": "LPN_SP",
+            "payer": "ODM",
+            "payer_program": "SP",
+            "procedure_code": "G0300",
+            "service_description": "Licensed Practical Nurse services under State Plan",
+            "service_category": "Nursing",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        # Ohio Home Care Waiver
+        {
+            "service_name": "Personal Care Aide - OHCW",
+            "service_code_internal": "PCA_OHCW",
+            "payer": "ODM",
+            "payer_program": "OHCW",
+            "procedure_code": "T1019",
+            "service_description": "Personal Care Aide services under Ohio Home Care Waiver",
+            "service_category": "Personal Care",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        {
+            "service_name": "RN Waiver Services - OHCW",
+            "service_code_internal": "RN_OHCW",
+            "payer": "ODM",
+            "payer_program": "OHCW",
+            "procedure_code": "T1002",
+            "service_description": "Registered Nurse waiver services under OHCW",
+            "service_category": "Nursing",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        {
+            "service_name": "LPN Waiver Services - OHCW",
+            "service_code_internal": "LPN_OHCW",
+            "payer": "ODM",
+            "payer_program": "OHCW",
+            "procedure_code": "T1003",
+            "service_description": "Licensed Practical Nurse waiver services under OHCW",
+            "service_category": "Nursing",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        {
+            "service_name": "Home Care Attendant - OHCW",
+            "service_code_internal": "HCA_OHCW",
+            "payer": "ODM",
+            "payer_program": "OHCW",
+            "procedure_code": "S5125",
+            "service_description": "Home Care Attendant services under OHCW",
+            "service_category": "Personal Care",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        # MyCare Waiver
+        {
+            "service_name": "Personal Care Aide - MyCare",
+            "service_code_internal": "PCA_MYCARE",
+            "payer": "ODM",
+            "payer_program": "MYCARE",
+            "procedure_code": "T1019",
+            "service_description": "Personal Care Aide services under MyCare Waiver",
+            "service_category": "Personal Care",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+        # PASSPORT Waiver
+        {
+            "service_name": "Personal Care Aide - PASSPORT",
+            "service_code_internal": "PCA_PASSPORT",
+            "payer": "ODA",
+            "payer_program": "PASSPORT",
+            "procedure_code": "T1019",
+            "service_description": "Personal Care Aide services under PASSPORT Waiver",
+            "service_category": "Personal Care",
+            "effective_start_date": "2024-01-01",
+            "is_active": True
+        },
+    ]
+    
+    # Check if already initialized
+    existing_count = await db.service_codes.count_documents({})
+    if existing_count > 0:
+        return {
+            "message": "Service codes already initialized",
+            "existing_count": existing_count
+        }
+    
+    # Insert all service codes
+    for code_data in ohio_codes:
+        service_code = ServiceCodeConfig(**code_data)
+        doc = service_code.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        await db.service_codes.insert_one(doc)
+    
+    logger.info(f"Initialized {len(ohio_codes)} Ohio Medicaid service codes")
+    
+    return {
+        "message": f"Successfully initialized {len(ohio_codes)} Ohio Medicaid service codes",
+        "codes_added": len(ohio_codes)
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
