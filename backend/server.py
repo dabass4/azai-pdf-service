@@ -299,15 +299,19 @@ class PatientProfile(BaseModel):
     # Basic Information
     first_name: str
     last_name: str
-    sex: str  # Male, Female, Other
-    date_of_birth: str  # YYYY-MM-DD format
+    sex: str = "Unknown"  # Male, Female, Other, Unknown
+    date_of_birth: str = "1900-01-01"  # YYYY-MM-DD format, default for incomplete
     is_newborn: bool = False  # EVV: Newborn indicator
     
+    # Registration status
+    is_complete: bool = False  # False if auto-created from timesheet
+    auto_created_from_timesheet: bool = False  # Flag for auto-creation
+    
     # Address with Geographic Coordinates (EVV Required)
-    address_street: str
-    address_city: str
-    address_state: str
-    address_zip: str
+    address_street: str = ""
+    address_city: str = ""
+    address_state: str = "OH"  # Default to Ohio
+    address_zip: str = ""
     address_latitude: Optional[float] = None  # EVV: Required for primary address
     address_longitude: Optional[float] = None  # EVV: Required for primary address
     address_type: str = "Home"  # Home, Service, Billing
@@ -316,12 +320,12 @@ class PatientProfile(BaseModel):
     timezone: str = "America/New_York"  # Default to Eastern for Ohio
     
     # Medical Information
-    prior_auth_number: str  # Alphanumeric with special characters
-    icd10_code: str
+    prior_auth_number: str = ""  # Alphanumeric with special characters
+    icd10_code: str = ""
     icd10_description: Optional[str] = None
-    physician_name: str
-    physician_npi: str  # 10-digit NPI
-    medicaid_number: str  # 12 characters max (Ohio: 12 digits with leading zeros)
+    physician_name: str = ""
+    physician_npi: str = ""  # 10-digit NPI
+    medicaid_number: str = ""  # 12 characters max (Ohio: 12 digits with leading zeros)
     
     # EVV: Alternate IDs
     patient_other_id: Optional[str] = None  # External system ID
