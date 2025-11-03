@@ -916,6 +916,43 @@ async def upload_timesheet(file: UploadFile = File(...)):
                 timesheet.extracted_data = extracted_data
                 timesheet.status = "completed"
                 
+                # Check and auto-register patient and employees
+                registration_results = {
+                    "patient": None,
+                    "employees": [],
+                    "incomplete_profiles": []
+                }
+                
+                if extracted_data and extracted_data.client_name:
+                    # Check/create patient
+                    patient_info = await check_or_create_patient(extracted_data.client_name)
+                    if patient_info:
+                        registration_results["patient"] = patient_info
+                        if not patient_info.get("is_complete"):
+                            registration_results["incomplete_profiles"].append({
+                                "type": "patient",
+                                "name": f"{patient_info['first_name']} {patient_info['last_name']}",
+                                "id": patient_info["id"]
+                            })
+                        timesheet.patient_id = patient_info["id"]
+                    
+                    # Check/create employees
+                    if extracted_data.employee_entries:
+                        for emp_entry in extracted_data.employee_entries:
+                            if emp_entry.employee_name:
+                                employee_info = await check_or_create_employee(emp_entry.employee_name)
+                                if employee_info:
+                                    registration_results["employees"].append(employee_info)
+                                    if not employee_info.get("is_complete"):
+                                        registration_results["incomplete_profiles"].append({
+                                            "type": "employee",
+                                            "name": f"{employee_info['first_name']} {employee_info['last_name']}",
+                                            "id": employee_info["id"]
+                                        })
+                
+                # Store registration results in timesheet
+                timesheet.registration_results = registration_results
+                
                 # Auto-submit to Sandata
                 submission_result = await submit_to_sandata(timesheet)
                 if submission_result["status"] == "success":
