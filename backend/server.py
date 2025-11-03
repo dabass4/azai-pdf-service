@@ -809,8 +809,60 @@ Return ONLY the JSON object, no additional text or explanation."""
         raise
 
 async def submit_to_sandata(timesheet: Timesheet) -> dict:
-    """Submit timesheet data to Sandata API (mocked for now)"""
+    """
+    Submit timesheet data to Sandata API
+    IMPORTANT: Validates that patient and all employees have complete profiles before submission
+    """
     try:
+        # Check if patient profile is complete
+        if timesheet.patient_id:
+            patient = await db.patients.find_one({"id": timesheet.patient_id}, {"_id": 0})
+            if patient:
+                if not patient.get("is_complete", True):
+                    return {
+                        "status": "blocked",
+                        "message": f"Cannot submit: Patient profile incomplete. Please complete the patient profile before submitting to Sandata.",
+                        "incomplete_profiles": [{"type": "patient", "name": f"{patient.get('first_name', '')} {patient.get('last_name', '')}"}]
+                    }
+        
+        # Check if all employees have complete profiles
+        if timesheet.extracted_data and timesheet.extracted_data.employee_entries:
+            incomplete_employees = []
+            for emp_entry in timesheet.extracted_data.employee_entries:
+                if emp_entry.employee_name:
+                    # Find employee by name
+                    name_parts = emp_entry.employee_name.strip().split()
+                    if len(name_parts) >= 2:
+                        first_name = name_parts[0]
+                        last_name = " ".join(name_parts[1:])
+                        
+                        employee = await db.employees.find_one({
+                            "first_name": {"$regex": f"^{first_name}$", "$options": "i"},
+                            "last_name": {"$regex": f"^{last_name}$", "$options": "i"}
+                        }, {"_id": 0})
+                        
+                        if employee and not employee.get("is_complete", True):
+                            incomplete_employees.append({
+                                "type": "employee",
+                                "name": f"{employee.get('first_name', '')} {employee.get('last_name', '')}"
+                            })
+            
+            if incomplete_employees:
+                employee_names = ", ".join([emp["name"] for emp in incomplete_employees])
+                return {
+                    "status": "blocked",
+                    "message": f"Cannot submit: Employee profile(s) incomplete. Please complete profiles for: {employee_names}",
+                    "incomplete_profiles": incomplete_employees
+                }
+        
+        # All profiles are complete, proceed with submission
+        if not timesheet.extracted_data:
+            return {
+                "status": "error",
+                "message": "No data extracted from timesheet"
+            }
+        
+        # Mock Sandata API submission
         sandata_url = os.environ.get('SANDATA_API_URL', '')
         api_key = os.environ.get('SANDATA_API_KEY', '')
         auth_token = os.environ.get('SANDATA_AUTH_TOKEN', '')
