@@ -168,12 +168,19 @@ const TimesheetEditor = () => {
       // Update the timesheet first
       await axios.put(`${API}/timesheets/${id}`, timesheet);
       
-      // Mark as manually reviewed and resubmit to Sandata
-      const updatedTimesheet = { ...timesheet, status: "completed", sandata_status: "submitted" };
-      await axios.put(`${API}/timesheets/${id}`, updatedTimesheet);
+      // Resubmit to Sandata with validation
+      const response = await axios.post(`${API}/timesheets/${id}/resubmit`);
       
-      toast.success("Timesheet saved and resubmitted to Sandata");
-      navigate("/");
+      if (response.data.status === "success") {
+        toast.success("Timesheet saved and resubmitted to Sandata");
+        navigate("/");
+      } else if (response.data.status === "blocked") {
+        toast.error(`Submission blocked: ${response.data.message}`);
+        setSaving(false);
+      } else {
+        toast.error(`Resubmission failed: ${response.data.message}`);
+        setSaving(false);
+      }
     } catch (e) {
       console.error("Resubmit error:", e);
       toast.error("Failed to resubmit timesheet");
