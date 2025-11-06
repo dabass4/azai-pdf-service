@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import SearchFilter from "@/components/SearchFilter";
 import BulkActionToolbar from "@/components/BulkActionToolbar";
+import MultiStepForm from "@/components/MultiStepForm";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
