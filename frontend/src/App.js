@@ -249,24 +249,17 @@ const Home = () => {
     if (!window.confirm(`Submit ${selectedTimesheets.length} timesheet(s) to Sandata API?`)) return;
     
     try {
-      let successCount = 0;
-      let failedCount = 0;
+      const response = await axios.post(`${API}/timesheets/bulk-submit-sandata`, {
+        ids: selectedTimesheets
+      });
       
-      for (const timesheetId of selectedTimesheets) {
-        try {
-          await axios.post(`${API}/timesheets/${timesheetId}/resubmit`);
-          successCount++;
-        } catch (e) {
-          failedCount++;
-          console.error(`Failed to submit timesheet ${timesheetId}:`, e);
-        }
-      }
+      const { success_count, failed_count } = response.data;
       
-      if (successCount > 0) {
-        toast.success(`${successCount} timesheet(s) submitted to Sandata successfully`);
+      if (success_count > 0) {
+        toast.success(`${success_count} timesheet(s) submitted to Sandata successfully`);
       }
-      if (failedCount > 0) {
-        toast.error(`${failedCount} timesheet(s) failed to submit`);
+      if (failed_count > 0) {
+        toast.error(`${failed_count} timesheet(s) failed to submit. Check profiles are complete.`);
       }
       
       await fetchTimesheets();
