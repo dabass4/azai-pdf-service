@@ -349,30 +349,41 @@ const Home = () => {
           />
         </div>
 
-        {/* Export and Bulk Actions Toolbar */}
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <Button
-            onClick={handleExport}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Download size={18} />
-            Export to CSV
-          </Button>
-          
-          <BulkActionToolbar
-            selectedCount={selectedTimesheets.length}
-            onClearSelection={() => setSelectedTimesheets([])}
-            actions={[
-              {
-                label: "Delete Selected",
-                icon: Trash2,
-                onClick: handleBulkDelete,
-                variant: "destructive"
-              }
-            ]}
-          />
-        </div>
+        {/* Bulk Actions Toolbar */}
+        <BulkActionToolbar
+          selectedCount={selectedTimesheets.length}
+          onClearSelection={() => setSelectedTimesheets([])}
+          actions={[
+            {
+              label: "Transmit to Sandata",
+              icon: Upload,
+              onClick: handleBulkSubmitSandata,
+              variant: "default",
+              show: selectedTimesheets.length > 0
+            },
+            {
+              label: "Submit Claims to Medicaid",
+              icon: ClipboardCheck,
+              onClick: handleBulkSubmitClaims,
+              variant: "default",
+              show: selectedTimesheets.length > 0
+            },
+            {
+              label: "Export CSV",
+              icon: Download,
+              onClick: handleBulkExport,
+              variant: "outline",
+              show: selectedTimesheets.length > 0
+            },
+            {
+              label: "Delete Selected",
+              icon: Trash2,
+              onClick: handleBulkDelete,
+              variant: "destructive",
+              show: selectedTimesheets.length > 0
+            }
+          ]}
+        />
 
         {/* Timesheets List */}
         <div>
