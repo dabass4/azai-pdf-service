@@ -1206,9 +1206,35 @@ async def create_patient(patient: PatientProfile):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/patients", response_model=List[PatientProfile])
-async def get_patients():
-    """Get all patient profiles"""
-    patients = await db.patients.find({}, {"_id": 0}).sort("last_name", 1).to_list(1000)
+async def get_patients(
+    search: Optional[str] = None,
+    is_complete: Optional[bool] = None,
+    limit: int = 1000,
+    skip: int = 0
+):
+    """Get all patient profiles with optional search and filters
+    
+    Args:
+        search: Search by first name, last name, or medicaid number
+        is_complete: Filter by completion status (True/False)
+        limit: Maximum number of results to return
+        skip: Number of results to skip (for pagination)
+    """
+    query = {}
+    
+    # Add search filter
+    if search:
+        query["$or"] = [
+            {"first_name": {"$regex": search, "$options": "i"}},
+            {"last_name": {"$regex": search, "$options": "i"}},
+            {"medicaid_number": {"$regex": search, "$options": "i"}}
+        ]
+    
+    # Add completion status filter
+    if is_complete is not None:
+        query["is_complete"] = is_complete
+    
+    patients = await db.patients.find(query, {"_id": 0}).sort("last_name", 1).skip(skip).limit(limit).to_list(limit)
     
     # Convert ISO string timestamps
     for patient in patients:
