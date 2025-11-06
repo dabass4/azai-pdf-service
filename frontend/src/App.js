@@ -321,7 +321,8 @@ const Home = () => {
         toast.error(`${failedCount} claim(s) failed to submit`);
       }
       
-      await fetchTimesheets();
+      setSelectedTimesheets([]); // Clear selection after claims submission
+      await fetchTimesheets(false);
     } catch (e) {
       console.error("Bulk claims submission error:", e);
       toast.error("Failed to submit claims to Medicaid");
