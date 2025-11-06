@@ -528,12 +528,34 @@ const Patients = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4" data-testid="patients-list">
-              {patients.map((patient) => (
-                <Card key={patient.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow" data-testid={`patient-${patient.id}`}>
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <>
+              {/* Select All Checkbox */}
+              <div className="mb-3 flex items-center gap-2 px-2">
+                <Checkbox
+                  checked={selectedPatients.length === patients.length && patients.length > 0}
+                  onCheckedChange={handleSelectAll}
+                  id="select-all"
+                />
+                <label htmlFor="select-all" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Select All ({patients.length})
+                </label>
+              </div>
+              
+              <div className="grid gap-4" data-testid="patients-list">
+                {patients.map((patient) => (
+                  <Card key={patient.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow" data-testid={`patient-${patient.id}`}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        {/* Selection Checkbox */}
+                        <div className="pt-1">
+                          <Checkbox
+                            checked={selectedPatients.includes(patient.id)}
+                            onCheckedChange={(checked) => handleSelectPatient(patient.id, checked)}
+                          />
+                        </div>
+                        
+                        <div className="flex-1 flex justify-between items-start">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                           <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                             {patient.first_name} {patient.last_name}
