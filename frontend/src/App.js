@@ -192,7 +192,7 @@ const Home = () => {
     try {
       await axios.delete(`${API}/timesheets/${id}`);
       toast.success("Timesheet deleted");
-      await fetchTimesheets();
+      await fetchTimesheets(false);
     } catch (e) {
       console.error("Delete error:", e);
       toast.error("Failed to delete timesheet");
