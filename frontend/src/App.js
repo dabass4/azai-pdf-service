@@ -109,7 +109,7 @@ const Home = () => {
   const [searchFilters, setSearchFilters] = useState({});
   const [selectedTimesheets, setSelectedTimesheets] = useState([]);
 
-  const fetchTimesheets = async () => {
+  const fetchTimesheets = async (preserveSelection = false) => {
     try {
       const params = new URLSearchParams();
       if (searchFilters.search) params.append('search', searchFilters.search);
@@ -119,7 +119,15 @@ const Home = () => {
       
       const response = await axios.get(`${API}/timesheets?${params.toString()}`);
       setTimesheets(response.data);
-      setSelectedTimesheets([]); // Clear selection on refresh
+      
+      // Only clear selection on user-initiated refresh, not auto-refresh
+      if (!preserveSelection) {
+        setSelectedTimesheets([]);
+      } else {
+        // Filter out any selected IDs that no longer exist in the new data
+        const currentIds = response.data.map(ts => ts.id);
+        setSelectedTimesheets(prev => prev.filter(id => currentIds.includes(id)));
+      }
     } catch (e) {
       console.error("Error fetching timesheets:", e);
       toast.error("Failed to load timesheets");
@@ -127,8 +135,8 @@ const Home = () => {
   };
 
   useEffect(() => {
-    fetchTimesheets();
-    const interval = setInterval(fetchTimesheets, 5000);
+    fetchTimesheets(false); // Initial load clears selection
+    const interval = setInterval(() => fetchTimesheets(true), 5000); // Auto-refresh preserves selection
     return () => clearInterval(interval);
   }, [searchFilters]);
 
