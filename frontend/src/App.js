@@ -103,11 +103,20 @@ const Home = () => {
   const [timesheets, setTimesheets] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [searchFilters, setSearchFilters] = useState({});
+  const [selectedTimesheets, setSelectedTimesheets] = useState([]);
 
   const fetchTimesheets = async () => {
     try {
-      const response = await axios.get(`${API}/timesheets`);
+      const params = new URLSearchParams();
+      if (searchFilters.search) params.append('search', searchFilters.search);
+      if (searchFilters.date_from) params.append('date_from', searchFilters.date_from);
+      if (searchFilters.date_to) params.append('date_to', searchFilters.date_to);
+      if (searchFilters.submission_status) params.append('submission_status', searchFilters.submission_status);
+      
+      const response = await axios.get(`${API}/timesheets?${params.toString()}`);
       setTimesheets(response.data);
+      setSelectedTimesheets([]); // Clear selection on refresh
     } catch (e) {
       console.error("Error fetching timesheets:", e);
       toast.error("Failed to load timesheets");
@@ -118,7 +127,7 @@ const Home = () => {
     fetchTimesheets();
     const interval = setInterval(fetchTimesheets, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [searchFilters]);
 
   const handleFileUpload = async (file) => {
     if (!file) return;
