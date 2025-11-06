@@ -1070,9 +1070,51 @@ async def upload_timesheet(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/timesheets", response_model=List[Timesheet])
-async def get_timesheets():
-    """Get all timesheets"""
-    timesheets = await db.timesheets.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+async def get_timesheets(
+    search: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    submission_status: Optional[str] = None,
+    limit: int = 1000,
+    skip: int = 0
+):
+    """Get all timesheets with optional search and filters
+    
+    Args:
+        search: Search by client name, patient ID, or employee name
+        date_from: Filter timesheets from this date (YYYY-MM-DD)
+        date_to: Filter timesheets to this date (YYYY-MM-DD)
+        submission_status: Filter by submission status (pending/submitted/failed)
+        limit: Maximum number of results to return
+        skip: Number of results to skip (for pagination)
+    """
+    query = {}
+    
+    # Add search filter
+    if search:
+        query["$or"] = [
+            {"client_name": {"$regex": search, "$options": "i"}},
+            {"patient_id": {"$regex": search, "$options": "i"}},
+            {"employee_entries.employee_name": {"$regex": search, "$options": "i"}}
+        ]
+    
+    # Add date range filter
+    if date_from or date_to:
+        date_query = {}
+        if date_from:
+            date_query["$gte"] = date_from
+        if date_to:
+            date_query["$lte"] = date_to
+        
+        # Search in time_entries for dates
+        if date_query:
+            query["employee_entries.time_entries.date"] = date_query
+    
+    # Add submission status filter
+    if submission_status:
+        query["submission_status"] = submission_status
+    
+    timesheets = await db.timesheets.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     
     # Convert ISO string timestamps back to datetime objects
     for ts in timesheets:
