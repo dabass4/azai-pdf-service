@@ -108,8 +108,9 @@ const Home = () => {
   const [dragActive, setDragActive] = useState(false);
   const [searchFilters, setSearchFilters] = useState({});
   const [selectedTimesheets, setSelectedTimesheets] = useState([]);
+  const autoRefreshRef = useRef(true); // Track if auto-refresh should preserve selection
 
-  const fetchTimesheets = async (preserveSelection = false) => {
+  const fetchTimesheets = useCallback(async (preserveSelection = false) => {
     try {
       const params = new URLSearchParams();
       if (searchFilters.search) params.append('search', searchFilters.search);
@@ -132,18 +133,20 @@ const Home = () => {
       console.error("Error fetching timesheets:", e);
       toast.error("Failed to load timesheets");
     }
-  };
+  }, [searchFilters]);
 
   // Initial load and filter changes
   useEffect(() => {
     fetchTimesheets(false); // Clear selection when filters change
-  }, [searchFilters]);
+  }, [searchFilters, fetchTimesheets]);
 
   // Auto-refresh with selection preservation
   useEffect(() => {
-    const interval = setInterval(() => fetchTimesheets(true), 5000);
+    const interval = setInterval(() => {
+      fetchTimesheets(true); // Always preserve selection on auto-refresh
+    }, 5000);
     return () => clearInterval(interval);
-  }, []); // Run only once on mount
+  }, [fetchTimesheets]);
 
   const handleFileUpload = async (file) => {
     if (!file) return;
