@@ -246,7 +246,8 @@ const Home = () => {
         ids: selectedTimesheets
       });
       toast.success(`${selectedTimesheets.length} timesheet(s) deleted`);
-      await fetchTimesheets();
+      setSelectedTimesheets([]); // Clear selection after deletion
+      await fetchTimesheets(false);
     } catch (e) {
       console.error("Bulk delete error:", e);
       toast.error("Failed to bulk delete timesheets");
