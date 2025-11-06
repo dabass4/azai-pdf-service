@@ -704,6 +704,7 @@ const Patients = () => {
             </CardContent>
           </Card>
         )}
+        */}
 
         {/* Search and Filters */}
         {!showForm && (
