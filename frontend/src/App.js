@@ -159,7 +159,7 @@ const Home = () => {
         toast.success("Timesheet uploaded and processing!");
       }
       
-      await fetchTimesheets();
+      await fetchTimesheets(false);
     } catch (e) {
       console.error("Upload error:", e);
       toast.error(e.response?.data?.detail || "Upload failed");
