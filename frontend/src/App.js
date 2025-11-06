@@ -389,12 +389,34 @@ const Home = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6" data-testid="timesheets-list">
-              {timesheets.map((timesheet) => (
-                <Card key={timesheet.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow" data-testid={`timesheet-${timesheet.id}`}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
+            <>
+              {/* Select All Checkbox */}
+              <div className="mb-3 flex items-center gap-2 px-2">
+                <Checkbox
+                  checked={selectedTimesheets.length === timesheets.length && timesheets.length > 0}
+                  onCheckedChange={handleSelectAll}
+                  id="select-all-timesheets"
+                />
+                <label htmlFor="select-all-timesheets" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Select All ({timesheets.length})
+                </label>
+              </div>
+              
+              <div className="grid gap-6" data-testid="timesheets-list">
+                {timesheets.map((timesheet) => (
+                  <Card key={timesheet.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow" data-testid={`timesheet-${timesheet.id}`}>
+                    <CardHeader>
+                      <div className="flex items-start gap-4">
+                        {/* Selection Checkbox */}
+                        <div className="pt-1">
+                          <Checkbox
+                            checked={selectedTimesheets.includes(timesheet.id)}
+                            onCheckedChange={(checked) => handleSelectTimesheet(timesheet.id, checked)}
+                          />
+                        </div>
+                        
+                        <div className="flex-1 flex items-start justify-between">
+                          <div className="flex items-center gap-3">
                         {getStatusIcon(timesheet.status, timesheet.sandata_status)}
                         <div>
                           <CardTitle className="text-lg">{timesheet.filename}</CardTitle>
