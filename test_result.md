@@ -279,12 +279,16 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Search and filter system for patients, employees, timesheets"
+    - "Bulk operations (export, mark complete, delete)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+  - agent: "main"
+    message: "Implementing Phase 1 & 2 UX improvements: (1) Search & Filter System - Added backend search/filter endpoints for patients, employees, timesheets with query parameters (search, is_complete, date_range, submission_status). Created reusable SearchFilter component with instant debounced search. (2) Bulk Operations - Added backend endpoints for CSV export (all Sandata fields), bulk update, and bulk delete. Created BulkActionToolbar component. Updated Patients page with search, filters, selection checkboxes, and bulk actions. Next: Update Employees page and main timesheets page, then implement Phase 3 (multi-step wizard forms)."
   - agent: "main"
     message: "Implemented comprehensive Ohio Medicaid EVV compliance system. This includes extended data models, EVV utilities, export/submission modules, mock aggregator, and complete UI. Ready for backend testing to verify API endpoints, export functionality, and submission workflow."
   - agent: "testing"
