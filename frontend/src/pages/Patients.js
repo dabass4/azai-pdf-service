@@ -125,17 +125,15 @@ const Patients = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (data) => {
     // Validate Medicaid number (12 characters max)
-    if (formData.medicaid_number.length > 12) {
+    if (data.medicaid_number && data.medicaid_number.length > 12) {
       toast.error("Medicaid number cannot exceed 12 characters");
       return;
     }
     
     // Validate NPI (10 digits)
-    if (formData.physician_npi && !/^\d{10}$/.test(formData.physician_npi)) {
+    if (data.physician_npi && !/^\d{10}$/.test(data.physician_npi)) {
       toast.error("NPI must be exactly 10 digits");
       return;
     }
@@ -143,7 +141,7 @@ const Patients = () => {
     try {
       // Mark as complete when manually saving
       const submitData = {
-        ...formData,
+        ...data,
         is_complete: true,
         auto_created_from_timesheet: false
       };
