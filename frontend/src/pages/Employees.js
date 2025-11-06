@@ -792,21 +792,23 @@ const Employees = () => {
                             {!employee.certifications && !employee.license_number && <p className="text-gray-400 text-xs italic">None listed</p>}
                           </div>
                         </div>
+                          </div>
+                          
+                          <div className="flex gap-2 ml-4">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(employee)} data-testid={`edit-employee-${employee.id}`}>
+                              <Edit className="text-blue-600" size={18} />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(employee.id)} data-testid={`delete-employee-${employee.id}`}>
+                              <Trash2 className="text-red-500" size={18} />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="flex gap-2 ml-4">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(employee)} data-testid={`edit-employee-${employee.id}`}>
-                          <Edit className="text-blue-600" size={18} />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(employee.id)} data-testid={`delete-employee-${employee.id}`}>
-                          <Trash2 className="text-red-500" size={18} />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
