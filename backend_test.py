@@ -1377,6 +1377,535 @@ Signature: [Signed]"""
         
         return True
 
+    def test_search_filter_and_bulk_operations(self):
+        """Test new search, filter, and bulk operation endpoints"""
+        print("\n🔍 Starting Search, Filter, and Bulk Operations Tests")
+        print("=" * 60)
+        
+        # Create test data first
+        patient_ids = self.create_test_patients_for_search()
+        employee_ids = self.create_test_employees_for_search()
+        timesheet_ids = self.create_test_timesheets_for_search()
+        
+        # Test search and filter endpoints
+        self.test_patients_search_and_filter()
+        self.test_employees_search_and_filter()
+        self.test_timesheets_search_and_filter()
+        
+        # Test export endpoint
+        self.test_timesheets_csv_export()
+        
+        # Test bulk update endpoints
+        if patient_ids:
+            self.test_patients_bulk_update(patient_ids[:2])  # Use first 2 patients
+        if employee_ids:
+            self.test_employees_bulk_update(employee_ids[:2])  # Use first 2 employees
+        
+        # Test bulk delete endpoints
+        if patient_ids:
+            self.test_patients_bulk_delete([patient_ids[-1]])  # Delete last patient
+        if employee_ids:
+            self.test_employees_bulk_delete([employee_ids[-1]])  # Delete last employee
+        if timesheet_ids:
+            self.test_timesheets_bulk_delete([timesheet_ids[-1]])  # Delete last timesheet
+        
+        return True
+    
+    def create_test_patients_for_search(self):
+        """Create test patients for search/filter testing"""
+        patient_ids = []
+        test_patients = [
+            {
+                "first_name": "Alice",
+                "last_name": "Johnson",
+                "medicaid_number": "111111111111",
+                "is_complete": True,
+                "address_city": "Columbus",
+                "address_state": "OH"
+            },
+            {
+                "first_name": "Bob",
+                "last_name": "Smith",
+                "medicaid_number": "222222222222",
+                "is_complete": False,
+                "address_city": "Cleveland",
+                "address_state": "OH"
+            },
+            {
+                "first_name": "Carol",
+                "last_name": "Williams",
+                "medicaid_number": "333333333333",
+                "is_complete": True,
+                "address_city": "Cincinnati",
+                "address_state": "OH"
+            }
+        ]
+        
+        for patient_data in test_patients:
+            try:
+                response = requests.post(f"{self.api_url}/patients", json=patient_data, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    patient_ids.append(data.get('id'))
+            except Exception as e:
+                print(f"Error creating test patient: {e}")
+        
+        return patient_ids
+    
+    def create_test_employees_for_search(self):
+        """Create test employees for search/filter testing"""
+        employee_ids = []
+        test_employees = [
+            {
+                "first_name": "David",
+                "last_name": "Brown",
+                "employee_id": "EMP001",
+                "is_complete": True,
+                "job_title": "Home Health Aide",
+                "employment_status": "Full-time"
+            },
+            {
+                "first_name": "Emma",
+                "last_name": "Davis",
+                "employee_id": "EMP002",
+                "is_complete": False,
+                "job_title": "Personal Care Assistant",
+                "employment_status": "Part-time"
+            },
+            {
+                "first_name": "Frank",
+                "last_name": "Miller",
+                "employee_id": "EMP003",
+                "is_complete": True,
+                "job_title": "Nurse Aide",
+                "employment_status": "Contract"
+            }
+        ]
+        
+        for employee_data in test_employees:
+            try:
+                response = requests.post(f"{self.api_url}/employees", json=employee_data, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    employee_ids.append(data.get('id'))
+            except Exception as e:
+                print(f"Error creating test employee: {e}")
+        
+        return employee_ids
+    
+    def create_test_timesheets_for_search(self):
+        """Create test timesheets for search/filter testing"""
+        # Note: In a real scenario, timesheets are created via file upload
+        # For testing, we'll check existing timesheets or create mock data
+        try:
+            response = requests.get(f"{self.api_url}/timesheets", timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                return [ts.get('id') for ts in data if ts.get('id')]
+        except Exception as e:
+            print(f"Error fetching existing timesheets: {e}")
+        
+        return []
+    
+    def test_patients_search_and_filter(self):
+        """Test GET /api/patients with search and filter parameters"""
+        try:
+            # Test 1: Basic search by name
+            response = requests.get(f"{self.api_url}/patients?search=Alice", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                found_alice = any(p.get('first_name') == 'Alice' for p in data)
+                success = success and found_alice
+                details = f"Status: {response.status_code}, Found Alice: {found_alice}, Count: {len(data)}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Patients Search by Name", success, details)
+            
+            # Test 2: Filter by completion status
+            response = requests.get(f"{self.api_url}/patients?is_complete=true", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                all_complete = all(p.get('is_complete', False) for p in data)
+                success = success and (len(data) == 0 or all_complete)
+                details = f"Status: {response.status_code}, All complete: {all_complete}, Count: {len(data)}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Patients Filter by Complete Status", success, details)
+            
+            # Test 3: Search by medicaid number
+            response = requests.get(f"{self.api_url}/patients?search=111111", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                found_medicaid = any('111111' in p.get('medicaid_number', '') for p in data)
+                details = f"Status: {response.status_code}, Found medicaid: {found_medicaid}, Count: {len(data)}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Patients Search by Medicaid Number", success, details)
+            
+            # Test 4: Pagination
+            response = requests.get(f"{self.api_url}/patients?limit=2&skip=0", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list) and len(data) <= 2
+                details = f"Status: {response.status_code}, Count: {len(data)} (limit=2)"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Patients Pagination", success, details)
+            
+            return True
+        except Exception as e:
+            self.log_test("Patients Search and Filter", False, str(e))
+            return False
+    
+    def test_employees_search_and_filter(self):
+        """Test GET /api/employees with search and filter parameters"""
+        try:
+            # Test 1: Basic search by name
+            response = requests.get(f"{self.api_url}/employees?search=David", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                found_david = any(e.get('first_name') == 'David' for e in data)
+                success = success and found_david
+                details = f"Status: {response.status_code}, Found David: {found_david}, Count: {len(data)}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Employees Search by Name", success, details)
+            
+            # Test 2: Filter by completion status
+            response = requests.get(f"{self.api_url}/employees?is_complete=false", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                all_incomplete = all(not e.get('is_complete', True) for e in data)
+                success = success and (len(data) == 0 or all_incomplete)
+                details = f"Status: {response.status_code}, All incomplete: {all_incomplete}, Count: {len(data)}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Employees Filter by Incomplete Status", success, details)
+            
+            # Test 3: Search by employee ID
+            response = requests.get(f"{self.api_url}/employees?search=EMP001", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                found_emp_id = any('EMP001' in str(e.get('employee_id', '')) for e in data)
+                details = f"Status: {response.status_code}, Found EMP001: {found_emp_id}, Count: {len(data)}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Employees Search by Employee ID", success, details)
+            
+            # Test 4: Pagination
+            response = requests.get(f"{self.api_url}/employees?limit=1&skip=1", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list) and len(data) <= 1
+                details = f"Status: {response.status_code}, Count: {len(data)} (limit=1, skip=1)"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Employees Pagination", success, details)
+            
+            return True
+        except Exception as e:
+            self.log_test("Employees Search and Filter", False, str(e))
+            return False
+    
+    def test_timesheets_search_and_filter(self):
+        """Test GET /api/timesheets with search and filter parameters"""
+        try:
+            # Test 1: Basic search
+            response = requests.get(f"{self.api_url}/timesheets?search=test", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                details = f"Status: {response.status_code}, Count: {len(data)}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Timesheets Search", success, details)
+            
+            # Test 2: Date range filter
+            response = requests.get(f"{self.api_url}/timesheets?date_from=2024-01-01&date_to=2024-12-31", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                details = f"Status: {response.status_code}, Count: {len(data)} (date range)"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Timesheets Date Range Filter", success, details)
+            
+            # Test 3: Submission status filter
+            response = requests.get(f"{self.api_url}/timesheets?submission_status=pending", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+                details = f"Status: {response.status_code}, Count: {len(data)} (pending status)"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Timesheets Submission Status Filter", success, details)
+            
+            # Test 4: Pagination
+            response = requests.get(f"{self.api_url}/timesheets?limit=5&skip=0", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                success = isinstance(data, list) and len(data) <= 5
+                details = f"Status: {response.status_code}, Count: {len(data)} (limit=5)"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Timesheets Pagination", success, details)
+            
+            return True
+        except Exception as e:
+            self.log_test("Timesheets Search and Filter", False, str(e))
+            return False
+    
+    def test_timesheets_csv_export(self):
+        """Test POST /api/timesheets/export for CSV export"""
+        try:
+            # Test CSV export with filters
+            export_data = {
+                "format": "csv",
+                "search": "",
+                "date_from": "2024-01-01",
+                "date_to": "2024-12-31"
+            }
+            
+            response = requests.post(f"{self.api_url}/timesheets/export", 
+                                   json=export_data, timeout=30)
+            success = response.status_code == 200
+            
+            if success:
+                # Check if response is CSV format
+                content_type = response.headers.get('content-type', '')
+                is_csv = 'text/csv' in content_type
+                
+                # Check if content-disposition header is present
+                has_filename = 'Content-Disposition' in response.headers
+                
+                # Check if response has content
+                has_content = len(response.content) > 0
+                
+                success = is_csv and has_filename and has_content
+                details = f"Status: {response.status_code}, CSV: {is_csv}, Filename: {has_filename}, Size: {len(response.content)} bytes"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Timesheets CSV Export", success, details)
+            
+            # Test export with search filter
+            export_data_search = {
+                "format": "csv",
+                "search": "test"
+            }
+            
+            response = requests.post(f"{self.api_url}/timesheets/export", 
+                                   json=export_data_search, timeout=30)
+            success = response.status_code == 200
+            
+            if success:
+                has_content = len(response.content) > 0
+                details = f"Status: {response.status_code}, Size: {len(response.content)} bytes (with search)"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Timesheets CSV Export with Search", success, details)
+            
+            return True
+        except Exception as e:
+            self.log_test("Timesheets CSV Export", False, str(e))
+            return False
+    
+    def test_patients_bulk_update(self, patient_ids):
+        """Test POST /api/patients/bulk-update"""
+        if not patient_ids:
+            self.log_test("Patients Bulk Update", False, "No patient IDs provided")
+            return False
+        
+        try:
+            bulk_update_data = {
+                "ids": patient_ids,
+                "updates": {
+                    "is_complete": True,
+                    "address_city": "Updated City"
+                }
+            }
+            
+            response = requests.post(f"{self.api_url}/patients/bulk-update", 
+                                   json=bulk_update_data, timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                has_required_fields = all(key in data for key in ['status', 'modified_count', 'matched_count'])
+                success = success and has_required_fields and data.get('status') == 'success'
+                details = f"Status: {response.status_code}, Modified: {data.get('modified_count')}, Matched: {data.get('matched_count')}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Patients Bulk Update", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Patients Bulk Update", False, str(e))
+            return False
+    
+    def test_employees_bulk_update(self, employee_ids):
+        """Test POST /api/employees/bulk-update"""
+        if not employee_ids:
+            self.log_test("Employees Bulk Update", False, "No employee IDs provided")
+            return False
+        
+        try:
+            bulk_update_data = {
+                "ids": employee_ids,
+                "updates": {
+                    "is_complete": True,
+                    "employment_status": "Active"
+                }
+            }
+            
+            response = requests.post(f"{self.api_employees/bulk-update", 
+                                   json=bulk_update_data, timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                has_required_fields = all(key in data for key in ['status', 'modified_count', 'matched_count'])
+                success = success and has_required_fields and data.get('status') == 'success'
+                details = f"Status: {response.status_code}, Modified: {data.get('modified_count')}, Matched: {data.get('matched_count')}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Employees Bulk Update", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Employees Bulk Update", False, str(e))
+            return False
+    
+    def test_patients_bulk_delete(self, patient_ids):
+        """Test POST /api/patients/bulk-delete"""
+        if not patient_ids:
+            self.log_test("Patients Bulk Delete", False, "No patient IDs provided")
+            return False
+        
+        try:
+            bulk_delete_data = {
+                "ids": patient_ids
+            }
+            
+            response = requests.post(f"{self.api_url}/patients/bulk-delete", 
+                                   json=bulk_delete_data, timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                has_required_fields = all(key in data for key in ['status', 'deleted_count'])
+                success = success and has_required_fields and data.get('status') == 'success'
+                details = f"Status: {response.status_code}, Deleted: {data.get('deleted_count')}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Patients Bulk Delete", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Patients Bulk Delete", False, str(e))
+            return False
+    
+    def test_employees_bulk_delete(self, employee_ids):
+        """Test POST /api/employees/bulk-delete"""
+        if not employee_ids:
+            self.log_test("Employees Bulk Delete", False, "No employee IDs provided")
+            return False
+        
+        try:
+            bulk_delete_data = {
+                "ids": employee_ids
+            }
+            
+            response = requests.post(f"{self.api_url}/employees/bulk-delete", 
+                                   json=bulk_delete_data, timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                has_required_fields = all(key in data for key in ['status', 'deleted_count'])
+                success = success and has_required_fields and data.get('status') == 'success'
+                details = f"Status: {response.status_code}, Deleted: {data.get('deleted_count')}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Employees Bulk Delete", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Employees Bulk Delete", False, str(e))
+            return False
+    
+    def test_timesheets_bulk_delete(self, timesheet_ids):
+        """Test POST /api/timesheets/bulk-delete"""
+        if not timesheet_ids:
+            self.log_test("Timesheets Bulk Delete", False, "No timesheet IDs provided")
+            return False
+        
+        try:
+            bulk_delete_data = {
+                "ids": timesheet_ids
+            }
+            
+            response = requests.post(f"{self.api_url}/timesheets/bulk-delete", 
+                                   json=bulk_delete_data, timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                has_required_fields = all(key in data for key in ['status', 'deleted_count'])
+                success = success and has_required_fields and data.get('status') == 'success'
+                details = f"Status: {response.status_code}, Deleted: {data.get('deleted_count')}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Timesheets Bulk Delete", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Timesheets Bulk Delete", False, str(e))
+            return False
+
     def test_time_calculation_and_units(self):
         """Test time normalization and unit calculation functionality"""
         print("\n⏰ Starting Time Calculation and Unit Conversion Tests")
