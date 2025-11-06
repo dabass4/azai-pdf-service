@@ -1454,6 +1454,81 @@ async def bulk_delete_timesheets(request: BulkDeleteRequest):
         logger.error(f"Bulk delete error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/timesheets/bulk-submit-sandata")
+async def bulk_submit_sandata(request: BulkDeleteRequest):
+    """Bulk submit multiple timesheets to Sandata"""
+    try:
+        results = {
+            "success": [],
+            "failed": []
+        }
+        
+        for timesheet_id in request.ids:
+            try:
+                # Get the timesheet
+                timesheet_doc = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+                
+                if not timesheet_doc:
+                    results["failed"].append({
+                        "id": timesheet_id,
+                        "error": "Timesheet not found"
+                    })
+                    continue
+                
+                # Convert to Timesheet object
+                if isinstance(timesheet_doc.get('created_at'), str):
+                    timesheet_doc['created_at'] = datetime.fromisoformat(timesheet_doc['created_at'])
+                if isinstance(timesheet_doc.get('updated_at'), str):
+                    timesheet_doc['updated_at'] = datetime.fromisoformat(timesheet_doc['updated_at'])
+                
+                timesheet = Timesheet(**timesheet_doc)
+                
+                # Submit to Sandata
+                submission_result = await submit_to_sandata(timesheet)
+                
+                # Update timesheet status
+                if submission_result["status"] == "success":
+                    await db.timesheets.update_one(
+                        {"id": timesheet_id},
+                        {"$set": {
+                            "sandata_status": "submitted",
+                            "submitted_at": datetime.now(timezone.utc).isoformat(),
+                            "error_message": None
+                        }}
+                    )
+                    results["success"].append(timesheet_id)
+                else:
+                    await db.timesheets.update_one(
+                        {"id": timesheet_id},
+                        {"$set": {
+                            "sandata_status": "blocked" if "incomplete" in submission_result.get("message", "").lower() else "pending",
+                            "error_message": submission_result.get("message", "Submission failed")
+                        }}
+                    )
+                    results["failed"].append({
+                        "id": timesheet_id,
+                        "error": submission_result.get("message", "Submission failed")
+                    })
+                    
+            except Exception as e:
+                logger.error(f"Error submitting timesheet {timesheet_id}: {e}")
+                results["failed"].append({
+                    "id": timesheet_id,
+                    "error": str(e)
+                })
+        
+        logger.info(f"Bulk Sandata submission: {len(results['success'])} succeeded, {len(results['failed'])} failed")
+        
+        return {
+            "status": "completed",
+            "success_count": len(results["success"]),
+            "failed_count": len(results["failed"]),
+            "results": results
+        }
+    except Exception as e:
+        logger.error(f"Bulk Sandata submission error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Patient Profile Endpoints
 @api_router.post("/patients", response_model=PatientProfile)
 async def create_patient(patient: PatientProfile):
