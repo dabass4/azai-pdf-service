@@ -457,7 +457,26 @@ const Patients = () => {
 
         {/* Patient Form Modal */}
         {showForm && (
-          <Card className="mb-8 border-2 border-blue-200 shadow-lg" data-testid="patient-form">
+          <div className="mb-8" data-testid="patient-form">
+            <MultiStepForm
+              steps={formSteps}
+              formData={formData}
+              onFormDataChange={setFormData}
+              onSubmit={handleSubmit}
+              onCancel={() => {
+                setShowForm(false);
+                setEditingPatient(null);
+                resetForm();
+              }}
+              submitLabel={editingPatient ? "Update Patient" : "Create Patient"}
+              storageKey="patient-form-draft"
+            />
+          </div>
+        )}
+
+        {/* Old form backup - remove this after testing
+        {false && showForm && (
+          <Card className="mb-8 border-2 border-blue-200 shadow-lg" data-testid="patient-form-old">
             <CardHeader className="bg-blue-50">
               <div className="flex justify-between items-center">
                 <CardTitle>{editingPatient ? "Edit Patient" : "New Patient"}</CardTitle>
