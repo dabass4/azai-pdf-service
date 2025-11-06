@@ -1233,6 +1233,227 @@ async def resubmit_timesheet(timesheet_id: str):
         logger.error(f"Resubmission error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Bulk Operations Endpoints
+
+class BulkUpdateRequest(BaseModel):
+    """Request model for bulk updates"""
+    ids: List[str]
+    updates: Dict[str, Any]
+
+class BulkDeleteRequest(BaseModel):
+    """Request model for bulk deletes"""
+    ids: List[str]
+
+@api_router.post("/timesheets/export")
+async def export_timesheets(
+    format: str = "csv",
+    search: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    submission_status: Optional[str] = None
+):
+    """Export timesheets to CSV/Excel format with all Sandata-required fields
+    
+    Args:
+        format: Export format ('csv' or 'excel')
+        search: Search filter
+        date_from: Start date filter
+        date_to: End date filter
+        submission_status: Submission status filter
+    """
+    # Build query using same logic as get_timesheets
+    query = {}
+    
+    if search:
+        query["$or"] = [
+            {"client_name": {"$regex": search, "$options": "i"}},
+            {"patient_id": {"$regex": search, "$options": "i"}},
+            {"employee_entries.employee_name": {"$regex": search, "$options": "i"}}
+        ]
+    
+    if date_from or date_to:
+        date_query = {}
+        if date_from:
+            date_query["$gte"] = date_from
+        if date_to:
+            date_query["$lte"] = date_to
+        if date_query:
+            query["employee_entries.time_entries.date"] = date_query
+    
+    if submission_status:
+        query["submission_status"] = submission_status
+    
+    # Fetch timesheets
+    timesheets = await db.timesheets.find(query, {"_id": 0}).sort("created_at", -1).to_list(10000)
+    
+    # Prepare CSV data with all Sandata-required fields
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # CSV Headers - All Sandata required fields
+    headers = [
+        "Timesheet ID", "Patient Name", "Patient ID", "Medicaid Number",
+        "Employee Name", "Employee ID", "Service Code", "Date",
+        "Time In", "Time Out", "Hours Worked", "Units", "Signature",
+        "Submission Status", "Created At", "Submitted At"
+    ]
+    writer.writerow(headers)
+    
+    # Write data rows
+    for ts in timesheets:
+        for emp_entry in ts.get("employee_entries", []):
+            for time_entry in emp_entry.get("time_entries", []):
+                row = [
+                    ts.get("id", ""),
+                    ts.get("client_name", ""),
+                    ts.get("patient_id", ""),
+                    ts.get("medicaid_number", ""),
+                    emp_entry.get("employee_name", ""),
+                    emp_entry.get("employee_id", ""),
+                    emp_entry.get("service_code", ""),
+                    time_entry.get("date", ""),
+                    time_entry.get("time_in", ""),
+                    time_entry.get("time_out", ""),
+                    time_entry.get("hours_worked", ""),
+                    time_entry.get("units", ""),
+                    emp_entry.get("signature", ""),
+                    ts.get("submission_status", "pending"),
+                    ts.get("created_at", ""),
+                    ts.get("submitted_at", "")
+                ]
+                writer.writerow(row)
+    
+    # Prepare response
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=timesheets_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        }
+    )
+
+@api_router.post("/patients/bulk-update")
+async def bulk_update_patients(request: BulkUpdateRequest):
+    """Bulk update multiple patient profiles
+    
+    Common use case: Mark multiple profiles as complete
+    """
+    try:
+        # Validate IDs exist
+        count = await db.patients.count_documents({"id": {"$in": request.ids}})
+        
+        if count == 0:
+            raise HTTPException(status_code=404, detail="No patients found with provided IDs")
+        
+        # Add updated_at timestamp
+        updates = request.updates.copy()
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        
+        # Perform bulk update
+        result = await db.patients.update_many(
+            {"id": {"$in": request.ids}},
+            {"$set": updates}
+        )
+        
+        logger.info(f"Bulk updated {result.modified_count} patients")
+        
+        return {
+            "status": "success",
+            "modified_count": result.modified_count,
+            "matched_count": result.matched_count
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Bulk update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/employees/bulk-update")
+async def bulk_update_employees(request: BulkUpdateRequest):
+    """Bulk update multiple employee profiles
+    
+    Common use case: Mark multiple profiles as complete
+    """
+    try:
+        # Validate IDs exist
+        count = await db.employees.count_documents({"id": {"$in": request.ids}})
+        
+        if count == 0:
+            raise HTTPException(status_code=404, detail="No employees found with provided IDs")
+        
+        # Add updated_at timestamp
+        updates = request.updates.copy()
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        
+        # Perform bulk update
+        result = await db.employees.update_many(
+            {"id": {"$in": request.ids}},
+            {"$set": updates}
+        )
+        
+        logger.info(f"Bulk updated {result.modified_count} employees")
+        
+        return {
+            "status": "success",
+            "modified_count": result.modified_count,
+            "matched_count": result.matched_count
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Bulk update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/patients/bulk-delete")
+async def bulk_delete_patients(request: BulkDeleteRequest):
+    """Bulk delete multiple patient profiles"""
+    try:
+        result = await db.patients.delete_many({"id": {"$in": request.ids}})
+        
+        logger.info(f"Bulk deleted {result.deleted_count} patients")
+        
+        return {
+            "status": "success",
+            "deleted_count": result.deleted_count
+        }
+    except Exception as e:
+        logger.error(f"Bulk delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/employees/bulk-delete")
+async def bulk_delete_employees(request: BulkDeleteRequest):
+    """Bulk delete multiple employee profiles"""
+    try:
+        result = await db.employees.delete_many({"id": {"$in": request.ids}})
+        
+        logger.info(f"Bulk deleted {result.deleted_count} employees")
+        
+        return {
+            "status": "success",
+            "deleted_count": result.deleted_count
+        }
+    except Exception as e:
+        logger.error(f"Bulk delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/timesheets/bulk-delete")
+async def bulk_delete_timesheets(request: BulkDeleteRequest):
+    """Bulk delete multiple timesheets"""
+    try:
+        result = await db.timesheets.delete_many({"id": {"$in": request.ids}})
+        
+        logger.info(f"Bulk deleted {result.deleted_count} timesheets")
+        
+        return {
+            "status": "success",
+            "deleted_count": result.deleted_count
+        }
+    except Exception as e:
+        logger.error(f"Bulk delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Patient Profile Endpoints
 @api_router.post("/patients", response_model=PatientProfile)
 async def create_patient(patient: PatientProfile):
