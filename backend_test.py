@@ -2474,7 +2474,22 @@ Signature: [Signed]"""
 def main():
     tester = TimesheetAPITester()
     
-    if len(sys.argv) > 1 and sys.argv[1] == "time_calc":
+    if len(sys.argv) > 1 and sys.argv[1] == "search_bulk":
+        # Run search, filter, and bulk operations tests
+        print("🔍 Testing Search, Filter, and Bulk Operations")
+        print("Testing new endpoints for search/filter and bulk operations")
+        print("=" * 80)
+        
+        # Test basic connectivity first
+        if not tester.test_root_endpoint():
+            print("❌ Root endpoint failed - stopping tests")
+            return 1
+        
+        # Run the new search, filter, and bulk operations tests
+        tester.test_search_filter_and_bulk_operations()
+        
+        return tester.get_results()
+    elif len(sys.argv) > 1 and sys.argv[1] == "time_calc":
         # Run time calculation and unit conversion tests
         tester.test_time_calculation_and_units()
         return tester.get_results()
