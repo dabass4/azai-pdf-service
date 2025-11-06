@@ -134,11 +134,16 @@ const Home = () => {
     }
   };
 
+  // Initial load and filter changes
   useEffect(() => {
-    fetchTimesheets(false); // Initial load clears selection
-    const interval = setInterval(() => fetchTimesheets(true), 5000); // Auto-refresh preserves selection
-    return () => clearInterval(interval);
+    fetchTimesheets(false); // Clear selection when filters change
   }, [searchFilters]);
+
+  // Auto-refresh with selection preservation
+  useEffect(() => {
+    const interval = setInterval(() => fetchTimesheets(true), 5000);
+    return () => clearInterval(interval);
+  }, []); // Run only once on mount
 
   const handleFileUpload = async (file) => {
     if (!file) return;
