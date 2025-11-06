@@ -137,7 +137,7 @@ const Home = () => {
 
   // Initial load and filter changes
   useEffect(() => {
-    fetchTimesheets(false); // Clear selection when filters change
+    fetchTimesheets(true); // Preserve selection, handleSearch already clears it
   }, [searchFilters, fetchTimesheets]);
 
   // Auto-refresh with selection preservation
