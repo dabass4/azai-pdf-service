@@ -653,6 +653,49 @@ const Employees = () => {
           </Card>
         )}
 
+        {/* Search and Filters */}
+        {!showForm && (
+          <div className="mb-6">
+            <SearchFilter
+              onSearch={handleSearch}
+              placeholder="Search by name or employee ID..."
+              filters={{
+                is_complete: {
+                  type: "select",
+                  label: "Status",
+                  placeholder: "Filter by status",
+                  options: [
+                    { value: "true", label: "Complete" },
+                    { value: "false", label: "Incomplete" }
+                  ]
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* Bulk Action Toolbar */}
+        {!showForm && (
+          <BulkActionToolbar
+            selectedCount={selectedEmployees.length}
+            onClearSelection={() => setSelectedEmployees([])}
+            actions={[
+              {
+                label: "Mark Complete",
+                icon: CheckCircle,
+                onClick: handleBulkMarkComplete,
+                variant: "default"
+              },
+              {
+                label: "Delete",
+                icon: Trash2,
+                onClick: handleBulkDelete,
+                variant: "destructive"
+              }
+            ]}
+          />
+        )}
+
         {/* Employees List */}
         <div>
           {employees.length === 0 ? (
