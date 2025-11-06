@@ -219,6 +219,217 @@ const Patients = () => {
     });
   };
 
+  // Multi-step form configuration
+  const formSteps = [
+    {
+      title: "Step 1: Basic Information",
+      description: "Enter patient's personal and identification details",
+      requiredFields: ["first_name", "last_name", "sex", "date_of_birth", "medicaid_number"],
+      render: ({ formData, onFormDataChange, errors }) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="first_name">First Name *</Label>
+            <Input
+              id="first_name"
+              value={formData.first_name || ""}
+              onChange={(e) => onFormDataChange({...formData, first_name: e.target.value})}
+              className={errors.first_name ? "border-red-500" : ""}
+            />
+            {errors.first_name && <p className="text-xs text-red-500 mt-1">{errors.first_name}</p>}
+          </div>
+          <div>
+            <Label htmlFor="last_name">Last Name *</Label>
+            <Input
+              id="last_name"
+              value={formData.last_name || ""}
+              onChange={(e) => onFormDataChange({...formData, last_name: e.target.value})}
+              className={errors.last_name ? "border-red-500" : ""}
+            />
+            {errors.last_name && <p className="text-xs text-red-500 mt-1">{errors.last_name}</p>}
+          </div>
+          <div>
+            <Label htmlFor="sex">Sex *</Label>
+            <Select 
+              value={formData.sex || ""} 
+              onValueChange={(value) => onFormDataChange({...formData, sex: value})}
+            >
+              <SelectTrigger className={errors.sex ? "border-red-500" : ""}>
+                <SelectValue placeholder="Select sex" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Male">Male</SelectItem>
+                <SelectItem value="Female">Female</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.sex && <p className="text-xs text-red-500 mt-1">{errors.sex}</p>}
+          </div>
+          <div>
+            <Label htmlFor="date_of_birth">Date of Birth *</Label>
+            <Input
+              id="date_of_birth"
+              type="date"
+              value={formData.date_of_birth || ""}
+              onChange={(e) => onFormDataChange({...formData, date_of_birth: e.target.value})}
+              className={errors.date_of_birth ? "border-red-500" : ""}
+            />
+            {errors.date_of_birth && <p className="text-xs text-red-500 mt-1">{errors.date_of_birth}</p>}
+          </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="medicaid_number">Medicaid Number (12 chars max) *</Label>
+            <Input
+              id="medicaid_number"
+              value={formData.medicaid_number || ""}
+              onChange={(e) => onFormDataChange({...formData, medicaid_number: e.target.value})}
+              maxLength="12"
+              className={`font-mono ${errors.medicaid_number ? "border-red-500" : ""}`}
+            />
+            <p className="text-xs text-gray-500 mt-1">{(formData.medicaid_number || "").length}/12 characters</p>
+            {errors.medicaid_number && <p className="text-xs text-red-500 mt-1">{errors.medicaid_number}</p>}
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Step 2: Address & Medical Information",
+      description: "Enter patient's address and medical details",
+      requiredFields: ["address_street", "address_city", "address_state", "address_zip", "prior_auth_number", "icd10_code"],
+      render: ({ formData, onFormDataChange, errors }) => (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Address</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label htmlFor="address_street">Street Address *</Label>
+                <Input
+                  id="address_street"
+                  value={formData.address_street || ""}
+                  onChange={(e) => onFormDataChange({...formData, address_street: e.target.value})}
+                  className={errors.address_street ? "border-red-500" : ""}
+                />
+                {errors.address_street && <p className="text-xs text-red-500 mt-1">{errors.address_street}</p>}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="address_city">City *</Label>
+                  <Input
+                    id="address_city"
+                    value={formData.address_city || ""}
+                    onChange={(e) => onFormDataChange({...formData, address_city: e.target.value})}
+                    className={errors.address_city ? "border-red-500" : ""}
+                  />
+                  {errors.address_city && <p className="text-xs text-red-500 mt-1">{errors.address_city}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="address_state">State *</Label>
+                  <Select 
+                    value={formData.address_state || ""} 
+                    onValueChange={(value) => onFormDataChange({...formData, address_state: value})}
+                  >
+                    <SelectTrigger className={errors.address_state ? "border-red-500" : ""}>
+                      <SelectValue placeholder="State" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {US_STATES.map(state => (
+                        <SelectItem key={state} value={state}>{state}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.address_state && <p className="text-xs text-red-500 mt-1">{errors.address_state}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="address_zip">ZIP Code *</Label>
+                  <Input
+                    id="address_zip"
+                    value={formData.address_zip || ""}
+                    onChange={(e) => onFormDataChange({...formData, address_zip: e.target.value})}
+                    maxLength="10"
+                    className={errors.address_zip ? "border-red-500" : ""}
+                  />
+                  {errors.address_zip && <p className="text-xs text-red-500 mt-1">{errors.address_zip}</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Medical Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="prior_auth_number">Prior Authorization Number *</Label>
+                <Input
+                  id="prior_auth_number"
+                  value={formData.prior_auth_number || ""}
+                  onChange={(e) => onFormDataChange({...formData, prior_auth_number: e.target.value})}
+                  className={errors.prior_auth_number ? "border-red-500" : ""}
+                />
+                {errors.prior_auth_number && <p className="text-xs text-red-500 mt-1">{errors.prior_auth_number}</p>}
+              </div>
+              <div>
+                <Label htmlFor="icd10_code">ICD-10 Code *</Label>
+                <Input
+                  id="icd10_code"
+                  value={formData.icd10_code || ""}
+                  onChange={(e) => onFormDataChange({...formData, icd10_code: e.target.value})}
+                  placeholder="e.g., Z99.89"
+                  className={errors.icd10_code ? "border-red-500" : ""}
+                />
+                <a href="https://www.icd10data.com" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline mt-1 block">
+                  Search ICD-10 codes →
+                </a>
+                {errors.icd10_code && <p className="text-xs text-red-500 mt-1">{errors.icd10_code}</p>}
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="icd10_description">ICD-10 Description (Optional)</Label>
+                <Input
+                  id="icd10_description"
+                  value={formData.icd10_description || ""}
+                  onChange={(e) => onFormDataChange({...formData, icd10_description: e.target.value})}
+                  placeholder="Optional description"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Step 3: Physician Information",
+      description: "Enter the attending physician's details",
+      requiredFields: ["physician_name", "physician_npi"],
+      render: ({ formData, onFormDataChange, errors }) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="physician_name">Physician Name *</Label>
+            <Input
+              id="physician_name"
+              value={formData.physician_name || ""}
+              onChange={(e) => onFormDataChange({...formData, physician_name: e.target.value})}
+              className={errors.physician_name ? "border-red-500" : ""}
+            />
+            {errors.physician_name && <p className="text-xs text-red-500 mt-1">{errors.physician_name}</p>}
+          </div>
+          <div>
+            <Label htmlFor="physician_npi">NPI Number (10 digits) *</Label>
+            <Input
+              id="physician_npi"
+              value={formData.physician_npi || ""}
+              onChange={(e) => onFormDataChange({...formData, physician_npi: e.target.value})}
+              maxLength="10"
+              pattern="\d{10}"
+              placeholder="1234567890"
+              className={`font-mono ${errors.physician_npi ? "border-red-500" : ""}`}
+            />
+            <a href="https://npiregistry.cms.hhs.gov" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline mt-1 block">
+              Verify NPI via NPPES →
+            </a>
+            {errors.physician_npi && <p className="text-xs text-red-500 mt-1">{errors.physician_npi}</p>}
+          </div>
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
