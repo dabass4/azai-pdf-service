@@ -597,21 +597,23 @@ const Patients = () => {
                             <p><span className="font-semibold">NPI:</span> <span className="font-mono">{patient.physician_npi}</span></p>
                           </div>
                         </div>
+                          </div>
+                          
+                          <div className="flex gap-2 ml-4">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(patient)} data-testid={`edit-patient-${patient.id}`}>
+                              <Edit className="text-blue-600" size={18} />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(patient.id)} data-testid={`delete-patient-${patient.id}`}>
+                              <Trash2 className="text-red-500" size={18} />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="flex gap-2 ml-4">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(patient)} data-testid={`edit-patient-${patient.id}`}>
-                          <Edit className="text-blue-600" size={18} />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(patient.id)} data-testid={`delete-patient-${patient.id}`}>
-                          <Trash2 className="text-red-500" size={18} />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
