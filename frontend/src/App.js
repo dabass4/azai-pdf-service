@@ -417,37 +417,38 @@ const Home = () => {
                         
                         <div className="flex-1 flex items-start justify-between">
                           <div className="flex items-center gap-3">
-                        {getStatusIcon(timesheet.status, timesheet.sandata_status)}
-                        <div>
-                          <CardTitle className="text-lg">{timesheet.filename}</CardTitle>
-                          <CardDescription>
-                            {getStatusText(timesheet.status, timesheet.sandata_status)} •{" "}
-                            {new Date(timesheet.created_at).toLocaleString()}
-                          </CardDescription>
+                            {getStatusIcon(timesheet.status, timesheet.sandata_status)}
+                            <div>
+                              <CardTitle className="text-lg">{timesheet.filename}</CardTitle>
+                              <CardDescription>
+                                {getStatusText(timesheet.status, timesheet.sandata_status)} •{" "}
+                                {new Date(timesheet.created_at).toLocaleString()}
+                              </CardDescription>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Link to={`/timesheet/edit/${timesheet.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                data-testid={`edit-timesheet-${timesheet.id}`}
+                                title="Edit timesheet"
+                              >
+                                <Edit2 className="text-blue-600" size={18} />
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(timesheet.id)}
+                              data-testid={`delete-timesheet-${timesheet.id}`}
+                              title="Delete timesheet"
+                            >
+                              <Trash2 className="text-red-500" size={18} />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Link to={`/timesheet/edit/${timesheet.id}`}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            data-testid={`edit-timesheet-${timesheet.id}`}
-                            title="Edit timesheet"
-                          >
-                            <Edit2 className="text-blue-600" size={18} />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(timesheet.id)}
-                          data-testid={`delete-timesheet-${timesheet.id}`}
-                          title="Delete timesheet"
-                        >
-                          <Trash2 className="text-red-500" size={18} />
-                        </Button>
-                      </div>
-                    </div>
                   </CardHeader>
                   
                   {timesheet.extracted_data && timesheet.status === "completed" && (
