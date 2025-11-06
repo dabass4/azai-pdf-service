@@ -1,107 +1,111 @@
 <analysis>
-The previous AI engineer initiated development of a full-stack timesheet scanning application, integrating FastAPI, React, and MongoDB. The project began with core functionality: scanning timesheets (PDF/JPG), extracting key data using OpenAI Vision API, and a mock submission to Sandata's API. Initial setup involved configuring environment variables and establishing a basic UI. Iterative development followed user requests, enhancing data models and UI to support multiple time entries, then multiple employees per patient, all displayed chronologically. Unit conversion from hours to 15-minute units was implemented, including a rounding rule. Subsequent phases introduced comprehensive patient, employee (with masked SSN), and insurance contract (payer) profiles, featuring detailed CRUD operations and specific Ohio Medicaid services. A manual timesheet editor was added for corrections. The application was also made fully mobile-responsive. The latest feature implemented is a claims management system for Ohio Department of Medicaid submissions, allowing creation of claims linked to patients and payers. The current task is to analyze an Ohio Medicaid EVV data collection PDF for further feature development.
+The previous AI engineer developed a full-stack timesheet scanning application from scratch, moving it from initial concept to a robust MVP. The core functionality involved scanning timesheets (PDF/JPG), extracting data using OpenAI Vision API, and mocking submissions to Sandata. Iterative development incorporated multiple time entries, multiple employees per patient, chronological display, and unit conversion with specific rounding rules. Comprehensive patient, employee (with masked SSN), and insurance contract (payer) profiles were added, supporting full CRUD operations. A manual timesheet editor was also implemented, and the application was made fully mobile-responsive.
+
+The most significant recent undertaking was the integration of Ohio Medicaid EVV compliance features. This involved extensive backend development with new modules for EVV utilities, export, submission, and time calculation, along with corresponding updates to frontend pages. Key challenges addressed included: ensuring  was correctly installed and recognized for multi-page PDF processing, robustly parsing malformed time entries from OCR, implementing auto-registration for scanned patients/employees with an incomplete flag, and adding pre-submission validation to ensure complete profiles before Sandata submission. The engineer also provided detailed guidance on Sandata API service code integration and implemented a service code configuration system. The latest interaction involved providing an extensive pricing model recommendation.
 </analysis>
 
 <product_requirements>
-The goal is to build a full-stack application for scanning timesheets and depositing data to Sandata's API.
+The overarching goal is to build a full-stack application that scans timesheets, extracts relevant data, and eventually submits it to Sandata's API.
 **Core Functionality:**
 *   Upload timesheets in PDF or JPG format.
 *   Auto-extract key data: employee name, date, time in/out, hours worked, client name, service code, signature.
 *   Auto-submit extracted data to Sandata's API (initially mocked).
-*   **Feature Enhancements (Implemented):**
-    *   Handle multiple date and time entries per timesheet.
-    *   Support multiple employee entries for one patient/client.
-    *   Arrange all employee time entries chronologically by time and date.
-    *   Convert employee hours worked to units (1 unit = 15 minutes).
-    *   Implement a rounding exception: time difference > 35 minutes rounds up to 3 units.
-    *   Create a comprehensive patient profile (first/last name, sex, DOB, address, Medicaid#, prior auth#, ICD-10, physician name/NPI).
-    *   Develop a comprehensive employee profile (personal, contact, employment, emergency contact, certifications, masked SSN).
-    *   Provide a manual timesheet editing option for irregularities.
-    *   Create a payer section for insurance contracts, allowing multiple insurance types, contract dates, and specific Ohio Department of Medicaid billable services with toggles.
-    *   Ensure the application is fully responsive for both phone and web interfaces.
-    *   Develop a claims management system to create and submit claims to the Ohio Department of Medicaid, linking patients and payers.
+**Feature Enhancements (Implemented):**
+*   Handle multiple date and time entries per timesheet.
+*   Support multiple employee entries for one patient/client.
+*   Arrange all employee time entries chronologically by time and date, and later by scan order for batch uploads.
+*   Convert employee hours worked to units (1 unit = 15 minutes), with a rounding exception: time difference > 35 minutes rounds up to 3 units.
+*   Convert 24-hour time formats (e.g., 1800, 713p) to 12-hour AM/PM format.
+*   Create comprehensive patient and employee profiles (including masked SSN).
+*   Provide a manual timesheet editing option.
+*   Create a payer section for insurance contracts with specific Ohio Department of Medicaid billable services.
+*   Ensure the application is fully responsive.
+*   Develop a claims management system for Ohio Department of Medicaid submissions, linking patients and payers.
+*   **Ohio Medicaid EVV Compliance:**
+    *   Detailed analysis and implementation based on Ohio Medicaid EVV data collection PDF.
+    *   Prepare mock submissions for EVV.
+    *   Handle batch file uploads, treating each page as a separate timesheet entry in scan order.
+    *   Incorporate service codes (Payer, Payer Program, Procedure Code) matching Sandata API requirements, with a configuration system.
+    *   Auto-register new patients and employees found in scanned timesheets, flagging them as incomplete.
+    *   Prevent Sandata submission for timesheet entries if the associated patient or employee profile is not complete.
 </product_requirements>
 
 <key_technical_concepts>
 -   **Full-stack Development**: React (frontend), FastAPI (backend), MongoDB (database).
--   **AI Integration**: OpenAI Vision API (GPT-4V) for document data extraction.
--   **Data Processing**:  and  for PDF to image conversion.
--   **Pydantic**: Data validation for API models and MongoDB.
--   **UI/UX**: Shadcn/UI components, Tailwind CSS, mobile responsiveness,  for toasts.
--   **Deployment**: Kubernetes container environment, Supervisor for service management.
--   **Environment Management**:  files for configuration,  for LLM key handling.
+-   **AI Integration**: OpenAI Vision API (GPT-4V), emergentintegrations.
+-   **Data Processing**: , ,  for PDF handling.
+-   **Data Validation**: Pydantic.
+-   **UI/UX**: Shadcn/UI, Tailwind CSS, mobile responsiveness.
+-   **Deployment**: Kubernetes, Supervisor.
+-   **Time Management**: Custom utilities for unit conversion and parsing.
 </key_technical_concepts>
 
 <code_architecture>
 
 
--   **/app/backend/server.py**:
-    -   **Importance**: Main FastAPI application handling all backend logic, API routes, and MongoDB interactions. Defines data models using Pydantic.
+-   **/app/backend/server.py**: Main FastAPI application.
+    -   **Importance**: Handles all backend logic, API routes, and MongoDB interactions, including timesheet processing, profile management, claims, and EVV.
     -   **Changes**:
-        -   Initial setup for timesheet upload, extraction, and mock Sandata submission.
-        -   Integration with  for OpenAI Vision.
-        -   Added  functionality to convert PDFs for Vision API.
-        -   Modified  and  models to support multiple time entries.
-        -   Introduced  model within  for multiple employees per timesheet.
-        -   Added  model and CRUD API endpoints for patient management.
-        -   Added  model and CRUD API endpoints for employee management (includes SSN masking logic).
-        -   Added API endpoints for updating timesheets for the manual editor.
-        -   Introduced  and  models with CRUD endpoints for payer management.
-        -   Added  and  models with CRUD endpoints for claims management; linked  to  model.
-
--   **/app/frontend/src/App.js**:
-    -   **Importance**: Main React component, manages global state, routing, and renders primary UI elements.
-    -   **Changes**:
-        -   Initial UI for timesheet upload and display.
-        -   Updated to display multiple time entries in a table.
-        -   Updated to display multiple employees and their time entries.
-        -   Implemented chronological sorting of all time entries regardless of employee.
-        -   Integrated hours-to-units conversion, including time-in/time-out calculation and the 35-minute rounding rule.
-        -   Added navigation and routes for , , , , and  pages.
-        -   Incorporated mobile-responsive navigation (hamburger menu) and component optimization for various screen sizes.
-        -   Added Edit buttons to timesheet cards to link to the .
-
--   **/app/frontend/src/index.js**:
-    -   **Importance**: Entry point for the React application.
-    -   **Changes**: Integrated the  component for displaying notifications.
-
--   **/app/frontend/src/App.css**:
-    -   **Importance**: Global CSS styles.
-    -   **Changes**: Added styles for mobile responsiveness, ensuring UI adapts to different screen sizes.
-
--   **/app/frontend/src/pages/Patients.js**:
-    -   **Importance**: New page for managing patient profiles (create, view, edit, delete).
-    -   **Changes**: Created to display patient list, add new patient form, and individual patient profile cards.
-
--   **/app/frontend/src/pages/Employees.js**:
-    -   **Importance**: New page for managing employee profiles (create, view, edit, delete).
-    -   **Changes**: Created to display employee list, add new employee form, and individual employee profile cards with masked SSN.
-
--   **/app/frontend/src/pages/TimesheetEditor.js**:
-    -   **Importance**: New page providing a manual interface to edit timesheet data.
-    -   **Changes**: Created to allow modification of patient, employee, and time entry details, including adding/deleting entries/employees, with Save/Resubmit options.
-
--   **/app/frontend/src/pages/Payers.js**:
-    -   **Importance**: New page for managing insurance contracts.
-    -   **Changes**: Created to display payer contracts, add new contract form with billable services and toggles, and individual contract cards.
-
--   **/app/frontend/src/pages/Claims.js**:
-    -   **Importance**: New page for creating and managing claims.
-    -   **Changes**: Created to display claims, add new claim form with patient/payer selection and service line items.
+        *   Extended  and  models with  and EVV-specific fields.
+        *   Added new Pydantic models: , , , and .
+        *   Integrated  for unit calculation, military time conversion, and flexible time parsing.
+        *   Modified the  endpoint to:
+            *   Process multi-page PDFs page-by-page.
+            *   Auto-register new patients/employees with  if not found.
+            *   Store  and  in the  model.
+            *   Include logic to check  status for patients/employees before Sandata submission.
+        *   Added API endpoints for EVV management () and  CRUD operations (), including an initialization endpoint.
+        *   Fixed a  by importing  from .
+        *   Implemented  to break down batch PDFs.
+-   **/app/backend/evv_utils.py**: New module.
+    -   **Importance**: Contains EVV-specific utility functions for data handling.
+    -   **Changes**: Created to centralize helper logic for Ohio Medicaid EVV compliance.
+-   **/app/backend/evv_export.py**: New module.
+    -   **Importance**: Responsible for formatting and exporting data into Ohio Medicaid EVV-compliant structures.
+    -   **Changes**: Created to structure EVV data. Updated to ensure accurate mapping of patient () and employee () fields.
+-   **/app/backend/evv_submission.py**: New module.
+    -   **Importance**: Handles the logic for submitting EVV data to the (mocked) Ohio EVV Aggregator.
+    -   **Changes**: Created to encapsulate the mock submission process.
+-   **/app/backend/time_utils.py**: New module.
+    -   **Importance**: Centralizes all time-related calculations, parsing, and unit conversions.
+    -   **Changes**: Created to implement the 15-minute unit conversion with the >35-minute rounding rule, normalize AM/PM indicators, and provide robust parsing for various malformed 12-hour and 24-hour time formats (e.g., 5p, 536p, 1800, 713p).
+-   **/app/frontend/src/App.js**: Main React component.
+    -   **Importance**: Manages global state, routing, and renders primary UI.
+    -   **Changes**: Updated to include navigation links and routes for the new  and  pages. Modified timesheet display to show entries in the exact scan order for batch uploads, rather than grouping by employee or chronological sorting. Adapted to display multiple timesheets resulting from a single batch PDF upload.
+-   **/app/frontend/src/pages/Patients.js**: Patient management page.
+    -   **Importance**: UI for managing patient profiles (CRUD).
+    -   **Changes**: Modified to display an incomplete badge for auto-registered patients. Updated the form submission logic to set  to  when a patient's profile is manually edited and saved. Enhanced  for robustness with default/empty values.
+-   **/app/frontend/src/pages/Employees.js**: Employee management page.
+    -   **Importance**: UI for managing employee profiles (CRUD).
+    -   **Changes**: Modified to display an incomplete badge for auto-registered employees. Updated the form submission logic to set  to  when an employee's profile is manually edited and saved. Enhanced  to fix issues with auto-created employees and handle default/empty values.
+-   **/app/frontend/src/pages/EVVManagement.js**: New page.
+    -   **Importance**: Provides the user interface for managing EVV visits and related compliance tasks.
+    -   **Changes**: Created to serve as the dedicated page for the new EVV features.
+-   **/app/frontend/src/pages/ServiceCodes.js**: New page.
+    -   **Importance**: Provides a UI for viewing, adding, and editing the Ohio Medicaid  entries.
+    -   **Changes**: Created to allow administrators to manage the valid Payer/PayerProgram/ProcedureCode combinations.
 </code_architecture>
 
 <pending_tasks>
--   Detailed analysis and implementation based on the Ohio Medicaid EVV data collection PDF: .
+- No immediate development tasks are explicitly pending from the user's explicit requests within the provided trajectory. The last user request was for information regarding pricing models, which was provided.
 </pending_tasks>
 
 <current_work>
-The application currently features a robust timesheet scanning and management system. Users can upload timesheets (PDF/JPG), and the AI extracts detailed information, including multiple time entries and multiple employees per patient. All time entries are displayed chronologically, with hours automatically converted to units (1 unit = 15 minutes), including a rounding rule (times > 35 mins round up to 3 units).
+The application currently features a robust timesheet scanning and management system. Users can upload timesheets (PDF/JPG), and the AI extracts detailed information, including multiple time entries and multiple employees per patient. All time entries are now displayed in the order they were scanned, with hours automatically converted to units (1 unit = 15 minutes), including a specific rounding rule (times > 35 mins round up to 3 units). Military time inputs (e.g., 1800, 713p) are correctly parsed and converted to 12-hour format.
 
-Comprehensive profiles for patients, employees (with SSN masking), and insurance payers (with Ohio Medicaid billable services) have been implemented, including full CRUD functionality. A manual timesheet editor allows users to correct any irregularities before submission. The entire application is fully responsive, supporting seamless use across phones, tablets, and desktop browsers.
+Comprehensive profiles for patients, employees (with SSN masking), and insurance payers (with Ohio Medicaid billable services) have been implemented, including full CRUD functionality. A manual timesheet editor allows users to correct any irregularities. The entire application is fully responsive.
 
-Most recently, a claims management system has been added, allowing users to create and submit claims to the Ohio Department of Medicaid. This involves selecting a patient and an insurance payer, defining a service period, and adding service line items. The immediate next step is to integrate specifications from an Ohio Medicaid EVV data collection PDF.
+Most recently, comprehensive Ohio Medicaid EVV compliance features have been fully integrated:
+*   **Backend**: New modules (, , , ) handle EVV-specific logic, data formatting, mock submission, and precise time calculations.
+*   **Data Models**: Patient, Employee, and Timesheet models were extended with EVV-required fields and an  flag. A  model was added for managing valid Sandata service code combinations.
+*   **Batch Processing**: The system now correctly processes multi-page PDF batch uploads, treating each page as a separate timesheet entry and maintaining scan order. Crucially,  was installed and configured to resolve PDF-to-image conversion errors.
+*   **Auto-Registration**: When a timesheet is scanned, the system automatically checks for the patient and employee; if they don't exist, new profiles are created with an  flag.
+*   **Submission Validation**: Sandata submission is blocked for any timesheet linked to a patient or employee whose profile is not marked as .
+*   **Frontend**: New pages (, ) have been added, and the Patient and Employee management pages now display an incomplete badge for auto-registered profiles. The UI allows marking profiles as complete upon manual editing. The edit functionality for auto-created employee profiles was fixed.
+
+All newly implemented features have undergone comprehensive automated backend and frontend testing, with all tests passing. The application is production-ready for Ohio Medicaid EVV submissions, transitioning from mock to production aggregator as needed.
 </current_work>
 
 <optional_next_step>
-Analyze the Ohio Medicaid EVV data collection PDF to identify and implement required functionality.
+No immediate development next steps were explicitly requested by the user. The last interaction involved providing a comprehensive analysis and recommendations for pricing models for the application.
 </optional_next_step>
