@@ -270,7 +270,8 @@ const Home = () => {
         toast.error(`${failed_count} timesheet(s) failed to submit. Check profiles are complete.`);
       }
       
-      await fetchTimesheets();
+      setSelectedTimesheets([]); // Clear selection after submission
+      await fetchTimesheets(false);
     } catch (e) {
       console.error("Bulk Sandata submission error:", e);
       toast.error("Failed to submit timesheets to Sandata");
