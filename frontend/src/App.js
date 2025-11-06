@@ -319,6 +319,61 @@ const Home = () => {
           </CardContent>
         </Card>
 
+        {/* Search and Filters */}
+        <div className="mb-6">
+          <SearchFilter
+            onSearch={handleSearch}
+            placeholder="Search by client name, patient ID, or employee..."
+            filters={{
+              date_from: {
+                type: "date",
+                label: "From Date",
+                placeholder: "Start date"
+              },
+              date_to: {
+                type: "date",
+                label: "To Date",
+                placeholder: "End date"
+              },
+              submission_status: {
+                type: "select",
+                label: "Submission Status",
+                placeholder: "Filter by status",
+                options: [
+                  { value: "pending", label: "Pending" },
+                  { value: "submitted", label: "Submitted" },
+                  { value: "failed", label: "Failed" }
+                ]
+              }
+            }}
+          />
+        </div>
+
+        {/* Export and Bulk Actions Toolbar */}
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Button
+            onClick={handleExport}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Download size={18} />
+            Export to CSV
+          </Button>
+          
+          <BulkActionToolbar
+            selectedCount={selectedTimesheets.length}
+            onClearSelection={() => setSelectedTimesheets([])}
+            actions={[
+              {
+                label: "Delete Selected",
+                icon: Trash2,
+                onClick: handleBulkDelete,
+                variant: "destructive"
+              }
+            ]}
+          />
+        </div>
+
         {/* Timesheets List */}
         <div>
           <h2 className="text-3xl font-bold text-gray-900 mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
