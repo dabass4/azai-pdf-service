@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { UserCheck, Plus, Edit, Trash2, X, Shield } from "lucide-react";
+import { UserCheck, Plus, Edit, Trash2, X, Shield, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import SearchFilter from "@/components/SearchFilter";
+import BulkActionToolbar from "@/components/BulkActionToolbar";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -23,6 +26,8 @@ const Employees = () => {
   const [employees, setEmployees] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
+  const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [searchFilters, setSearchFilters] = useState({});
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -52,15 +57,71 @@ const Employees = () => {
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [searchFilters]);
 
   const fetchEmployees = async () => {
     try {
-      const response = await axios.get(`${API}/employees`);
+      const params = new URLSearchParams();
+      if (searchFilters.search) params.append('search', searchFilters.search);
+      if (searchFilters.is_complete !== undefined) params.append('is_complete', searchFilters.is_complete);
+      
+      const response = await axios.get(`${API}/employees?${params.toString()}`);
       setEmployees(response.data);
+      setSelectedEmployees([]); // Clear selection when data refreshes
     } catch (e) {
       console.error("Error fetching employees:", e);
       toast.error("Failed to load employees");
+    }
+  };
+
+  const handleSearch = (filters) => {
+    setSearchFilters(filters);
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedEmployees(employees.map(e => e.id));
+    } else {
+      setSelectedEmployees([]);
+    }
+  };
+
+  const handleSelectEmployee = (employeeId, checked) => {
+    if (checked) {
+      setSelectedEmployees(prev => [...prev, employeeId]);
+    } else {
+      setSelectedEmployees(prev => prev.filter(id => id !== employeeId));
+    }
+  };
+
+  const handleBulkMarkComplete = async () => {
+    if (!window.confirm(`Mark ${selectedEmployees.length} employee(s) as complete?`)) return;
+    
+    try {
+      await axios.post(`${API}/employees/bulk-update`, {
+        ids: selectedEmployees,
+        updates: { is_complete: true }
+      });
+      toast.success(`${selectedEmployees.length} employee(s) marked as complete`);
+      await fetchEmployees();
+    } catch (e) {
+      console.error("Bulk update error:", e);
+      toast.error("Failed to bulk update employees");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedEmployees.length} employee(s)? This cannot be undone.`)) return;
+    
+    try {
+      await axios.post(`${API}/employees/bulk-delete`, {
+        ids: selectedEmployees
+      });
+      toast.success(`${selectedEmployees.length} employee(s) deleted`);
+      await fetchEmployees();
+    } catch (e) {
+      console.error("Bulk delete error:", e);
+      toast.error("Failed to bulk delete employees");
     }
   };
 
