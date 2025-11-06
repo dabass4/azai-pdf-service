@@ -209,6 +209,7 @@ const Home = () => {
 
   const handleSearch = (filters) => {
     setSearchFilters(filters);
+    setSelectedTimesheets([]); // Clear selection when user changes filters
   };
 
   const handleExport = async () => {
