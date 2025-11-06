@@ -245,6 +245,117 @@ const Home = () => {
     }
   };
 
+  const handleBulkSubmitSandata = async () => {
+    if (!window.confirm(`Submit ${selectedTimesheets.length} timesheet(s) to Sandata API?`)) return;
+    
+    try {
+      let successCount = 0;
+      let failedCount = 0;
+      
+      for (const timesheetId of selectedTimesheets) {
+        try {
+          await axios.post(`${API}/timesheets/${timesheetId}/resubmit`);
+          successCount++;
+        } catch (e) {
+          failedCount++;
+          console.error(`Failed to submit timesheet ${timesheetId}:`, e);
+        }
+      }
+      
+      if (successCount > 0) {
+        toast.success(`${successCount} timesheet(s) submitted to Sandata successfully`);
+      }
+      if (failedCount > 0) {
+        toast.error(`${failedCount} timesheet(s) failed to submit`);
+      }
+      
+      await fetchTimesheets();
+    } catch (e) {
+      console.error("Bulk Sandata submission error:", e);
+      toast.error("Failed to submit timesheets to Sandata");
+    }
+  };
+
+  const handleBulkSubmitClaims = async () => {
+    if (!window.confirm(`Submit ${selectedTimesheets.length} claim(s) to Ohio Medicaid?`)) return;
+    
+    try {
+      // Get selected timesheets data
+      const selectedTimesheetData = timesheets.filter(ts => selectedTimesheets.includes(ts.id));
+      
+      // Check if all selected timesheets have required data
+      const missingData = selectedTimesheetData.filter(ts => 
+        !ts.patient_id || ts.sandata_status !== "submitted"
+      );
+      
+      if (missingData.length > 0) {
+        toast.error(`${missingData.length} timesheet(s) must be submitted to Sandata first before creating claims`);
+        return;
+      }
+      
+      let successCount = 0;
+      let failedCount = 0;
+      
+      // Create claims for each timesheet
+      for (const timesheet of selectedTimesheetData) {
+        try {
+          await axios.post(`${API}/claims`, {
+            patient_id: timesheet.patient_id,
+            payer_id: timesheet.payer_id || "", // May need to select payer
+            timesheet_ids: [timesheet.id],
+            status: "pending"
+          });
+          successCount++;
+        } catch (e) {
+          failedCount++;
+          console.error(`Failed to create claim for timesheet ${timesheet.id}:`, e);
+        }
+      }
+      
+      if (successCount > 0) {
+        toast.success(`${successCount} claim(s) submitted to Ohio Medicaid successfully`);
+      }
+      if (failedCount > 0) {
+        toast.error(`${failedCount} claim(s) failed to submit`);
+      }
+      
+      await fetchTimesheets();
+    } catch (e) {
+      console.error("Bulk claims submission error:", e);
+      toast.error("Failed to submit claims to Medicaid");
+    }
+  };
+
+  const handleBulkExport = async () => {
+    try {
+      // Build query with selected timesheet IDs
+      const selectedTimesheetData = timesheets.filter(ts => selectedTimesheets.includes(ts.id));
+      
+      if (selectedTimesheetData.length === 0) {
+        toast.error("No timesheets selected for export");
+        return;
+      }
+      
+      // Create CSV content manually for selected timesheets
+      const params = new URLSearchParams();
+      params.append('format', 'csv');
+      
+      // Apply current filters and add export trigger
+      if (searchFilters.search) params.append('search', searchFilters.search);
+      if (searchFilters.date_from) params.append('date_from', searchFilters.date_from);
+      if (searchFilters.date_to) params.append('date_to', searchFilters.date_to);
+      if (searchFilters.submission_status) params.append('submission_status', searchFilters.submission_status);
+      
+      const downloadUrl = `${API}/timesheets/export?${params.toString()}`;
+      window.open(downloadUrl, '_blank');
+      
+      toast.success(`Exporting ${selectedTimesheets.length} timesheet(s) to CSV`);
+    } catch (e) {
+      console.error("Bulk export error:", e);
+      toast.error("Failed to export timesheets");
+    }
+  };
+
   const getStatusIcon = (status, sandataStatus) => {
     if (status === "failed") return <XCircle className="text-red-500" size={20} />;
     if (status === "processing") return <Clock className="text-blue-500 animate-pulse" size={20} />;
