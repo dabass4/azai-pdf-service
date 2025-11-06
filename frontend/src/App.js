@@ -188,6 +188,60 @@ const Home = () => {
     }
   };
 
+  const handleSearch = (filters) => {
+    setSearchFilters(filters);
+  };
+
+  const handleExport = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (searchFilters.search) params.append('search', searchFilters.search);
+      if (searchFilters.date_from) params.append('date_from', searchFilters.date_from);
+      if (searchFilters.date_to) params.append('date_to', searchFilters.date_to);
+      if (searchFilters.submission_status) params.append('submission_status', searchFilters.submission_status);
+      params.append('format', 'csv');
+      
+      // Create download link
+      const downloadUrl = `${API}/timesheets/export?${params.toString()}`;
+      window.open(downloadUrl, '_blank');
+      toast.success("Export started! Check your downloads.");
+    } catch (e) {
+      console.error("Export error:", e);
+      toast.error("Failed to export timesheets");
+    }
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedTimesheets(timesheets.map(t => t.id));
+    } else {
+      setSelectedTimesheets([]);
+    }
+  };
+
+  const handleSelectTimesheet = (timesheetId, checked) => {
+    if (checked) {
+      setSelectedTimesheets(prev => [...prev, timesheetId]);
+    } else {
+      setSelectedTimesheets(prev => prev.filter(id => id !== timesheetId));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedTimesheets.length} timesheet(s)? This cannot be undone.`)) return;
+    
+    try {
+      await axios.post(`${API}/timesheets/bulk-delete`, {
+        ids: selectedTimesheets
+      });
+      toast.success(`${selectedTimesheets.length} timesheet(s) deleted`);
+      await fetchTimesheets();
+    } catch (e) {
+      console.error("Bulk delete error:", e);
+      toast.error("Failed to bulk delete timesheets");
+    }
+  };
+
   const getStatusIcon = (status, sandataStatus) => {
     if (status === "failed") return <XCircle className="text-red-500" size={20} />;
     if (status === "processing") return <Clock className="text-blue-500 animate-pulse" size={20} />;
