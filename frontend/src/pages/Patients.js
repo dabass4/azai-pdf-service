@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Users, Plus, Edit, Trash2, X } from "lucide-react";
+import { Users, Plus, Edit, Trash2, X, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import SearchFilter from "@/components/SearchFilter";
+import BulkActionToolbar from "@/components/BulkActionToolbar";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -23,6 +26,8 @@ const Patients = () => {
   const [patients, setPatients] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingPatient, setEditingPatient] = useState(null);
+  const [selectedPatients, setSelectedPatients] = useState([]);
+  const [searchFilters, setSearchFilters] = useState({});
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -42,15 +47,71 @@ const Patients = () => {
 
   useEffect(() => {
     fetchPatients();
-  }, []);
+  }, [searchFilters]);
 
   const fetchPatients = async () => {
     try {
-      const response = await axios.get(`${API}/patients`);
+      const params = new URLSearchParams();
+      if (searchFilters.search) params.append('search', searchFilters.search);
+      if (searchFilters.is_complete !== undefined) params.append('is_complete', searchFilters.is_complete);
+      
+      const response = await axios.get(`${API}/patients?${params.toString()}`);
       setPatients(response.data);
+      setSelectedPatients([]); // Clear selection when data refreshes
     } catch (e) {
       console.error("Error fetching patients:", e);
       toast.error("Failed to load patients");
+    }
+  };
+
+  const handleSearch = (filters) => {
+    setSearchFilters(filters);
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedPatients(patients.map(p => p.id));
+    } else {
+      setSelectedPatients([]);
+    }
+  };
+
+  const handleSelectPatient = (patientId, checked) => {
+    if (checked) {
+      setSelectedPatients(prev => [...prev, patientId]);
+    } else {
+      setSelectedPatients(prev => prev.filter(id => id !== patientId));
+    }
+  };
+
+  const handleBulkMarkComplete = async () => {
+    if (!window.confirm(`Mark ${selectedPatients.length} patient(s) as complete?`)) return;
+    
+    try {
+      await axios.post(`${API}/patients/bulk-update`, {
+        ids: selectedPatients,
+        updates: { is_complete: true }
+      });
+      toast.success(`${selectedPatients.length} patient(s) marked as complete`);
+      await fetchPatients();
+    } catch (e) {
+      console.error("Bulk update error:", e);
+      toast.error("Failed to bulk update patients");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedPatients.length} patient(s)? This cannot be undone.`)) return;
+    
+    try {
+      await axios.post(`${API}/patients/bulk-delete`, {
+        ids: selectedPatients
+      });
+      toast.success(`${selectedPatients.length} patient(s) deleted`);
+      await fetchPatients();
+    } catch (e) {
+      console.error("Bulk delete error:", e);
+      toast.error("Failed to bulk delete patients");
     }
   };
 
