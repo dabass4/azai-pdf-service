@@ -1309,9 +1309,35 @@ async def create_employee(employee: EmployeeProfile):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/employees", response_model=List[EmployeeProfile])
-async def get_employees():
-    """Get all employee profiles"""
-    employees = await db.employees.find({}, {"_id": 0}).sort("last_name", 1).to_list(1000)
+async def get_employees(
+    search: Optional[str] = None,
+    is_complete: Optional[bool] = None,
+    limit: int = 1000,
+    skip: int = 0
+):
+    """Get all employee profiles with optional search and filters
+    
+    Args:
+        search: Search by first name, last name, or employee ID
+        is_complete: Filter by completion status (True/False)
+        limit: Maximum number of results to return
+        skip: Number of results to skip (for pagination)
+    """
+    query = {}
+    
+    # Add search filter
+    if search:
+        query["$or"] = [
+            {"first_name": {"$regex": search, "$options": "i"}},
+            {"last_name": {"$regex": search, "$options": "i"}},
+            {"employee_id": {"$regex": search, "$options": "i"}}
+        ]
+    
+    # Add completion status filter
+    if is_complete is not None:
+        query["is_complete"] = is_complete
+    
+    employees = await db.employees.find(query, {"_id": 0}).sort("last_name", 1).skip(skip).limit(limit).to_list(limit)
     
     # Convert ISO string timestamps
     for employee in employees:
