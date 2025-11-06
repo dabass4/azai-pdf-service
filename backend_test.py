@@ -1801,7 +1801,7 @@ Signature: [Signed]"""
                 }
             }
             
-            response = requests.post(f"{self.api_employees/bulk-update", 
+            response = requests.post(f"{self.api_url}/employees/bulk-update", 
                                    json=bulk_update_data, timeout=10)
             success = response.status_code == 200
             
