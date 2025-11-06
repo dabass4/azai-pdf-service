@@ -474,6 +474,49 @@ const Patients = () => {
           </Card>
         )}
 
+        {/* Search and Filters */}
+        {!showForm && (
+          <div className="mb-6">
+            <SearchFilter
+              onSearch={handleSearch}
+              placeholder="Search by name or Medicaid number..."
+              filters={{
+                is_complete: {
+                  type: "select",
+                  label: "Status",
+                  placeholder: "Filter by status",
+                  options: [
+                    { value: "true", label: "Complete" },
+                    { value: "false", label: "Incomplete" }
+                  ]
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* Bulk Action Toolbar */}
+        {!showForm && (
+          <BulkActionToolbar
+            selectedCount={selectedPatients.length}
+            onClearSelection={() => setSelectedPatients([])}
+            actions={[
+              {
+                label: "Mark Complete",
+                icon: CheckCircle,
+                onClick: handleBulkMarkComplete,
+                variant: "default"
+              },
+              {
+                label: "Delete",
+                icon: Trash2,
+                onClick: handleBulkDelete,
+                variant: "destructive"
+              }
+            ]}
+          />
+        )}
+
         {/* Patients List */}
         <div>
           {patients.length === 0 ? (
