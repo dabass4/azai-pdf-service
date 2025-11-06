@@ -707,12 +707,34 @@ const Employees = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4" data-testid="employees-list">
-              {employees.map((employee) => (
-                <Card key={employee.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow" data-testid={`employee-${employee.id}`}>
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6">
+            <>
+              {/* Select All Checkbox */}
+              <div className="mb-3 flex items-center gap-2 px-2">
+                <Checkbox
+                  checked={selectedEmployees.length === employees.length && employees.length > 0}
+                  onCheckedChange={handleSelectAll}
+                  id="select-all-employees"
+                />
+                <label htmlFor="select-all-employees" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Select All ({employees.length})
+                </label>
+              </div>
+              
+              <div className="grid gap-4" data-testid="employees-list">
+                {employees.map((employee) => (
+                  <Card key={employee.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow" data-testid={`employee-${employee.id}`}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        {/* Selection Checkbox */}
+                        <div className="pt-1">
+                          <Checkbox
+                            checked={selectedEmployees.includes(employee.id)}
+                            onCheckedChange={(checked) => handleSelectEmployee(employee.id, checked)}
+                          />
+                        </div>
+                        
+                        <div className="flex-1 flex justify-between items-start">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div>
                           <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                             {employee.first_name} {employee.middle_name} {employee.last_name}
