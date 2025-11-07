@@ -581,6 +581,7 @@ class EmployeeEntry(BaseModel):
 
 class ExtractedData(BaseModel):
     client_name: Optional[str] = None  # Single patient/client
+    week_of: Optional[str] = None  # Week date range from timesheet header
     employee_entries: List[EmployeeEntry] = []  # Multiple employees
 
 class Timesheet(BaseModel):
