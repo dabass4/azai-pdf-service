@@ -99,6 +99,7 @@ class ServiceCodeConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str  # Multi-tenant isolation
     
     # Service identification
     service_name: str  # Display name: "Home Health Aide - State Plan"
