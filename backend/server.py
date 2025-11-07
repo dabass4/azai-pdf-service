@@ -3044,9 +3044,6 @@ async def initialize_ohio_service_codes():
         "codes_added": len(ohio_codes)
     }
 
-# Include the router in the main app
-app.include_router(api_router)
-
 # Authentication Endpoints
 
 class SignupRequest(BaseModel):
