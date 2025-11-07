@@ -131,7 +131,8 @@ def test_calculate_units():
         ("8:30 AM", "11:45 AM", 13, 3.25), # 195 minutes -> 13 units
         ("11:32 AM", "12:05 PM", 2, 0.55), # 33 minutes -> 2 units
         ("9:00 AM", "5:00 PM", 32, 8.0),   # 480 minutes -> 32 units (8 hours)
-        ("9:00 AM", "9:35 AM", 2, 0.58),   # 35 minutes -> 2 units (standard)
+        ("9:00 AM", "9:34 AM", 2, 0.57),   # 34 minutes -> 2 units (standard)
+        ("9:00 AM", "9:35 AM", 3, 0.58),   # 35 minutes -> 3 units (special rule - CHANGED)
         ("9:00 AM", "9:36 AM", 3, 0.6),    # 36 minutes -> 3 units (special rule)
         ("9:00 AM", "9:45 AM", 3, 0.75),   # 45 minutes -> 3 units (exact)
         ("9:00 AM", "9:50 AM", 3, 0.83),   # 50 minutes -> 3 units (special rule)
