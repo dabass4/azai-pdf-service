@@ -2098,9 +2098,9 @@ async def get_contracts(organization_id: str = Depends(get_organization_id)):
     return contracts
 
 @api_router.get("/insurance-contracts/{contract_id}", response_model=InsuranceContract)
-async def get_contract(contract_id: str):
+async def get_contract(contract_id: str, organization_id: str = Depends(get_organization_id)):
     """Get specific contract by ID"""
-    contract = await db.insurance_contracts.find_one({"id": contract_id}, {"_id": 0})
+    contract = await db.insurance_contracts.find_one({"id": contract_id, "organization_id": organization_id}, {"_id": 0})
     
     if not contract:
         raise HTTPException(status_code=404, detail="Contract not found")
