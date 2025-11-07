@@ -1449,14 +1449,14 @@ async def export_timesheets(
     )
 
 @api_router.post("/patients/bulk-update")
-async def bulk_update_patients(request: BulkUpdateRequest):
+async def bulk_update_patients(request: BulkUpdateRequest, organization_id: str = Depends(get_organization_id)):
     """Bulk update multiple patient profiles
     
     Common use case: Mark multiple profiles as complete
     """
     try:
-        # Validate IDs exist
-        count = await db.patients.count_documents({"id": {"$in": request.ids}})
+        # Validate IDs exist within organization
+        count = await db.patients.count_documents({"id": {"$in": request.ids}, "organization_id": organization_id})
         
         if count == 0:
             raise HTTPException(status_code=404, detail="No patients found with provided IDs")
@@ -1465,9 +1465,9 @@ async def bulk_update_patients(request: BulkUpdateRequest):
         updates = request.updates.copy()
         updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         
-        # Perform bulk update
+        # Perform bulk update within organization
         result = await db.patients.update_many(
-            {"id": {"$in": request.ids}},
+            {"id": {"$in": request.ids}, "organization_id": organization_id},
             {"$set": updates}
         )
         
