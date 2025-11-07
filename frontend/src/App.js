@@ -78,29 +78,6 @@ const Navigation = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden pb-3 pt-2 border-t border-gray-200">
-            <div className="space-y-1">
-              {navLinks.map(({ to, icon: Icon, label }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center px-3 py-3 text-base font-medium rounded-md ${
-                    location.pathname === to
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                  data-testid={`mobile-nav-${label.toLowerCase()}`}
-                >
-                  <Icon className="mr-3" size={20} />
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
           {/* User Info & Logout */}
           {isAuthenticated && (
             <div className="hidden md:flex items-center gap-4 ml-auto">
@@ -123,6 +100,30 @@ const Navigation = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden pb-3 pt-2 border-t border-gray-200">
+            <div className="space-y-1">
+              {navLinks.map(({ to, icon: Icon, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center px-3 py-3 text-base font-medium rounded-md ${
+                    location.pathname === to
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                  data-testid={`mobile-nav-${label.toLowerCase()}`}
+                >
+                  <Icon className="mr-3" size={20} />
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </nav>
     );
   };
