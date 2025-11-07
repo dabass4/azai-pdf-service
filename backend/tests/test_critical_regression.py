@@ -103,8 +103,11 @@ class TestCriticalCalculations:
         test_cases = [
             (15, 1),   # 15 minutes = 1 unit
             (30, 2),   # 30 minutes = 2 units
+            (34, 2),   # 34 minutes = 2 units (standard rounding)
+            (35, 3),   # 35 minutes = 3 units (special rule - CHANGED)
             (36, 3),   # 36 minutes = 3 units (special rule)
             (45, 3),   # 45 minutes = 3 units (exact)
+            (59, 3),   # 59 minutes = 3 units (special rule)
             (60, 4),   # 60 minutes = 4 units
             (480, 32), # 8 hours = 32 units
         ]
