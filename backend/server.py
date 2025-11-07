@@ -1032,7 +1032,7 @@ async def root():
     return {"message": "Timesheet Scanner API"}
 
 @api_router.post("/timesheets/upload")
-async def upload_timesheet(file: UploadFile = File(...)):
+async def upload_timesheet(file: UploadFile = File(...), organization_id: str = Depends(get_organization_id)):
     """Upload and process a timesheet file (handles multi-page PDFs as batch)"""
     try:
         # Validate file type
