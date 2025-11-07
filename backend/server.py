@@ -1904,15 +1904,18 @@ async def delete_patient(patient_id: str, organization_id: str = Depends(get_org
 
 # Employee Profile Endpoints
 @api_router.post("/employees", response_model=EmployeeProfile)
-async def create_employee(employee: EmployeeProfile):
+async def create_employee(employee: EmployeeProfile, organization_id: str = Depends(get_organization_id)):
     """Create a new employee profile"""
     try:
+        # Ensure organization_id is set
+        employee.organization_id = organization_id
+        
         doc = employee.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
         doc['updated_at'] = doc['updated_at'].isoformat()
         
         await db.employees.insert_one(doc)
-        logger.info(f"Employee created: {employee.id}")
+        logger.info(f"Employee created: {employee.id} for org: {organization_id}")
         
         return employee
     except Exception as e:
