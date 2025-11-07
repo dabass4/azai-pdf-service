@@ -824,17 +824,30 @@ function App() {
       <div className="App">
         <BrowserRouter>
           <Routes>
-            {/* Public Routes */}
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            {/* Public Routes - redirect to /timesheets if authenticated */}
+            <Route path="/landing" element={
+              <PublicRoute>
+                <LandingPage />
+              </PublicRoute>
+            } />
+            <Route path="/login" element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } />
+            <Route path="/signup" element={
+              <PublicRoute>
+                <Signup />
+              </PublicRoute>
+            } />
             
-            {/* Protected Routes */}
+            {/* Protected Routes - redirect to /landing if not authenticated */}
             <Route path="/*" element={
               <ProtectedRoute>
                 <Navigation />
                 <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/timesheets" element={<Home />} />
                   <Route path="/patients" element={<Patients />} />
                   <Route path="/employees" element={<Employees />} />
                   <Route path="/payers" element={<Payers />} />
