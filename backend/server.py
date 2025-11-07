@@ -2069,9 +2069,12 @@ async def get_incomplete_profiles():
 
 # Insurance Contract / Payer Endpoints
 @api_router.post("/insurance-contracts", response_model=InsuranceContract)
-async def create_contract(contract: InsuranceContract):
+async def create_contract(contract: InsuranceContract, organization_id: str = Depends(get_organization_id)):
     """Create a new insurance contract"""
     try:
+        # Ensure organization_id is set from JWT token
+        contract.organization_id = organization_id
+        
         doc = contract.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
         doc['updated_at'] = doc['updated_at'].isoformat()
