@@ -1872,9 +1872,10 @@ async def get_patient(patient_id: str):
     return patient
 
 @api_router.put("/patients/{patient_id}", response_model=PatientProfile)
-async def update_patient(patient_id: str, patient_update: PatientProfile):
+async def update_patient(patient_id: str, patient_update: PatientProfile, organization_id: str = Depends(get_organization_id)):
     """Update patient profile"""
     patient_update.id = patient_id
+    patient_update.organization_id = organization_id
     patient_update.updated_at = datetime.now(timezone.utc)
     
     doc = patient_update.model_dump()
@@ -1882,7 +1883,7 @@ async def update_patient(patient_id: str, patient_update: PatientProfile):
     doc['updated_at'] = doc['updated_at'].isoformat()
     
     result = await db.patients.update_one(
-        {"id": patient_id},
+        {"id": patient_id, "organization_id": organization_id},
         {"$set": doc}
     )
     
