@@ -75,7 +75,8 @@ class ComprehensiveBackendTester:
             if success:
                 data = response.json()
                 self.test_user1_token = data.get('access_token')
-                self.test_user1_org_id = data.get('organization_id')
+                user_data = data.get('user', {})
+                self.test_user1_org_id = user_data.get('organization_id')
                 success = self.test_user1_token is not None and self.test_user1_org_id is not None
                 details = f"Token: {self.test_user1_token[:20]}..., Org ID: {self.test_user1_org_id}"
             else:
