@@ -130,7 +130,7 @@ def normalize_am_pm(time_str: str) -> str:
         else:
             am_pm_str = 'PM'
     
-    return f"{hour}:{minute:02d} {am_pm_str}"
+    return f"{hour:02d}:{minute:02d} {am_pm_str}"
 
 
 def parse_time_string(time_str: str) -> Optional[time]:
