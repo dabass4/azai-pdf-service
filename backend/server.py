@@ -2171,9 +2171,10 @@ async def get_claim(claim_id: str, organization_id: str = Depends(get_organizati
     return claim
 
 @api_router.put("/claims/{claim_id}", response_model=MedicaidClaim)
-async def update_claim(claim_id: str, claim_update: MedicaidClaim):
+async def update_claim(claim_id: str, claim_update: MedicaidClaim, organization_id: str = Depends(get_organization_id)):
     """Update claim"""
     claim_update.id = claim_id
+    claim_update.organization_id = organization_id
     claim_update.updated_at = datetime.now(timezone.utc)
     
     doc = claim_update.model_dump()
@@ -2181,7 +2182,7 @@ async def update_claim(claim_id: str, claim_update: MedicaidClaim):
     doc['updated_at'] = doc['updated_at'].isoformat()
     
     result = await db.claims.update_one(
-        {"id": claim_id},
+        {"id": claim_id, "organization_id": organization_id},
         {"$set": doc}
     )
     
