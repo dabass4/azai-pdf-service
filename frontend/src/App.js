@@ -12,6 +12,7 @@ import BulkActionToolbar from "@/components/BulkActionToolbar";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
+import LandingPage from "@/pages/LandingPage";
 import Patients from "@/pages/Patients";
 import Employees from "@/pages/Employees";
 import TimesheetEditor from "@/pages/TimesheetEditor";
