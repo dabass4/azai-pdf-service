@@ -21,6 +21,7 @@ import Claims from "@/pages/Claims";
 import EVVManagement from "@/pages/EVVManagement";
 import ServiceCodes from "@/pages/ServiceCodes";
 import Settings from "@/pages/Settings";
+import { formatDateForDisplay } from "./utils/dateUtils";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
