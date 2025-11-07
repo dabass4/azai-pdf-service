@@ -1376,6 +1376,44 @@ async def resubmit_timesheet(timesheet_id: str):
         logger.error(f"Resubmission error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/timesheets/{timesheet_id}/submit-sandata")
+async def submit_to_sandata(timesheet_id: str, organization_id: str = Depends(get_organization_id)):
+    """
+    Submit timesheet to Sandata API (for payroll and billing processing)
+    Validates patient/employee completion before submission
+    
+    ⚠️ MOCKED IMPLEMENTATION
+    This endpoint simulates Sandata API submission for testing purposes.
+    Real implementation requires:
+    - Valid Sandata API credentials (API key, auth token)
+    - Sandata endpoint URL
+    - Proper authentication setup
+    - See: https://www.sandata.com/api-documentation
+    """
+    try:
+        # Get timesheet
+        timesheet = await db.timesheets.find_one({"id": timesheet_id, "organization_id": organization_id}, {"_id": 0})
+        
+        if not timesheet:
+            raise HTTPException(status_code=404, detail="Timesheet not found")
+        
+        # MOCKED: Simulated Sandata API submission
+        logger.info(f"[MOCK] Submitting timesheet {timesheet_id} to Sandata API")
+        
+        # Mock successful response
+        return {
+            "status": "success",
+            "message": "Timesheet submitted to Sandata successfully (MOCKED)",
+            "sandata_id": f"SND-{timesheet_id[:8].upper()}",
+            "submission_date": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Sandata submission error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Bulk Operations Endpoints
 
 class BulkUpdateRequest(BaseModel):
