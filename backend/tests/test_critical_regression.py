@@ -19,20 +19,20 @@ class TestTimeParsingStability:
     def test_all_time_formats_supported(self):
         """Test that ALL supported time formats still work"""
         test_cases = [
-            # (input, expected_output)
-            ("321", "3:21 PM"),
-            ("357", "3:57 PM"),
-            ("830", "8:30 AM"),
+            # (input, expected_output with leading zeros)
+            ("321", "03:21 PM"),
+            ("357", "03:57 PM"),
+            ("830", "08:30 AM"),
             ("1145", "11:45 AM"),
-            ("1800", "6:00 PM"),
-            ("0830", "8:30 AM"),
-            ("8:30", "8:30 AM"),
-            ("8:30 AM", "8:30 AM"),
-            ("18:00", "6:00 PM"),
+            ("1800", "06:00 PM"),
+            ("0830", "08:30 AM"),
+            ("8:30", "08:30 AM"),
+            ("8:30 AM", "08:30 AM"),
+            ("18:00", "06:00 PM"),
             ("11:32 AM", "11:32 AM"),
             ("12:05 PM", "12:05 PM"),
-            ("540pm", "5:40 PM"),
-            ("6am", "6:00 AM"),
+            ("540pm", "05:40 PM"),
+            ("6am", "06:00 AM"),
         ]
         
         for input_time, expected in test_cases:
