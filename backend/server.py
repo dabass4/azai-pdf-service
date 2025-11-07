@@ -2235,9 +2235,9 @@ async def submit_claim(claim_id: str, organization_id: str = Depends(get_organiz
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.delete("/claims/{claim_id}")
-async def delete_claim(claim_id: str):
+async def delete_claim(claim_id: str, organization_id: str = Depends(get_organization_id)):
     """Delete a claim"""
-    result = await db.claims.delete_one({"id": claim_id})
+    result = await db.claims.delete_one({"id": claim_id, "organization_id": organization_id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Claim not found")
