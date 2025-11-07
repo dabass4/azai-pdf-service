@@ -3052,6 +3052,180 @@ async def initialize_ohio_service_codes():
         "codes_added": len(ohio_codes)
     }
 
+# Payment & Subscription Endpoints
+
+class CheckoutRequest(BaseModel):
+    """Request to create checkout session"""
+    plan: str  # "basic" or "professional"
+
+@api_router.post("/payments/create-checkout")
+async def create_checkout(
+    request: CheckoutRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Create a Stripe checkout session for subscription upgrade
+    """
+    try:
+        organization_id = current_user["organization_id"]
+        
+        # Get organization details
+        org = await db.organizations.find_one({"id": organization_id}, {"_id": 0})
+        if not org:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        
+        # Create checkout session
+        session = create_checkout_session(
+            organization_id=organization_id,
+            plan=request.plan,
+            success_url=f"https://ocr-timesheet.preview.emergentagent.com/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"https://ocr-timesheet.preview.emergentagent.com/payment/cancelled",
+            customer_email=current_user["email"]
+        )
+        
+        return session
+    except Exception as e:
+        logger.error(f"Checkout error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/payments/create-portal")
+async def create_portal(current_user: Dict = Depends(get_current_user)):
+    """
+    Create a Stripe billing portal session
+    """
+    try:
+        organization_id = current_user["organization_id"]
+        
+        # Get organization
+        org = await db.organizations.find_one({"id": organization_id}, {"_id": 0})
+        if not org:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        
+        if not org.get("stripe_customer_id"):
+            raise HTTPException(status_code=400, detail="No active subscription")
+        
+        # Create billing portal session
+        session = create_billing_portal_session(
+            customer_id=org["stripe_customer_id"],
+            return_url="https://ocr-timesheet.preview.emergentagent.com/"
+        )
+        
+        return session
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Billing portal error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/payments/webhook")
+async def stripe_webhook(request: Request):
+    """
+    Handle Stripe webhooks for subscription events
+    """
+    try:
+        payload = await request.body()
+        sig_header = request.headers.get('stripe-signature')
+        
+        event = verify_webhook_signature(payload, sig_header)
+        
+        # Handle different event types
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            organization_id = session['metadata']['organization_id']
+            plan = session['metadata']['plan']
+            customer_id = session['customer']
+            subscription_id = session['subscription']
+            
+            # Update organization
+            plan_limits = get_plan_limits(plan)
+            plan_features = get_plan_features(plan)
+            
+            await db.organizations.update_one(
+                {"id": organization_id},
+                {"$set": {
+                    "plan": plan,
+                    "subscription_status": "active",
+                    "stripe_customer_id": customer_id,
+                    "stripe_subscription_id": subscription_id,
+                    "features": plan_features,
+                    "max_timesheets": plan_limits["max_timesheets"],
+                    "max_employees": plan_limits["max_employees"],
+                    "max_patients": plan_limits["max_patients"],
+                    "last_payment_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            logger.info(f"Subscription activated for org: {organization_id}, plan: {plan}")
+        
+        elif event['type'] == 'customer.subscription.updated':
+            subscription = event['data']['object']
+            customer_id = subscription['customer']
+            status = subscription['status']
+            
+            # Update subscription status
+            await db.organizations.update_one(
+                {"stripe_customer_id": customer_id},
+                {"$set": {
+                    "subscription_status": status,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            logger.info(f"Subscription updated for customer: {customer_id}, status: {status}")
+        
+        elif event['type'] == 'customer.subscription.deleted':
+            subscription = event['data']['object']
+            customer_id = subscription['customer']
+            
+            # Downgrade to trial/basic
+            await db.organizations.update_one(
+                {"stripe_customer_id": customer_id},
+                {"$set": {
+                    "subscription_status": "cancelled",
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            logger.info(f"Subscription cancelled for customer: {customer_id}")
+        
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/payments/plans")
+async def get_plans():
+    """Get available subscription plans"""
+    return {
+        "plans": [
+            {
+                "id": "basic",
+                "name": "Basic Plan",
+                "price": 49,
+                "interval": "month",
+                "features": PLANS["basic"]["features"],
+                "limits": PLANS["basic"]["limits"]
+            },
+            {
+                "id": "professional",
+                "name": "Professional Plan",
+                "price": 149,
+                "interval": "month",
+                "features": PLANS["professional"]["features"],
+                "limits": PLANS["professional"]["limits"]
+            },
+            {
+                "id": "enterprise",
+                "name": "Enterprise Plan",
+                "price": "Custom",
+                "interval": "month",
+                "features": PLANS["enterprise"]["features"],
+                "limits": PLANS["enterprise"]["limits"]
+            }
+        ]
+    }
+
 # Authentication Endpoints
 
 class SignupRequest(BaseModel):
