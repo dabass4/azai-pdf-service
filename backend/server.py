@@ -42,6 +42,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Multi-Tenant Data Isolation Middleware
+async def get_organization_id(x_organization_id: str = Header(None)) -> str:
+    """
+    Extract organization_id from request header.
+    Temporary solution until Firebase authentication is implemented.
+    In production, this will be extracted from JWT token.
+    """
+    if not x_organization_id:
+        # For now, return a default organization ID for backward compatibility
+        # TODO: Make this required once authentication is implemented
+        return "default-org"
+    return x_organization_id
+
 # Define Models
 
 # Business Entity Configuration (EVV Required)
