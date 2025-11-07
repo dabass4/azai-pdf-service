@@ -41,11 +41,12 @@ class TestTimeParsingStability:
                 f"REGRESSION: Time parsing broke for '{input_time}' - got '{result}' expected '{expected}'"
     
     def test_special_rounding_rule(self):
-        """Ensure >35 min rounding to 3 units never breaks"""
+        """Ensure >=35 min rounding to 3 units never breaks"""
         test_cases = [
+            ("9:00 AM", "9:35 AM", 3),  # 35 min = 3 units (special rule - CHANGED)
             ("9:00 AM", "9:36 AM", 3),  # 36 min = 3 units (special rule)
             ("9:00 AM", "9:50 AM", 3),  # 50 min = 3 units (special rule)
-            ("9:00 AM", "9:35 AM", 2),  # 35 min = 2 units (standard)
+            ("9:00 AM", "9:34 AM", 2),  # 34 min = 2 units (standard)
             ("9:00 AM", "10:00 AM", 4), # 60 min = 4 units (standard)
         ]
         
