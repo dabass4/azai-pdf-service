@@ -1112,7 +1112,7 @@ async def upload_timesheet(file: UploadFile = File(...), organization_id: str = 
                     if extracted_data.employee_entries:
                         for emp_entry in extracted_data.employee_entries:
                             if emp_entry.employee_name:
-                                employee_info = await check_or_create_employee(emp_entry.employee_name)
+                                employee_info = await check_or_create_employee(emp_entry.employee_name, organization_id)
                                 if employee_info:
                                     registration_results["employees"].append(employee_info)
                                     if not employee_info.get("is_complete"):
