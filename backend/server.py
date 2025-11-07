@@ -2757,9 +2757,12 @@ async def create_service_code(service_code: ServiceCodeConfig, organization_id: 
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/service-codes", response_model=List[ServiceCodeConfig])
-async def get_service_codes(active_only: bool = False):
+async def get_service_codes(active_only: bool = False, organization_id: str = Depends(get_organization_id)):
     """Get all service code configurations"""
-    query = {"is_active": True} if active_only else {}
+    query = {"organization_id": organization_id}
+    if active_only:
+        query["is_active"] = True
+    
     service_codes = await db.service_codes.find(query, {"_id": 0}).to_list(1000)
     
     for sc in service_codes:
