@@ -89,7 +89,7 @@ def normalize_am_pm(time_str: str) -> str:
             else:
                 am_pm_str = 'PM'
         
-        return f"{hour}:{minute:02d} {am_pm_str}"
+        return f"{hour:02d}:{minute:02d} {am_pm_str}"
     
     # Check for format with colon (e.g., "8:30", "18:00", "8:30 AM")
     match = re.match(r'^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?$', time_str, re.IGNORECASE)
