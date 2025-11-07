@@ -2136,9 +2136,9 @@ async def create_claim(claim: MedicaidClaim, organization_id: str = Depends(get_
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/claims", response_model=List[MedicaidClaim])
-async def get_claims():
+async def get_claims(organization_id: str = Depends(get_organization_id)):
     """Get all claims"""
-    claims = await db.claims.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    claims = await db.claims.find({"organization_id": organization_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
     # Convert ISO string timestamps
     for claim in claims:
