@@ -2084,9 +2084,9 @@ async def create_contract(contract: InsuranceContract):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/insurance-contracts", response_model=List[InsuranceContract])
-async def get_contracts():
+async def get_contracts(organization_id: str = Depends(get_organization_id)):
     """Get all insurance contracts"""
-    contracts = await db.insurance_contracts.find({}, {"_id": 0}).sort("payer_name", 1).to_list(1000)
+    contracts = await db.insurance_contracts.find({"organization_id": organization_id}, {"_id": 0}).sort("payer_name", 1).to_list(1000)
     
     # Convert ISO string timestamps
     for contract in contracts:
