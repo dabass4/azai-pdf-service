@@ -4,6 +4,12 @@ Stripe payment integration for subscription management
 import os
 import stripe
 from typing import Dict, Optional
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load environment variables
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
 
 stripe.api_key = os.environ.get('STRIPE_API_KEY', '')
 
