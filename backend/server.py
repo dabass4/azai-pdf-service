@@ -2738,15 +2738,18 @@ async def get_evv_exception_codes():
 # ========================================
 
 @api_router.post("/service-codes", response_model=ServiceCodeConfig)
-async def create_service_code(service_code: ServiceCodeConfig):
+async def create_service_code(service_code: ServiceCodeConfig, organization_id: str = Depends(get_organization_id)):
     """Create a new service code configuration"""
     try:
+        # Ensure organization_id is set
+        service_code.organization_id = organization_id
+        
         doc = service_code.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
         doc['updated_at'] = doc['updated_at'].isoformat()
         
         await db.service_codes.insert_one(doc)
-        logger.info(f"Service code created: {service_code.id}")
+        logger.info(f"Service code created: {service_code.id} for org: {organization_id}")
         
         return service_code
     except Exception as e:
