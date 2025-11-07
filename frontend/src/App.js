@@ -100,10 +100,54 @@ const Navigation = () => {
               ))}
             </div>
           </div>
+
+          {/* User Info & Logout */}
+          {isAuthenticated && (
+            <div className="hidden md:flex items-center gap-4 ml-auto">
+              <div className="text-right">
+                <p className="text-sm font-semibold text-gray-900">{user?.first_name} {user?.last_name}</p>
+                <p className="text-xs text-gray-600">{organization?.name}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  logout();
+                  toast.success('Logged out successfully');
+                }}
+                className="flex items-center gap-2"
+              >
+                <LogOut size={16} />
+                Logout
+              </Button>
+            </div>
+          )}
         )}
       </div>
     </nav>
   );
+};
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 };
 
 const Home = () => {
