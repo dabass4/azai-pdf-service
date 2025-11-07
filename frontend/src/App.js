@@ -123,9 +123,9 @@ const Navigation = () => {
             </div>
           </div>
         )}
-      </nav>
-    );
-  };
+      </div>
+    </nav>
+  );
 };
 
 // Protected Route Component
