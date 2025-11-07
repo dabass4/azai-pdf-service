@@ -1068,7 +1068,8 @@ async def upload_timesheet(file: UploadFile = File(...), organization_id: str = 
             timesheet = Timesheet(
                 filename=f"{file.filename}{page_suffix}",
                 file_type=file_extension,
-                status="processing"
+                status="processing",
+                organization_id=organization_id
             )
             
             # Save to database
