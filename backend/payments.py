@@ -4,14 +4,18 @@ Stripe payment integration for subscription management
 import os
 import stripe
 from typing import Dict, Optional
-from dotenv import load_dotenv
-from pathlib import Path
 
-# Load environment variables
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+# Initialize Stripe - key will be set by server.py
+def init_stripe():
+    """Initialize Stripe with API key from environment"""
+    stripe.api_key = os.environ.get('STRIPE_API_KEY', '')
+    if not stripe.api_key:
+        print("WARNING: STRIPE_API_KEY not found in environment")
+    else:
+        print(f"Stripe initialized with key: {stripe.api_key[:20]}...")
 
-stripe.api_key = os.environ.get('STRIPE_API_KEY', '')
+# Call init on import
+init_stripe()
 
 # Subscription plan configurations
 PLANS = {
