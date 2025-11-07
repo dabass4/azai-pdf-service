@@ -597,7 +597,7 @@ async def get_pdf_page_count(file_path: str) -> int:
         except:
             return 1
 
-async def check_or_create_patient(client_name: str) -> Dict[str, Any]:
+async def check_or_create_patient(client_name: str, organization_id: str) -> Dict[str, Any]:
     """
     Check if patient exists by name, create if not found
     Returns patient info with is_complete flag
@@ -615,14 +615,15 @@ async def check_or_create_patient(client_name: str) -> Dict[str, Any]:
         first_name = name_parts[0]
         last_name = " ".join(name_parts[1:])
     
-    # Search for existing patient (case-insensitive)
+    # Search for existing patient (case-insensitive) within organization
     existing_patient = await db.patients.find_one({
+        "organization_id": organization_id,
         "first_name": {"$regex": f"^{first_name}$", "$options": "i"},
         "last_name": {"$regex": f"^{last_name}$", "$options": "i"}
     }, {"_id": 0})
     
     if existing_patient:
-        logger.info(f"Found existing patient: {first_name} {last_name}")
+        logger.info(f"Found existing patient: {first_name} {last_name} for org: {organization_id}")
         return {
             "id": existing_patient["id"],
             "first_name": existing_patient["first_name"],
@@ -632,10 +633,11 @@ async def check_or_create_patient(client_name: str) -> Dict[str, Any]:
         }
     
     # Create new incomplete patient profile
-    logger.info(f"Auto-creating patient: {first_name} {last_name}")
+    logger.info(f"Auto-creating patient: {first_name} {last_name} for org: {organization_id}")
     new_patient = PatientProfile(
         first_name=first_name,
         last_name=last_name,
+        organization_id=organization_id,
         is_complete=False,
         auto_created_from_timesheet=True
     )
