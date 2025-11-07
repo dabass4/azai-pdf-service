@@ -1964,9 +1964,9 @@ async def get_employees(
     return employees
 
 @api_router.get("/employees/{employee_id}", response_model=EmployeeProfile)
-async def get_employee(employee_id: str):
+async def get_employee(employee_id: str, organization_id: str = Depends(get_organization_id)):
     """Get specific employee by ID"""
-    employee = await db.employees.find_one({"id": employee_id}, {"_id": 0})
+    employee = await db.employees.find_one({"id": employee_id, "organization_id": organization_id}, {"_id": 0})
     
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
