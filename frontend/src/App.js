@@ -760,7 +760,7 @@ const Home = () => {
                                   <tbody className="bg-white divide-y divide-gray-200">
                                     {allEntries.map((entry, index) => (
                                       <tr key={index} className="hover:bg-gray-50" data-testid={`chronological-entry-${timesheet.id}-${index}`}>
-                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{entry.date || "N/A"}</td>
+                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{formatDateForDisplay(entry.date)}</td>
                                         <td className="px-4 py-3 text-sm text-gray-900">{entry.employee_name || "N/A"}</td>
                                         <td className="px-4 py-3 text-sm text-gray-700">{entry.service_code || "N/A"}</td>
                                         <td className="px-4 py-3 text-sm text-gray-900">{entry.time_in || "N/A"}</td>
