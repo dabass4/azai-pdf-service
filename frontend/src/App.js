@@ -26,6 +26,7 @@ const API = `${BACKEND_URL}/api`;
 const Navigation = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, organization, logout, isAuthenticated } = useAuth();
   
   const navLinks = [
     { to: "/", icon: HomeIcon, label: "Timesheets" },
