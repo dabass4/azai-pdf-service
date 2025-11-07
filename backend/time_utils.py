@@ -369,7 +369,8 @@ def calculate_units_from_times(time_in: str, time_out: str) -> Tuple[Optional[in
 
 def format_time_12hr(time_obj: time) -> str:
     """
-    Format time object to 12-hour format with AM/PM
+    Format time object to 12-hour format with AM/PM with leading zeros
+    Examples: 08:30 AM, 12:00 PM, 05:45 PM
     """
     if not time_obj:
         return ""
@@ -385,4 +386,5 @@ def format_time_12hr(time_obj: time) -> str:
     elif hour > 12:
         hour = hour - 12
     
-    return f"{hour}:{minute:02d} {am_pm}"
+    # Format with leading zero for hours
+    return f"{hour:02d}:{minute:02d} {am_pm}"
