@@ -1485,14 +1485,14 @@ async def bulk_update_patients(request: BulkUpdateRequest, organization_id: str 
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/employees/bulk-update")
-async def bulk_update_employees(request: BulkUpdateRequest):
+async def bulk_update_employees(request: BulkUpdateRequest, organization_id: str = Depends(get_organization_id)):
     """Bulk update multiple employee profiles
     
     Common use case: Mark multiple profiles as complete
     """
     try:
-        # Validate IDs exist
-        count = await db.employees.count_documents({"id": {"$in": request.ids}})
+        # Validate IDs exist within organization
+        count = await db.employees.count_documents({"id": {"$in": request.ids}, "organization_id": organization_id})
         
         if count == 0:
             raise HTTPException(status_code=404, detail="No employees found with provided IDs")
@@ -1501,9 +1501,9 @@ async def bulk_update_employees(request: BulkUpdateRequest):
         updates = request.updates.copy()
         updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         
-        # Perform bulk update
+        # Perform bulk update within organization
         result = await db.employees.update_many(
-            {"id": {"$in": request.ids}},
+            {"id": {"$in": request.ids}, "organization_id": organization_id},
             {"$set": updates}
         )
         
