@@ -8,7 +8,7 @@ import tempfile
 import uuid
 
 class TimesheetAPITester:
-    def __init__(self, base_url="https://timesheet-saas.preview.emergentagent.com"):
+    def __init__(self, base_url="https://timeclaim-1.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
