@@ -22,16 +22,20 @@ const Login = () => {
     setLoading(true);
 
     try {
+      console.log('Submitting login form...');
       const result = await login(formData.email, formData.password);
+      console.log('Login result:', result);
       
       if (result.success) {
         toast.success('Welcome back!');
         navigate('/');
       } else {
+        console.error('Login failed:', result.error);
         toast.error(result.error || 'Login failed');
       }
     } catch (error) {
-      toast.error('An error occurred during login');
+      console.error('Login exception:', error);
+      toast.error('An error occurred during login: ' + error.message);
     } finally {
       setLoading(false);
     }
