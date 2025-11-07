@@ -95,19 +95,24 @@ def parse_time_string(time_str: str) -> Optional[time]:
     - "8:30 AM", "08:30AM", "8:30"
     - Military time: "1800", "0830", "1345"
     - "18:00", "08:30" (24-hour with colon)
-    - Malformed: "830am", "540pm", "6am" (missing colons)
+    - Malformed: "830am", "540pm", "6am", "321", "1145" (missing colons)
     """
     if not time_str:
         return None
     
     try:
-        # Clean the input
-        time_str = time_str.strip()
+        # Clean the input - remove extra spaces and common OCR errors
+        time_str = time_str.strip().replace('O', '0').replace('o', '0')
+        
+        # Filter out completely invalid inputs (letters, special chars except : and AM/PM)
+        if re.search(r'[^0-9:apmAPM\s]', time_str):
+            logger.warning(f"Invalid time string with unexpected characters: '{time_str}'")
+            return None
         
         # Handle malformed times without colons
-        # Examples: "830am", "540pm", "6am", "1645"
+        # Examples: "830am", "540pm", "6am", "1645", "321", "1145"
         
-        # Check for formats like "540pm", "830am", "6pm", "705p" (with or without 'm')
+        # Check for formats like "540pm", "830am", "6pm", "705p", "321", "1145"
         match_no_colon = re.match(r'^(\d{1,4})\s*(a|p|am|pm|AM|PM)?$', time_str, re.IGNORECASE)
         if match_no_colon:
             digits = match_no_colon.group(1)
@@ -122,16 +127,21 @@ def parse_time_string(time_str: str) -> Optional[time]:
                     am_pm = 'PM'
             
             # Parse based on digit count
-            if len(digits) == 3:  # e.g., "540" or "830"
+            if len(digits) == 3:  # e.g., "540" -> 5:40, "830" -> 8:30, "321" -> 3:21
                 hour = int(digits[0])
                 minute = int(digits[1:])
-            elif len(digits) == 4:  # e.g., "1645" or "0830"
+            elif len(digits) == 4:  # e.g., "1645" -> 16:45, "0830" -> 08:30, "1145" -> 11:45
                 hour = int(digits[:2])
                 minute = int(digits[2:])
-            elif len(digits) == 1 or len(digits) == 2:  # e.g., "6" or "11"
+            elif len(digits) == 1 or len(digits) == 2:  # e.g., "6" -> 6:00, "11" -> 11:00
                 hour = int(digits)
                 minute = 0
             else:
+                return None
+            
+            # Validate minute range
+            if minute > 59:
+                logger.warning(f"Invalid minute value: {minute} from '{time_str}'")
                 return None
             
             # Apply AM/PM if provided, otherwise use smart logic
@@ -142,10 +152,14 @@ def parse_time_string(time_str: str) -> Optional[time]:
                     hour = 0
             else:
                 # Smart AM/PM logic for times without indicator
-                if 7 <= hour <= 11:
-                    pass  # Morning
+                # For 3 or 4 digit times without AM/PM
+                if hour >= 13:  # Definitely PM (military time)
+                    pass  # Already in 24-hour format
+                elif 7 <= hour <= 11:
+                    pass  # Morning (AM)
                 elif 1 <= hour <= 6:
-                    hour += 12  # Afternoon/evening
+                    hour += 12  # Afternoon/evening (PM)
+                # hour 12 stays as-is (noon)
             
             if 0 <= hour <= 23 and 0 <= minute <= 59:
                 return time(hour=hour, minute=minute)
