@@ -18,13 +18,14 @@ class ComprehensiveBackendTester:
         self.tests_passed = 0
         self.test_results = []
         
-        # Test user credentials
-        self.test_user1_email = "testuser1@test.com"
+        # Test user credentials with timestamp to ensure uniqueness
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.test_user1_email = f"testuser1_{timestamp}@test.com"
         self.test_user1_password = "SecurePass123!"
         self.test_user1_token = None
         self.test_user1_org_id = None
         
-        self.test_user2_email = "testuser2@test.com"
+        self.test_user2_email = f"testuser2_{timestamp}@test.com"
         self.test_user2_password = "SecurePass456!"
         self.test_user2_token = None
         self.test_user2_org_id = None
