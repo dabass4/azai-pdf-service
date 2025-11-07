@@ -36,8 +36,8 @@ def normalize_am_pm(time_str: str) -> str:
         logger.warning(f"Cannot normalize invalid time: '{time_str}'")
         return time_str
     
-    # Check for 3 or 4 digit format without colon (e.g., "321", "1145", "830", "1800")
-    match_digits = re.match(r'^(\d{3,4})\s*(a|p|am|pm|AM|PM)?$', time_str, re.IGNORECASE)
+    # Check for 1-4 digit format without colon (e.g., "6am", "321", "1145", "830", "1800")
+    match_digits = re.match(r'^(\d{1,4})\s*(a|p|am|pm|AM|PM)?$', time_str, re.IGNORECASE)
     if match_digits:
         digits = match_digits.group(1)
         am_pm = match_digits.group(2)
