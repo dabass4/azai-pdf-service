@@ -85,11 +85,13 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('Login attempt:', email, 'to', `${API}/auth/login`);
       const response = await axios.post(`${API}/auth/login`, {
         email,
         password
       });
 
+      console.log('Login response:', response.data);
       const { access_token, user: userData, organization: orgData } = response.data;
       
       localStorage.setItem('auth_token', access_token);
@@ -100,9 +102,10 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
+      console.error('Error details:', error.response?.data);
       return {
         success: false,
-        error: error.response?.data?.detail || 'Login failed'
+        error: error.response?.data?.detail || error.message || 'Login failed'
       };
     }
   };
