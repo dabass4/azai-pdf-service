@@ -2155,9 +2155,9 @@ async def get_claims(organization_id: str = Depends(get_organization_id)):
     return claims
 
 @api_router.get("/claims/{claim_id}", response_model=MedicaidClaim)
-async def get_claim(claim_id: str):
+async def get_claim(claim_id: str, organization_id: str = Depends(get_organization_id)):
     """Get specific claim by ID"""
-    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+    claim = await db.claims.find_one({"id": claim_id, "organization_id": organization_id}, {"_id": 0})
     
     if not claim:
         raise HTTPException(status_code=404, detail="Claim not found")
