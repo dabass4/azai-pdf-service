@@ -1980,9 +1980,10 @@ async def get_employee(employee_id: str, organization_id: str = Depends(get_orga
     return employee
 
 @api_router.put("/employees/{employee_id}", response_model=EmployeeProfile)
-async def update_employee(employee_id: str, employee_update: EmployeeProfile):
+async def update_employee(employee_id: str, employee_update: EmployeeProfile, organization_id: str = Depends(get_organization_id)):
     """Update employee profile"""
     employee_update.id = employee_id
+    employee_update.organization_id = organization_id
     employee_update.updated_at = datetime.now(timezone.utc)
     
     doc = employee_update.model_dump()
@@ -1990,7 +1991,7 @@ async def update_employee(employee_id: str, employee_update: EmployeeProfile):
     doc['updated_at'] = doc['updated_at'].isoformat()
     
     result = await db.employees.update_one(
-        {"id": employee_id},
+        {"id": employee_id, "organization_id": organization_id},
         {"$set": doc}
     )
     
