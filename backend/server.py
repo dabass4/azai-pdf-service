@@ -50,17 +50,27 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Multi-Tenant Data Isolation Middleware
-async def get_organization_id(x_organization_id: str = Header(None)) -> str:
+async def get_organization_id(
+    authorization: Optional[str] = Header(None),
+    x_organization_id: Optional[str] = Header(None)
+) -> str:
     """
-    Extract organization_id from request header.
-    Temporary solution until Firebase authentication is implemented.
-    In production, this will be extracted from JWT token.
+    Extract organization_id from JWT token or fallback to header.
+    Priority: JWT token > X-Organization-ID header > default-org
     """
-    if not x_organization_id:
-        # For now, return a default organization ID for backward compatibility
-        # TODO: Make this required once authentication is implemented
-        return "default-org"
-    return x_organization_id
+    # Try to get from JWT token first
+    if authorization:
+        try:
+            return await get_organization_from_token(authorization)
+        except:
+            pass
+    
+    # Fallback to X-Organization-ID header
+    if x_organization_id:
+        return x_organization_id
+    
+    # Fallback to default for backward compatibility
+    return "default-org"
 
 # Define Models
 
