@@ -1537,10 +1537,10 @@ async def bulk_delete_patients(request: BulkDeleteRequest, organization_id: str 
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/employees/bulk-delete")
-async def bulk_delete_employees(request: BulkDeleteRequest):
+async def bulk_delete_employees(request: BulkDeleteRequest, organization_id: str = Depends(get_organization_id)):
     """Bulk delete multiple employee profiles"""
     try:
-        result = await db.employees.delete_many({"id": {"$in": request.ids}})
+        result = await db.employees.delete_many({"id": {"$in": request.ids}, "organization_id": organization_id})
         
         logger.info(f"Bulk deleted {result.deleted_count} employees")
         
