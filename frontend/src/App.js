@@ -122,10 +122,10 @@ const Navigation = () => {
               </Button>
             </div>
           )}
-        )}
-      </div>
-    </nav>
-  );
+        </div>
+      </nav>
+    );
+  };
 };
 
 // Protected Route Component
