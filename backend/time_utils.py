@@ -12,55 +12,84 @@ logger = logging.getLogger(__name__)
 
 def normalize_am_pm(time_str: str) -> str:
     """
-    Normalize AM/PM in time string using system logic
-    Handles military time format (e.g., 1800 → 6:00 PM)
+    Normalize any time format to consistent 12-hour format with AM/PM
+    Handles military time, malformed times, and mixed formats
     
     Rules:
+    - All times converted to "H:MM AM/PM" format (no leading zero for hour)
+    - Military time (e.g., 1800, 321) converted to 12-hour
     - Times 7:00-11:59 without AM/PM are assumed AM
-    - Times 12:00-6:59 without clear indicator use context
-    - Times 1:00-6:59 are typically PM for end times
-    - Military time (e.g., 1800) converted to 12-hour with AM/PM
+    - Times 1:00-6:59 without AM/PM are assumed PM
+    - 12:xx defaults to PM (noon) unless explicitly marked
+    
+    Returns:
+        Normalized time string in "H:MM AM" or "H:MM PM" format
     """
     if not time_str:
         return time_str
     
-    # Remove extra spaces
-    time_str = time_str.strip()
+    # Clean input - remove extra spaces and common OCR errors
+    time_str = time_str.strip().replace('O', '0').replace('o', '0')
     
-    # Check for military time format (4 digits without colon)
-    if re.match(r'^\d{4}$', time_str):
-        hour = int(time_str[:2])
-        minute = int(time_str[2:])
+    # Filter out completely invalid inputs
+    if re.search(r'[^0-9:apmAPM\s]', time_str):
+        logger.warning(f"Cannot normalize invalid time: '{time_str}'")
+        return time_str
+    
+    # Check for 3 or 4 digit format without colon (e.g., "321", "1145", "830", "1800")
+    match_digits = re.match(r'^(\d{3,4})\s*(a|p|am|pm|AM|PM)?$', time_str, re.IGNORECASE)
+    if match_digits:
+        digits = match_digits.group(1)
+        am_pm = match_digits.group(2)
         
-        # Convert 24-hour to 12-hour with AM/PM
-        if hour == 0:
-            return f"12:{minute:02d} AM"
-        elif hour < 12:
-            return f"{hour}:{minute:02d} AM"
-        elif hour == 12:
-            return f"12:{minute:02d} PM"
+        # Parse based on digit count
+        if len(digits) == 3:  # e.g., "321" -> 3:21, "830" -> 8:30
+            hour = int(digits[0])
+            minute = int(digits[1:])
+        elif len(digits) == 4:  # e.g., "1145" -> 11:45, "1800" -> 18:00
+            hour = int(digits[:2])
+            minute = int(digits[2:])
         else:
-            return f"{hour-12}:{minute:02d} PM"
-    
-    # Check for 24-hour format with colon (e.g., "18:00")
-    match_24hr = re.match(r'^(\d{1,2}):(\d{2})$', time_str)
-    if match_24hr:
-        hour = int(match_24hr.group(1))
-        minute = int(match_24hr.group(2))
+            return time_str
         
-        if hour >= 13 or hour == 0:  # Definitely 24-hour format
-            if hour == 0:
-                return f"12:{minute:02d} AM"
-            elif hour < 12:
-                return f"{hour}:{minute:02d} AM"
-            elif hour == 12:
-                return f"12:{minute:02d} PM"
+        # Validate minute
+        if minute > 59:
+            logger.warning(f"Invalid minute in time: '{time_str}'")
+            return time_str
+        
+        # Convert to 12-hour format
+        if am_pm:
+            # Use provided AM/PM
+            am_pm = am_pm.upper()
+            if am_pm in ['A', 'AM']:
+                am_pm_str = 'AM'
+                if hour == 12:
+                    hour = 12  # 12 AM is midnight
+            else:  # P or PM
+                am_pm_str = 'PM'
+                if hour < 12 and hour != 0:
+                    hour = hour  # Keep as-is for 12-hour
+        else:
+            # Smart AM/PM logic
+            if hour >= 13:  # Definitely 24-hour PM
+                hour = hour - 12
+                am_pm_str = 'PM'
+            elif hour == 0:  # Midnight
+                hour = 12
+                am_pm_str = 'AM'
+            elif 7 <= hour <= 11:  # Morning
+                am_pm_str = 'AM'
+            elif hour == 12:  # Noon
+                am_pm_str = 'PM'
+            elif 1 <= hour <= 6:  # Afternoon/Evening
+                am_pm_str = 'PM'
             else:
-                return f"{hour-12}:{minute:02d} PM"
+                am_pm_str = 'PM'
+        
+        return f"{hour}:{minute:02d} {am_pm_str}"
     
-    # Extract hour and minute from 12-hour format
-    # Match patterns like "8:30", "08:30", "8:30AM", "8:30 AM", etc.
-    match = re.match(r'(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?', time_str, re.IGNORECASE)
+    # Check for format with colon (e.g., "8:30", "18:00", "8:30 AM")
+    match = re.match(r'^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?$', time_str, re.IGNORECASE)
     
     if not match:
         return time_str
@@ -69,23 +98,36 @@ def normalize_am_pm(time_str: str) -> str:
     minute = int(match.group(2))
     am_pm_from_scan = match.group(3)
     
-    # Apply system logic for AM/PM determination
-    # Times 12-6 could be AM or PM, but we'll use smart defaults
+    # Validate minute
+    if minute > 59:
+        logger.warning(f"Invalid minute in time: '{time_str}'")
+        return time_str
     
-    if hour >= 7 and hour <= 11:
-        # Morning times: 7 AM - 11 AM
-        am_pm = "AM"
-    elif hour == 12:
-        # Noon or Midnight - use scanned value if available, otherwise assume PM (noon)
-        am_pm = "PM" if not am_pm_from_scan else am_pm_from_scan.upper()
-    elif hour >= 1 and hour <= 6:
-        # Afternoon/Evening: 1 PM - 6 PM (typical work hours)
-        am_pm = "PM"
+    # If hour >= 13, it's definitely 24-hour format
+    if hour >= 13:
+        hour = hour - 12
+        am_pm_str = 'PM'
+    elif hour == 0:
+        hour = 12
+        am_pm_str = 'AM'
+    elif am_pm_from_scan:
+        # Use provided AM/PM
+        am_pm_str = am_pm_from_scan.upper()
+        # Ensure hour is in correct range for 12-hour format
+        if hour > 12:
+            hour = hour - 12
     else:
-        # Use scanned AM/PM if available
-        am_pm = am_pm_from_scan.upper() if am_pm_from_scan else "PM"
+        # Apply smart AM/PM logic
+        if 7 <= hour <= 11:
+            am_pm_str = 'AM'
+        elif hour == 12:
+            am_pm_str = 'PM'  # Default to noon
+        elif 1 <= hour <= 6:
+            am_pm_str = 'PM'
+        else:
+            am_pm_str = 'PM'
     
-    return f"{hour}:{minute:02d} {am_pm}"
+    return f"{hour}:{minute:02d} {am_pm_str}"
 
 
 def parse_time_string(time_str: str) -> Optional[time]:
