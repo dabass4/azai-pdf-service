@@ -2192,10 +2192,10 @@ async def update_claim(claim_id: str, claim_update: MedicaidClaim, organization_
     return claim_update
 
 @api_router.post("/claims/{claim_id}/submit")
-async def submit_claim(claim_id: str):
+async def submit_claim(claim_id: str, organization_id: str = Depends(get_organization_id)):
     """Submit claim to Ohio Medicaid (mocked)"""
     try:
-        claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+        claim = await db.claims.find_one({"id": claim_id, "organization_id": organization_id}, {"_id": 0})
         
         if not claim:
             raise HTTPException(status_code=404, detail="Claim not found")
