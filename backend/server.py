@@ -1236,9 +1236,9 @@ async def get_timesheets(
     return timesheets
 
 @api_router.get("/timesheets/{timesheet_id}", response_model=Timesheet)
-async def get_timesheet(timesheet_id: str):
+async def get_timesheet(timesheet_id: str, organization_id: str = Depends(get_organization_id)):
     """Get specific timesheet by ID"""
-    timesheet = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+    timesheet = await db.timesheets.find_one({"id": timesheet_id, "organization_id": organization_id}, {"_id": 0})
     
     if not timesheet:
         raise HTTPException(status_code=404, detail="Timesheet not found")
