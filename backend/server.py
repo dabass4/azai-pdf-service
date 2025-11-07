@@ -1252,9 +1252,10 @@ async def get_timesheet(timesheet_id: str, organization_id: str = Depends(get_or
     return timesheet
 
 @api_router.put("/timesheets/{timesheet_id}", response_model=Timesheet)
-async def update_timesheet(timesheet_id: str, timesheet_update: Timesheet):
+async def update_timesheet(timesheet_id: str, timesheet_update: Timesheet, organization_id: str = Depends(get_organization_id)):
     """Update timesheet data (for manual corrections)"""
     timesheet_update.id = timesheet_id
+    timesheet_update.organization_id = organization_id
     timesheet_update.updated_at = datetime.now(timezone.utc)
     
     doc = timesheet_update.model_dump()
@@ -1262,7 +1263,7 @@ async def update_timesheet(timesheet_id: str, timesheet_update: Timesheet):
     doc['updated_at'] = doc['updated_at'].isoformat()
     
     result = await db.timesheets.update_one(
-        {"id": timesheet_id},
+        {"id": timesheet_id, "organization_id": organization_id},
         {"$set": doc}
     )
     
