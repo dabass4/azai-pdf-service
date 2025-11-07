@@ -1622,6 +1622,165 @@ async def bulk_submit_sandata(request: BulkDeleteRequest):
         logger.error(f"Bulk Sandata submission error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Organization Management Endpoints
+
+@api_router.post("/organizations", response_model=Organization)
+async def create_organization(org: Organization):
+    """Create a new organization"""
+    try:
+        org_dict = org.dict()
+        org_dict["created_at"] = org_dict["created_at"].isoformat()
+        org_dict["updated_at"] = org_dict["updated_at"].isoformat()
+        if org_dict.get("trial_ends_at"):
+            org_dict["trial_ends_at"] = org_dict["trial_ends_at"].isoformat()
+        if org_dict.get("last_payment_at"):
+            org_dict["last_payment_at"] = org_dict["last_payment_at"].isoformat()
+        
+        await db.organizations.insert_one(org_dict)
+        logger.info(f"Organization created: {org.id}")
+        return org
+    except Exception as e:
+        logger.error(f"Error creating organization: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/organizations/{org_id}", response_model=Organization)
+async def get_organization(org_id: str):
+    """Get organization details"""
+    try:
+        org_doc = await db.organizations.find_one({"id": org_id}, {"_id": 0})
+        if not org_doc:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        
+        # Convert ISO strings back to datetime
+        if isinstance(org_doc.get('created_at'), str):
+            org_doc['created_at'] = datetime.fromisoformat(org_doc['created_at'])
+        if isinstance(org_doc.get('updated_at'), str):
+            org_doc['updated_at'] = datetime.fromisoformat(org_doc['updated_at'])
+        if org_doc.get('trial_ends_at') and isinstance(org_doc['trial_ends_at'], str):
+            org_doc['trial_ends_at'] = datetime.fromisoformat(org_doc['trial_ends_at'])
+        if org_doc.get('last_payment_at') and isinstance(org_doc['last_payment_at'], str):
+            org_doc['last_payment_at'] = datetime.fromisoformat(org_doc['last_payment_at'])
+        
+        return Organization(**org_doc)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching organization: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/organizations/{org_id}", response_model=Organization)
+async def update_organization(org_id: str, updates: Dict[str, Any]):
+    """Update organization details"""
+    try:
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        
+        result = await db.organizations.update_one(
+            {"id": org_id},
+            {"$set": updates}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        
+        # Fetch and return updated organization
+        org_doc = await db.organizations.find_one({"id": org_id}, {"_id": 0})
+        
+        # Convert ISO strings
+        if isinstance(org_doc.get('created_at'), str):
+            org_doc['created_at'] = datetime.fromisoformat(org_doc['created_at'])
+        if isinstance(org_doc.get('updated_at'), str):
+            org_doc['updated_at'] = datetime.fromisoformat(org_doc['updated_at'])
+        if org_doc.get('trial_ends_at') and isinstance(org_doc['trial_ends_at'], str):
+            org_doc['trial_ends_at'] = datetime.fromisoformat(org_doc['trial_ends_at'])
+        if org_doc.get('last_payment_at') and isinstance(org_doc['last_payment_at'], str):
+            org_doc['last_payment_at'] = datetime.fromisoformat(org_doc['last_payment_at'])
+        
+        return Organization(**org_doc)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating organization: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/organizations/{org_id}/users", response_model=List[User])
+async def get_organization_users(org_id: str):
+    """Get all users in an organization"""
+    try:
+        users = await db.users.find({"organization_id": org_id}, {"_id": 0}).to_list(1000)
+        
+        # Convert ISO strings
+        for user in users:
+            if isinstance(user.get('created_at'), str):
+                user['created_at'] = datetime.fromisoformat(user['created_at'])
+            if isinstance(user.get('updated_at'), str):
+                user['updated_at'] = datetime.fromisoformat(user['updated_at'])
+            if user.get('last_login_at') and isinstance(user['last_login_at'], str):
+                user['last_login_at'] = datetime.fromisoformat(user['last_login_at'])
+        
+        return users
+    except Exception as e:
+        logger.error(f"Error fetching organization users: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/users", response_model=User)
+async def create_user(user: User):
+    """Create a new user"""
+    try:
+        user_dict = user.dict()
+        user_dict["created_at"] = user_dict["created_at"].isoformat()
+        user_dict["updated_at"] = user_dict["updated_at"].isoformat()
+        if user_dict.get("last_login_at"):
+            user_dict["last_login_at"] = user_dict["last_login_at"].isoformat()
+        
+        await db.users.insert_one(user_dict)
+        logger.info(f"User created: {user.id}")
+        return user
+    except Exception as e:
+        logger.error(f"Error creating user: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/evv-credentials/{org_id}", response_model=EVVCredentials)
+async def get_evv_credentials(org_id: str):
+    """Get EVV credentials for an organization"""
+    try:
+        creds_doc = await db.evv_credentials.find_one({"organization_id": org_id}, {"_id": 0})
+        if not creds_doc:
+            raise HTTPException(status_code=404, detail="EVV credentials not found")
+        
+        # Convert ISO strings
+        if isinstance(creds_doc.get('created_at'), str):
+            creds_doc['created_at'] = datetime.fromisoformat(creds_doc['created_at'])
+        if isinstance(creds_doc.get('updated_at'), str):
+            creds_doc['updated_at'] = datetime.fromisoformat(creds_doc['updated_at'])
+        
+        return EVVCredentials(**creds_doc)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching EVV credentials: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/evv-credentials/{org_id}", response_model=EVVCredentials)
+async def update_evv_credentials(org_id: str, creds: EVVCredentials):
+    """Update EVV credentials for an organization"""
+    try:
+        creds_dict = creds.dict()
+        creds_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+        creds_dict["created_at"] = creds_dict["created_at"].isoformat()
+        
+        # Upsert (update or insert)
+        result = await db.evv_credentials.update_one(
+            {"organization_id": org_id},
+            {"$set": creds_dict},
+            upsert=True
+        )
+        
+        logger.info(f"EVV credentials updated for org: {org_id}")
+        return creds
+    except Exception as e:
+        logger.error(f"Error updating EVV credentials: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Patient Profile Endpoints
 @api_router.post("/patients", response_model=PatientProfile)
 async def create_patient(patient: PatientProfile):
