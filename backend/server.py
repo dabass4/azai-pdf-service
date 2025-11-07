@@ -1816,7 +1816,8 @@ async def get_patients(
     search: Optional[str] = None,
     is_complete: Optional[bool] = None,
     limit: int = 1000,
-    skip: int = 0
+    skip: int = 0,
+    organization_id: str = Depends(get_organization_id)
 ):
     """Get all patient profiles with optional search and filters
     
@@ -1826,7 +1827,7 @@ async def get_patients(
         limit: Maximum number of results to return
         skip: Number of results to skip (for pagination)
     """
-    query = {}
+    query = {"organization_id": organization_id}  # Multi-tenant isolation
     
     # Add search filter
     if search:
