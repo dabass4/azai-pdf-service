@@ -332,17 +332,22 @@ def calculate_units_from_times(time_in: str, time_out: str) -> Tuple[Optional[in
     Calculate billable units and hours from check-in and check-out times
     
     Args:
-        time_in: Check-in time string
-        time_out: Check-out time string
+        time_in: Check-in time string (any format)
+        time_out: Check-out time string (any format)
     
     Returns:
         Tuple of (units, hours) or (None, None) if calculation fails
+    
+    Example:
+        calculate_units_from_times("321", "357") 
+        -> (3, 0.6)  # 3:21 PM to 3:57 PM = 36 minutes = 3 units, 0.6 hours
     """
     try:
         # Calculate time difference in minutes
         minutes = calculate_time_difference_minutes(time_in, time_out)
         
         if minutes is None:
+            logger.warning(f"Cannot calculate units - time parsing failed for: '{time_in}' to '{time_out}'")
             return None, None
         
         # Convert to units with special rounding
@@ -351,9 +356,11 @@ def calculate_units_from_times(time_in: str, time_out: str) -> Tuple[Optional[in
         # Calculate hours (for display purposes)
         hours = round(minutes / 60.0, 2)
         
+        logger.info(f"Calculated: '{time_in}' to '{time_out}' = {minutes} min = {units} units = {hours} hrs")
+        
         return units, hours
     except Exception as e:
-        logger.error(f"Error calculating units from times: {e}")
+        logger.error(f"Error calculating units from '{time_in}' to '{time_out}': {e}")
         return None, None
 
 
