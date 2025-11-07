@@ -11,36 +11,81 @@ export const formatDateForDisplay = (dateStr) => {
   if (!dateStr) return "N/A";
   
   try {
-    // Handle YYYY-MM-DD format
+    // Remove any trailing slashes or extra characters
+    dateStr = dateStr.toString().trim().replace(/\/$/, '');
+    
+    // Handle YYYY-MM-DD format (database standard)
     if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const [year, month, day] = dateStr.split('-');
       return `${parseInt(month)}/${parseInt(day)}/${year}`;
     }
     
-    // Handle MM/DD/YYYY format (already formatted)
+    // Handle MM/DD/YYYY format (already correct)
     if (dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
       return dateStr;
     }
     
-    // Handle MM-DD or other partial formats
-    if (dateStr.match(/^\d{1,2}[-\/]\d{1,2}$/)) {
-      const separator = dateStr.includes('/') ? '/' : '-';
-      const [month, day] = dateStr.split(separator);
-      const year = new Date().getFullYear();
+    // Handle MM/DD/YY format (2-digit year)
+    const mmddyy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+    if (mmddyy) {
+      const [, month, day, yy] = mmddyy;
+      // Convert 2-digit year: 00-30 → 2000-2030, 31-99 → 1931-1999
+      const year = parseInt(yy) <= 30 ? `20${yy}` : `19${yy}`;
       return `${parseInt(month)}/${parseInt(day)}/${year}`;
     }
     
-    // Try to parse as Date object
+    // Handle MM-DD-YY format (with dashes)
+    const mmddyyDash = dateStr.match(/^(\d{1,2})-(\d{1,2})-(\d{2})$/);
+    if (mmddyyDash) {
+      const [, month, day, yy] = mmddyyDash;
+      const year = parseInt(yy) <= 30 ? `20${yy}` : `19${yy}`;
+      return `${parseInt(month)}/${parseInt(day)}/${year}`;
+    }
+    
+    // Handle MM-DD or MM/DD (partial date - use current year)
+    const partial = dateStr.match(/^(\d{1,2})[-\/](\d{1,2})$/);
+    if (partial) {
+      const [, month, day] = partial;
+      // Use 2024 as default year for old timesheets
+      const year = 2024;
+      return `${parseInt(month)}/${parseInt(day)}/${year}`;
+    }
+    
+    // Handle MM.DD format (dot separator)
+    const dotFormat = dateStr.match(/^(\d{1,2})\.(\d{1,2})$/);
+    if (dotFormat) {
+      const [, month, day] = dotFormat;
+      const year = 2024;
+      return `${parseInt(month)}/${parseInt(day)}/${year}`;
+    }
+    
+    // Handle day names (Sunday, Monday, Mon, Tue, etc.)
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 
+                     'sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    if (dayNames.includes(dateStr.toLowerCase().replace(/\s+\d+$/, ''))) {
+      // Return as-is with note
+      return `${dateStr} (Need Week Context)`;
+    }
+    
+    // Handle single/double digit (day of month)
+    if (dateStr.match(/^\d{1,2}$/)) {
+      const day = parseInt(dateStr);
+      if (day >= 1 && day <= 31) {
+        return `?/${day}/2024 (Need Month)`;
+      }
+    }
+    
+    // Try to parse as Date object (handles various formats)
     const date = new Date(dateStr);
-    if (!isNaN(date.getTime())) {
+    if (!isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 2100) {
       const month = date.getMonth() + 1;
       const day = date.getDate();
       const year = date.getFullYear();
       return `${month}/${day}/${year}`;
     }
     
-    // Return as-is if can't parse
-    return dateStr;
+    // Return as-is with warning for unrecognized formats
+    return `${dateStr} (Invalid Format)`;
   } catch (error) {
     console.error('Date formatting error:', error);
     return dateStr;
