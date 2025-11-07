@@ -1377,7 +1377,7 @@ async def resubmit_timesheet(timesheet_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/timesheets/{timesheet_id}/submit-sandata")
-async def submit_to_sandata(timesheet_id: str, organization_id: str = Depends(get_organization_id)):
+async def submit_timesheet_to_sandata(timesheet_id: str, organization_id: str = Depends(get_organization_id)):
     """
     Submit timesheet to Sandata API (for payroll and billing processing)
     Validates patient/employee completion before submission
