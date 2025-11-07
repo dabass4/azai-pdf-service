@@ -61,23 +61,6 @@ const Navigation = () => {
             ))}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none"
-              data-testid="mobile-menu-button"
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-
-          {/* App Title for Mobile */}
-          <div className="md:hidden flex items-center">
-            <h1 className="text-lg font-bold text-gray-900">Timesheet Scanner</h1>
-          </div>
-        </div>
-
           {/* User Info & Logout */}
           {isAuthenticated && (
             <div className="hidden md:flex items-center gap-4 ml-auto">
@@ -99,6 +82,22 @@ const Navigation = () => {
               </Button>
             </div>
           )}
+
+          {/* Mobile menu button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none"
+              data-testid="mobile-menu-button"
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+
+          {/* App Title for Mobile */}
+          <div className="md:hidden flex items-center">
+            <h1 className="text-lg font-bold text-gray-900">Timesheet Scanner</h1>
+          </div>
         </div>
 
         {/* Mobile Navigation Menu */}
