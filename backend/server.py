@@ -950,6 +950,7 @@ async def submit_to_sandata(timesheet: Timesheet) -> dict:
                         last_name = " ".join(name_parts[1:])
                         
                         employee = await db.employees.find_one({
+                            "organization_id": timesheet.organization_id,
                             "first_name": {"$regex": f"^{first_name}$", "$options": "i"},
                             "last_name": {"$regex": f"^{last_name}$", "$options": "i"}
                         }, {"_id": 0})
