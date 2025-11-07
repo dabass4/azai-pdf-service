@@ -38,6 +38,7 @@ const Navigation = () => {
     { to: "/claims", icon: ClipboardCheck, label: "Claims" },
     { to: "/evv", icon: Activity, label: "EVV" },
     { to: "/service-codes", icon: Code, label: "Service Codes" },
+    { to: "/settings", icon: SettingsIcon, label: "Settings" }
   ];
   
   return (
