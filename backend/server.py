@@ -2328,8 +2328,13 @@ async def delete_claim(claim_id: str, organization_id: str = Depends(get_organiz
 @api_router.post("/claims/bulk-submit")
 async def bulk_submit_claims(request: Dict, organization_id: str = Depends(get_organization_id)):
     """
-    Submit multiple claims to Ohio Medicaid in bulk (mocked).
-    Expects: {"claim_ids": ["id1", "id2", "id3"]}
+    Submit multiple claims to Ohio Medicaid in bulk
+    
+    ⚠️ MOCKED IMPLEMENTATION
+    This endpoint simulates bulk claim submission to Ohio Medicaid for testing.
+    Real implementation requires same credentials as single submission.
+    
+    Request body: {"claim_ids": ["id1", "id2", "id3"]}
     """
     try:
         claim_ids = request.get("claim_ids", [])
