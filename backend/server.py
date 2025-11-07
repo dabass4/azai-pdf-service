@@ -2112,9 +2112,12 @@ async def delete_contract(contract_id: str):
 
 # Medicaid Claims Endpoints
 @api_router.post("/claims", response_model=MedicaidClaim)
-async def create_claim(claim: MedicaidClaim):
+async def create_claim(claim: MedicaidClaim, organization_id: str = Depends(get_organization_id)):
     """Create a new Medicaid claim"""
     try:
+        # Ensure organization_id is set
+        claim.organization_id = organization_id
+        
         # Auto-generate claim number if not provided
         if not claim.claim_number:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
@@ -2125,7 +2128,7 @@ async def create_claim(claim: MedicaidClaim):
         doc['updated_at'] = doc['updated_at'].isoformat()
         
         await db.claims.insert_one(doc)
-        logger.info(f"Claim created: {claim.id}")
+        logger.info(f"Claim created: {claim.id} for org: {organization_id}")
         
         return claim
     except Exception as e:
