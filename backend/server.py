@@ -2276,6 +2276,70 @@ async def delete_claim(claim_id: str, organization_id: str = Depends(get_organiz
     
     return {"message": "Claim deleted successfully"}
 
+@api_router.post("/claims/bulk-submit")
+async def bulk_submit_claims(request: Dict, organization_id: str = Depends(get_organization_id)):
+    """
+    Submit multiple claims to Ohio Medicaid in bulk (mocked).
+    Expects: {"claim_ids": ["id1", "id2", "id3"]}
+    """
+    try:
+        claim_ids = request.get("claim_ids", [])
+        
+        if not claim_ids:
+            raise HTTPException(status_code=400, detail="No claim IDs provided")
+        
+        # Fetch all claims
+        claims = await db.claims.find({
+            "id": {"$in": claim_ids},
+            "organization_id": organization_id
+        }, {"_id": 0}).to_list(1000)
+        
+        if not claims:
+            raise HTTPException(status_code=404, detail="No claims found")
+        
+        # Mock bulk submission
+        submission_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        submitted_claims = []
+        
+        for claim in claims:
+            # Skip already submitted claims
+            if claim.get('status') == 'submitted':
+                continue
+            
+            logger.info(f"[MOCK BULK] Submitting claim: {claim['claim_number']}")
+            logger.info(f"  Patient: {claim['patient_name']} (Medicaid: {claim['patient_medicaid_number']})")
+            logger.info(f"  Total: ${claim['total_amount']:.2f}, Units: {claim['total_units']}")
+            
+            # Update claim status
+            await db.claims.update_one(
+                {"id": claim['id']},
+                {"$set": {
+                    "status": "submitted",
+                    "submission_date": submission_date,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            submitted_claims.append({
+                "claim_id": claim['id'],
+                "claim_number": claim['claim_number'],
+                "reference_id": f"REF-{claim['id'][:8].upper()}"
+            })
+        
+        return {
+            "status": "success",
+            "message": f"{len(submitted_claims)} claims submitted successfully (MOCKED)",
+            "submission_date": submission_date,
+            "submitted_claims": submitted_claims,
+            "skipped_count": len(claims) - len(submitted_claims)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Bulk claim submission error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ========================================
 # EVV (Electronic Visit Verification) Endpoints
 # ========================================
