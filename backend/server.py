@@ -3249,6 +3249,9 @@ async def get_current_user_info(current_user: Dict = Depends(get_current_user)):
         logger.error(f"Get user info error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Include the router in the main app
+app.include_router(api_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
