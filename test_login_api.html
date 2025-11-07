@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Login API Test</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testLogin() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await axios.post('https://timesheet-saas.preview.emergentagent.com/api/auth/login', {
+                    email: 'testlogin@test.com',
+                    password: 'Test123!'
+                });
+                
+                resultDiv.innerHTML = '<pre style="color: green">SUCCESS:\n' + JSON.stringify(response.data, null, 2) + '</pre>';
+            } catch (error) {
+                resultDiv.innerHTML = '<pre style="color: red">ERROR:\n' + error.message + '\n' + JSON.stringify(error.response?.data, null, 2) + '</pre>';
+            }
+        }
+    </script>
+</body>
+</html>
