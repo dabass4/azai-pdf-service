@@ -252,8 +252,8 @@ def calculate_time_difference_minutes(time_in: str, time_out: str) -> Optional[i
     Calculate time difference in minutes between check-in and check-out
     
     Args:
-        time_in: Check-in time string (e.g., "8:30 AM")
-        time_out: Check-out time string (e.g., "5:45 PM")
+        time_in: Check-in time string (e.g., "8:30 AM", "321", "0830")
+        time_out: Check-out time string (e.g., "5:45 PM", "545", "1745")
     
     Returns:
         Time difference in minutes, or None if parsing fails
@@ -264,6 +264,7 @@ def calculate_time_difference_minutes(time_in: str, time_out: str) -> Optional[i
         t_out = parse_time_string(time_out)
         
         if not t_in or not t_out:
+            logger.warning(f"Failed to parse times - In: '{time_in}' -> {t_in}, Out: '{time_out}' -> {t_out}")
             return None
         
         # Convert to minutes since midnight
@@ -278,9 +279,12 @@ def calculate_time_difference_minutes(time_in: str, time_out: str) -> Optional[i
         else:
             diff = minutes_out - minutes_in
         
+        # Log calculation for debugging
+        logger.debug(f"Time calc: {time_in} ({t_in.strftime('%H:%M')}) to {time_out} ({t_out.strftime('%H:%M')}) = {diff} minutes")
+        
         return diff
     except Exception as e:
-        logger.error(f"Error calculating time difference: {e}")
+        logger.error(f"Error calculating time difference from '{time_in}' to '{time_out}': {e}")
         return None
 
 
