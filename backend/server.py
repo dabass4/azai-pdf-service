@@ -949,6 +949,7 @@ Return ONLY the JSON object, no additional text or explanation."""
             # Create ExtractedData with validated fields
             return ExtractedData(
                 client_name=extracted_json.get("client_name"),
+                week_of=extracted_json.get("week_of"),
                 employee_entries=employee_entries
             )
             
