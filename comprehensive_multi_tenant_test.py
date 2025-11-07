@@ -114,7 +114,9 @@ class MultiTenantTester:
             if success:
                 data = response.json()
                 self.org2_token = data.get('access_token')
-                self.org2_id = data.get('organization_id')
+                # Extract organization_id from organization object
+                org_data = data.get('organization', {})
+                self.org2_id = org_data.get('id')
                 success = self.org2_token is not None and self.org2_id is not None
                 details = f"Token: {self.org2_token[:20]}..., Org ID: {self.org2_id}"
             else:
