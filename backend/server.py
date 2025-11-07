@@ -90,7 +90,7 @@ class BusinessEntityConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    organization_id: str  # Multi-tenant isolation
+    organization_id: Optional[str] = None  # Multi-tenant isolation (set by endpoint from JWT)
     business_entity_id: str  # Max 10 characters
     business_entity_medicaid_id: str  # 7 digits for Ohio
     agency_name: str
