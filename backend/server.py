@@ -3047,6 +3047,211 @@ async def initialize_ohio_service_codes():
 # Include the router in the main app
 app.include_router(api_router)
 
+# Authentication Endpoints
+
+class SignupRequest(BaseModel):
+    """Signup request model"""
+    email: str
+    password: str
+    first_name: str
+    last_name: str
+    organization_name: str
+    phone: Optional[str] = None
+
+class LoginRequest(BaseModel):
+    """Login request model"""
+    email: str
+    password: str
+
+class AuthResponse(BaseModel):
+    """Authentication response model"""
+    access_token: str
+    token_type: str = "bearer"
+    user: Dict[str, Any]
+    organization: Dict[str, Any]
+
+@api_router.post("/auth/signup", response_model=AuthResponse)
+async def signup(request: SignupRequest):
+    """
+    Sign up a new user and create their organization.
+    This creates:
+    1. A new organization (on free trial)
+    2. A new user as the owner
+    3. Returns JWT token
+    """
+    try:
+        # Check if user already exists
+        existing_user = await db.users.find_one({"email": request.email}, {"_id": 0})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # Create organization
+        org = Organization(
+            name=request.organization_name,
+            plan="basic",
+            subscription_status="trial",
+            admin_email=request.email,
+            admin_name=f"{request.first_name} {request.last_name}",
+            phone=request.phone,
+            max_timesheets=100,
+            max_employees=5,
+            max_patients=10,
+            features=["sandata_submission"],
+            trial_ends_at=datetime.now(timezone.utc) + timedelta(days=14)  # 14-day trial
+        )
+        
+        org_dict = org.dict()
+        org_dict["created_at"] = org_dict["created_at"].isoformat()
+        org_dict["updated_at"] = org_dict["updated_at"].isoformat()
+        if org_dict.get("trial_ends_at"):
+            org_dict["trial_ends_at"] = org_dict["trial_ends_at"].isoformat()
+        
+        await db.organizations.insert_one(org_dict)
+        logger.info(f"Organization created: {org.id} - {org.name}")
+        
+        # Create user
+        user = User(
+            email=request.email,
+            organization_id=org.id,
+            first_name=request.first_name,
+            last_name=request.last_name,
+            phone=request.phone,
+            role="owner"
+        )
+        
+        user_dict = user.dict()
+        # Hash password and store separately
+        user_dict["password_hash"] = hash_password(request.password)
+        user_dict["created_at"] = user_dict["created_at"].isoformat()
+        user_dict["updated_at"] = user_dict["updated_at"].isoformat()
+        
+        await db.users.insert_one(user_dict)
+        logger.info(f"User created: {user.id} - {user.email}")
+        
+        # Create access token
+        access_token = create_access_token(
+            user_id=user.id,
+            email=user.email,
+            organization_id=org.id,
+            role=user.role
+        )
+        
+        # Return response
+        return AuthResponse(
+            access_token=access_token,
+            user={
+                "id": user.id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.role,
+                "organization_id": org.id
+            },
+            organization={
+                "id": org.id,
+                "name": org.name,
+                "plan": org.plan,
+                "subscription_status": org.subscription_status,
+                "features": org.features
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Signup error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/auth/login", response_model=AuthResponse)
+async def login(request: LoginRequest):
+    """
+    Login with email and password.
+    Returns JWT token.
+    """
+    try:
+        # Find user
+        user_doc = await db.users.find_one({"email": request.email}, {"_id": 0})
+        if not user_doc:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Verify password
+        if not verify_password(request.password, user_doc["password_hash"]):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Check if user is active
+        if not user_doc.get("is_active", True):
+            raise HTTPException(status_code=403, detail="Account is disabled")
+        
+        # Get organization
+        org_doc = await db.organizations.find_one({"id": user_doc["organization_id"]}, {"_id": 0})
+        if not org_doc:
+            raise HTTPException(status_code=500, detail="Organization not found")
+        
+        # Update last login
+        await db.users.update_one(
+            {"id": user_doc["id"]},
+            {"$set": {"last_login_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        # Create access token
+        access_token = create_access_token(
+            user_id=user_doc["id"],
+            email=user_doc["email"],
+            organization_id=user_doc["organization_id"],
+            role=user_doc["role"]
+        )
+        
+        # Return response
+        return AuthResponse(
+            access_token=access_token,
+            user={
+                "id": user_doc["id"],
+                "email": user_doc["email"],
+                "first_name": user_doc["first_name"],
+                "last_name": user_doc["last_name"],
+                "role": user_doc["role"],
+                "organization_id": user_doc["organization_id"]
+            },
+            organization={
+                "id": org_doc["id"],
+                "name": org_doc["name"],
+                "plan": org_doc["plan"],
+                "subscription_status": org_doc["subscription_status"],
+                "features": org_doc.get("features", [])
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/auth/me")
+async def get_current_user_info(current_user: Dict = Depends(get_current_user)):
+    """
+    Get current authenticated user information.
+    Requires valid JWT token.
+    """
+    try:
+        # Get full user details
+        user_doc = await db.users.find_one({"id": current_user["user_id"]}, {"_id": 0, "password_hash": 0})
+        if not user_doc:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Get organization
+        org_doc = await db.organizations.find_one({"id": current_user["organization_id"]}, {"_id": 0})
+        
+        return {
+            "user": user_doc,
+            "organization": org_doc
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get user info error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
