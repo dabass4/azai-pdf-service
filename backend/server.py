@@ -1796,15 +1796,18 @@ async def update_evv_credentials(org_id: str, creds: EVVCredentials):
 
 # Patient Profile Endpoints
 @api_router.post("/patients", response_model=PatientProfile)
-async def create_patient(patient: PatientProfile):
+async def create_patient(patient: PatientProfile, organization_id: str = Depends(get_organization_id)):
     """Create a new patient profile"""
     try:
+        # Ensure organization_id is set
+        patient.organization_id = organization_id
+        
         doc = patient.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
         doc['updated_at'] = doc['updated_at'].isoformat()
         
         await db.patients.insert_one(doc)
-        logger.info(f"Patient created: {patient.id}")
+        logger.info(f"Patient created: {patient.id} for org: {organization_id}")
         
         return patient
     except Exception as e:
