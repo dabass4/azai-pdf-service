@@ -25,6 +25,7 @@ import aiohttp
 from pdf2image import convert_from_path
 from PIL import Image
 from time_utils import calculate_units_from_times, normalize_am_pm
+from date_utils import normalize_dates_in_extracted_data
 from auth import (
     hash_password, 
     verify_password, 
