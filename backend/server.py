@@ -525,7 +525,7 @@ class MedicaidClaim(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    organization_id: str  # Multi-tenant isolation
+    organization_id: Optional[str] = None  # Multi-tenant isolation (set by endpoint from JWT)
     claim_number: str  # Auto-generated claim number
     
     # Patient Information
