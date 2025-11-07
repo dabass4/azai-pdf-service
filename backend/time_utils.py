@@ -294,9 +294,15 @@ def minutes_to_units_with_rounding(minutes: int) -> int:
     
     Rules:
     - 1 unit = 15 minutes
-    - Standard rounding: 0-7 mins = 0 units, 8-22 = 1 unit, 23-37 = 2 units, etc.
-    - SPECIAL RULE: If time worked is > 35 minutes but < 60 minutes (2.33-3.99 units),
-      round UP to 3 units (45 minutes)
+    - Standard rounding: 0-7 mins = 0 units, 8-22 = 1 unit, 23-37 = 2 units, 38-52 = 3 units
+    - SPECIAL RULE: If time worked is > 35 minutes but < 60 minutes,
+      round UP to 3 units (45 minutes) to ensure minimum billing
+    - Examples:
+      * 36 minutes = 3 units (special rule)
+      * 37 minutes = 3 units (special rule)
+      * 45 minutes = 3 units (exact)
+      * 50 minutes = 3 units (special rule)
+      * 60 minutes = 4 units (exact hour)
     
     Args:
         minutes: Total minutes worked
@@ -307,13 +313,16 @@ def minutes_to_units_with_rounding(minutes: int) -> int:
     if minutes is None or minutes < 0:
         return 0
     
-    # Special rounding rule: > 35 minutes and < 60 minutes rounds to 3 units
+    # Special rounding rule: > 35 minutes and < 60 minutes rounds UP to 3 units
     if 35 < minutes < 60:
+        logger.debug(f"Special rounding: {minutes} minutes -> 3 units (rule: >35 and <60)")
         return 3
     
     # Standard rounding for other cases
     # Round to nearest 15-minute unit
     units = round(minutes / 15.0)
+    
+    logger.debug(f"Standard rounding: {minutes} minutes -> {units} units")
     
     return units
 
