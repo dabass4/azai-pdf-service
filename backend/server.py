@@ -1893,9 +1893,9 @@ async def update_patient(patient_id: str, patient_update: PatientProfile, organi
     return patient_update
 
 @api_router.delete("/patients/{patient_id}")
-async def delete_patient(patient_id: str):
+async def delete_patient(patient_id: str, organization_id: str = Depends(get_organization_id)):
     """Delete a patient profile"""
-    result = await db.patients.delete_one({"id": patient_id})
+    result = await db.patients.delete_one({"id": patient_id, "organization_id": organization_id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Patient not found")
