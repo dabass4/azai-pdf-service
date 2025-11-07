@@ -1274,9 +1274,9 @@ async def update_timesheet(timesheet_id: str, timesheet_update: Timesheet, organ
     return timesheet_update
 
 @api_router.delete("/timesheets/{timesheet_id}")
-async def delete_timesheet(timesheet_id: str):
+async def delete_timesheet(timesheet_id: str, organization_id: str = Depends(get_organization_id)):
     """Delete a timesheet"""
-    result = await db.timesheets.delete_one({"id": timesheet_id})
+    result = await db.timesheets.delete_one({"id": timesheet_id, "organization_id": organization_id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Timesheet not found")
