@@ -2263,7 +2263,18 @@ async def update_claim(claim_id: str, claim_update: MedicaidClaim, organization_
 
 @api_router.post("/claims/{claim_id}/submit")
 async def submit_claim(claim_id: str, organization_id: str = Depends(get_organization_id)):
-    """Submit claim to Ohio Medicaid (mocked)"""
+    """
+    Submit claim to Ohio Medicaid portal
+    
+    ⚠️ MOCKED IMPLEMENTATION
+    This endpoint simulates Ohio Medicaid claim submission for testing purposes.
+    Real implementation requires:
+    - Ohio Medicaid portal credentials
+    - MITS (Medicaid Information Technology System) access
+    - EDI 837 format compliance
+    - Trading partner agreement
+    - See: https://medicaid.ohio.gov/providers-partners/providers/billing-and-claims
+    """
     try:
         claim = await db.claims.find_one({"id": claim_id, "organization_id": organization_id}, {"_id": 0})
         
