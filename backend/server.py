@@ -1097,7 +1097,7 @@ async def upload_timesheet(file: UploadFile = File(...), organization_id: str = 
                 
                 if extracted_data and extracted_data.client_name:
                     # Check/create patient
-                    patient_info = await check_or_create_patient(extracted_data.client_name)
+                    patient_info = await check_or_create_patient(extracted_data.client_name, organization_id)
                     if patient_info:
                         registration_results["patient"] = patient_info
                         if not patient_info.get("is_complete"):
