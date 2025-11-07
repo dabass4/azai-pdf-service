@@ -1185,7 +1185,8 @@ async def get_timesheets(
     date_to: Optional[str] = None,
     submission_status: Optional[str] = None,
     limit: int = 1000,
-    skip: int = 0
+    skip: int = 0,
+    organization_id: str = Depends(get_organization_id)
 ):
     """Get all timesheets with optional search and filters
     
@@ -1197,7 +1198,7 @@ async def get_timesheets(
         limit: Maximum number of results to return
         skip: Number of results to skip (for pagination)
     """
-    query = {}
+    query = {"organization_id": organization_id}
     
     # Add search filter
     if search:
