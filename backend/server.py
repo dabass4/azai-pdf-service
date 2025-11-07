@@ -2001,9 +2001,9 @@ async def update_employee(employee_id: str, employee_update: EmployeeProfile, or
     return employee_update
 
 @api_router.delete("/employees/{employee_id}")
-async def delete_employee(employee_id: str):
+async def delete_employee(employee_id: str, organization_id: str = Depends(get_organization_id)):
     """Delete an employee profile"""
-    result = await db.employees.delete_one({"id": employee_id})
+    result = await db.employees.delete_one({"id": employee_id, "organization_id": organization_id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Employee not found")
