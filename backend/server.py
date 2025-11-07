@@ -1856,9 +1856,9 @@ async def get_patients(
     return patients
 
 @api_router.get("/patients/{patient_id}", response_model=PatientProfile)
-async def get_patient(patient_id: str):
+async def get_patient(patient_id: str, organization_id: str = Depends(get_organization_id)):
     """Get specific patient by ID"""
-    patient = await db.patients.find_one({"id": patient_id}, {"_id": 0})
+    patient = await db.patients.find_one({"id": patient_id, "organization_id": organization_id}, {"_id": 0})
     
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
