@@ -141,6 +141,7 @@ def parse_date_with_context(date_str: str, week_range: Optional[Tuple[datetime, 
         
         # Pattern 4: Day name (Monday, Mon, M) - use week context
         if week_range:
+            # Map day names to weekday numbers (0=Monday, 6=Sunday in Python)
             day_names_full = {
                 'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
                 'friday': 4, 'saturday': 5, 'sunday': 6
@@ -149,29 +150,24 @@ def parse_date_with_context(date_str: str, week_range: Optional[Tuple[datetime, 
                 'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3,
                 'fri': 4, 'sat': 5, 'sun': 6
             }
-            day_names_single = {
-                'm': 0, 't': 1, 'w': 2, 'th': 3, 'f': 4, 's': 5, 'su': 6
-            }
             
             date_lower = date_str.lower()
-            day_index = None
+            target_weekday = None
             
             # Check full name
             if date_lower in day_names_full:
-                day_index = day_names_full[date_lower]
+                target_weekday = day_names_full[date_lower]
             # Check short name
             elif date_lower in day_names_short:
-                day_index = day_names_short[date_lower]
-            # Check single letter
-            elif date_lower in day_names_single:
-                day_index = day_names_single[date_lower]
+                target_weekday = day_names_short[date_lower]
             
-            if day_index is not None:
-                # Calculate the date based on week start
-                target_date = week_range[0] + timedelta(days=day_index)
-                # Make sure it's within the week range
-                if week_range[0] <= target_date <= week_range[1]:
-                    return target_date.strftime("%Y-%m-%d")
+            if target_weekday is not None:
+                # Find the date in the week range that matches this weekday
+                current_date = week_range[0]
+                while current_date <= week_range[1]:
+                    if current_date.weekday() == target_weekday:
+                        return current_date.strftime("%Y-%m-%d")
+                    current_date += timedelta(days=1)
         
         # Pattern 5: Just a day number (1-31) - use week context
         match = re.match(r'^(\d{1,2})$', date_str)
