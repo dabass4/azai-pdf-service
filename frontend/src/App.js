@@ -20,6 +20,7 @@ import Payers from "@/pages/Payers";
 import Claims from "@/pages/Claims";
 import EVVManagement from "@/pages/EVVManagement";
 import ServiceCodes from "@/pages/ServiceCodes";
+import Settings from "@/pages/Settings";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
