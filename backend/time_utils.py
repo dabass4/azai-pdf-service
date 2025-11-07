@@ -43,7 +43,10 @@ def normalize_am_pm(time_str: str) -> str:
         am_pm = match_digits.group(2)
         
         # Parse based on digit count
-        if len(digits) == 3:  # e.g., "321" -> 3:21, "830" -> 8:30
+        if len(digits) == 1 or len(digits) == 2:  # e.g., "6" -> 6:00, "11" -> 11:00
+            hour = int(digits)
+            minute = 0
+        elif len(digits) == 3:  # e.g., "321" -> 3:21, "830" -> 8:30
             hour = int(digits[0])
             minute = int(digits[1:])
         elif len(digits) == 4:  # e.g., "1145" -> 11:45, "1800" -> 18:00
