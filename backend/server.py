@@ -494,6 +494,7 @@ class InsuranceContract(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str  # Multi-tenant isolation
     payer_name: str  # e.g., Ohio Department of Medicaid
     insurance_type: str  # Medicaid, Medicare, Private, etc.
     contract_number: Optional[str] = None
