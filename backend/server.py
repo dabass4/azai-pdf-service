@@ -807,6 +807,7 @@ Return ONLY a valid JSON object with this exact structure:
 
 {
   "client_name": "name of the patient or client",
+  "week_of": "week date range if shown (e.g., '10/6/2024 - 10/12/2024', '10-6 to 10-12', 'Week of 10/6')",
   "employee_entries": [
     {
       "employee_name": "first employee's full name",
@@ -814,7 +815,7 @@ Return ONLY a valid JSON object with this exact structure:
       "signature": "Yes if signature is present, No if not",
       "time_entries": [
         {
-          "date": "YYYY-MM-DD",
+          "date": "date as shown (e.g., '10/6', '10-6', 'Monday', 'Mon', '6')",
           "time_in": "time format as shown",
           "time_out": "time format as shown",
           "hours_worked": "number of hours"
@@ -829,6 +830,14 @@ CRITICAL INSTRUCTIONS:
 - Do NOT group by employee - maintain document order
 - Extract ALL employees and ALL their time entries
 - Group time entries by employee, but keep employees in order they appear
+
+DATE EXTRACTION RULES:
+- **LOOK FOR WEEK INFORMATION** at the top of timesheet (e.g., "Week of 10/6/2024", "10/6 - 10/12", "Week ending 10/12")
+- Extract dates EXACTLY as shown (don't convert or interpret)
+- Common formats: "10/6", "10-6", "Monday", "Mon", "M", "6", "10/6/24"
+- Include day names if present: "Monday 10/6", "Mon", "M"
+- DO NOT try to convert to full dates - extract as-is
+- System will parse dates using week context
 
 TIME FORMAT RULES:
 - Extract times EXACTLY as shown in the document
