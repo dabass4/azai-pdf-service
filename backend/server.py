@@ -929,7 +929,7 @@ async def submit_to_sandata(timesheet: Timesheet) -> dict:
     try:
         # Check if patient profile is complete
         if timesheet.patient_id:
-            patient = await db.patients.find_one({"id": timesheet.patient_id}, {"_id": 0})
+            patient = await db.patients.find_one({"id": timesheet.patient_id, "organization_id": timesheet.organization_id}, {"_id": 0})
             if patient:
                 if not patient.get("is_complete", True):
                     return {
