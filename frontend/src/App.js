@@ -796,21 +796,34 @@ const Home = () => {
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Navigation />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/patients" element={<Patients />} />
-          <Route path="/employees" element={<Employees />} />
-          <Route path="/payers" element={<Payers />} />
-          <Route path="/claims" element={<Claims />} />
-          <Route path="/evv" element={<EVVManagement />} />
-          <Route path="/service-codes" element={<ServiceCodes />} />
-          <Route path="/timesheet/edit/:id" element={<TimesheetEditor />} />
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <AuthProvider>
+      <div className="App">
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            
+            {/* Protected Routes */}
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <Navigation />
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/patients" element={<Patients />} />
+                  <Route path="/employees" element={<Employees />} />
+                  <Route path="/payers" element={<Payers />} />
+                  <Route path="/claims" element={<Claims />} />
+                  <Route path="/evv" element={<EVVManagement />} />
+                  <Route path="/service-codes" element={<ServiceCodes />} />
+                  <Route path="/timesheet/edit/:id" element={<TimesheetEditor />} />
+                </Routes>
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </BrowserRouter>
+      </div>
+    </AuthProvider>
   );
 }
 
