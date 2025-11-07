@@ -893,6 +893,9 @@ Return ONLY the JSON object, no additional text or explanation."""
                 logger.error(f"Invalid JSON structure: {extracted_json}")
                 return ExtractedData()
             
+            # Normalize dates using week context
+            extracted_json = normalize_dates_in_extracted_data(extracted_json)
+            
             # Parse employee_entries array
             employee_entries = []
             employee_entries_data = extracted_json.get("employee_entries", [])
