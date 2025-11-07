@@ -133,6 +133,94 @@ class ServiceCodeConfig(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Multi-Tenant Organization Model
+class Organization(BaseModel):
+    """Organization/Company account for multi-tenancy"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str  # Company/Organization name
+    plan: str = "basic"  # "basic", "professional", "enterprise"
+    subscription_status: str = "trial"  # "trial", "active", "suspended", "cancelled"
+    stripe_customer_id: Optional[str] = None
+    stripe_subscription_id: Optional[str] = None
+    
+    # Contact Information
+    admin_email: str
+    admin_name: str
+    phone: Optional[str] = None
+    
+    # Address
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    
+    # Plan limits
+    max_timesheets: int = 100  # Per month, -1 for unlimited
+    max_employees: int = 5
+    max_patients: int = 10
+    
+    # Features enabled
+    features: List[str] = ["sandata_submission"]  # ["sandata_submission", "evv_submission", "bulk_operations", "advanced_reporting", "api_access"]
+    
+    # Metadata
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    trial_ends_at: Optional[datetime] = None
+    last_payment_at: Optional[datetime] = None
+
+# User Model
+class User(BaseModel):
+    """User account with role-based access"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    firebase_uid: Optional[str] = None  # Firebase authentication UID
+    organization_id: str  # Link to organization
+    
+    # Profile
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    
+    # Role and permissions
+    role: str = "staff"  # "owner", "admin", "staff"
+    is_active: bool = True
+    
+    # Metadata
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_login_at: Optional[datetime] = None
+
+# EVV Credentials Model
+class EVVCredentials(BaseModel):
+    """Secure storage for EVV API credentials per organization"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str  # Link to organization
+    
+    # Environment selection
+    environment: str = "sandbox"  # "sandbox" or "production"
+    
+    # Sandata API Credentials
+    sandata_api_key: Optional[str] = None
+    sandata_api_secret: Optional[str] = None
+    sandata_organization_id: Optional[str] = None
+    sandata_enabled: bool = False
+    
+    # Ohio EVV Aggregator Credentials
+    ohio_evv_username: Optional[str] = None
+    ohio_evv_password: Optional[str] = None
+    ohio_evv_business_entity_id: Optional[str] = None
+    ohio_evv_enabled: bool = False
+    
+    # Metadata
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # EVV Visit Record (Core)
 class EVVVisit(BaseModel):
     """
