@@ -3571,6 +3571,454 @@ async def get_current_user_info(current_user: Dict = Depends(get_current_user)):
         logger.error(f"Get user info error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ========================================
+# Ohio Medicaid 837P Claims Endpoints
+# ========================================
+
+from edi_claim_generator import ClaimGenerator
+
+# Models for 837P claim generation
+class Generate837ClaimRequest(BaseModel):
+    """Request to generate 837P claim from timesheets"""
+    timesheet_ids: List[str] = Field(..., description="List of timesheet IDs to include in claim")
+    
+class Generate837BulkRequest(BaseModel):
+    """Request to generate multiple 837P claims"""
+    claims: List[Dict[str, Any]] = Field(..., description="List of claim data dictionaries")
+
+class ODMEnrollmentStep(BaseModel):
+    """ODM enrollment checklist step"""
+    step_number: int
+    step_name: str
+    description: str
+    completed: bool = False
+    completed_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class ODMEnrollmentStatus(BaseModel):
+    """Track ODM trading partner enrollment progress"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
+    trading_partner_id: Optional[str] = None  # 7-digit ODM ID when assigned
+    enrollment_status: str = "not_started"  # not_started, in_progress, testing, approved
+    steps: List[ODMEnrollmentStep] = []
+    documents: List[Dict[str, str]] = []  # Document references
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+@api_router.post("/claims/generate-837")
+async def generate_837_claim(
+    request: Generate837ClaimRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Generate X12 837P claim file from selected timesheets.
+    
+    This creates a HIPAA 5010-compliant 837 Professional claim file
+    that can be submitted to Ohio Medicaid after trading partner enrollment.
+    """
+    try:
+        organization_id = current_user["organization_id"]
+        
+        # Fetch timesheets
+        timesheets = []
+        for timesheet_id in request.timesheet_ids:
+            ts = await db.timesheets.find_one({
+                "id": timesheet_id,
+                "organization_id": organization_id
+            }, {"_id": 0})
+            
+            if not ts:
+                raise HTTPException(status_code=404, detail=f"Timesheet {timesheet_id} not found")
+            
+            timesheets.append(ts)
+        
+        if not timesheets:
+            raise HTTPException(status_code=400, detail="No timesheets found")
+        
+        # Group timesheets by patient for claim generation
+        claims_by_patient = {}
+        for ts in timesheets:
+            patient_id = ts.get('patient_id')
+            if not patient_id:
+                continue
+            
+            if patient_id not in claims_by_patient:
+                claims_by_patient[patient_id] = []
+            
+            claims_by_patient[patient_id].append(ts)
+        
+        # Generate 837P file for the first patient (for now)
+        # In production, you might want to handle multiple patients differently
+        if not claims_by_patient:
+            raise HTTPException(status_code=400, detail="No valid timesheets with patient information")
+        
+        # Take first patient's timesheets
+        patient_id = list(claims_by_patient.keys())[0]
+        patient_timesheets = claims_by_patient[patient_id]
+        
+        # Fetch patient information
+        patient = await db.patients.find_one({
+            "id": patient_id,
+            "organization_id": organization_id
+        }, {"_id": 0})
+        
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        # Fetch business entity configuration for sender ID
+        business_entity = await db.business_entity.find_one({
+            "organization_id": organization_id
+        }, {"_id": 0})
+        
+        # Build claim data structure
+        service_lines = []
+        billing_provider_npi = None
+        rendering_provider_npi = None
+        rendering_provider_name = None
+        
+        for ts in patient_timesheets:
+            extracted = ts.get('extracted_data', {})
+            entries = extracted.get('entries', [])
+            
+            for entry in entries:
+                service_date = entry.get('date', '')
+                service_code = entry.get('service_code', 'T1019')  # Default to T1019 if missing
+                hours = entry.get('hours', 0)
+                units = entry.get('units', 0)
+                
+                # Calculate charge (example: $20 per unit)
+                charge_per_unit = 20.00
+                charge_amount = float(units) * charge_per_unit if units else 0
+                
+                # Get employee info for rendering provider
+                employee_name = entry.get('employee_name', '')
+                
+                # Fetch employee to get NPI
+                if employee_name and not rendering_provider_npi:
+                    employee = await db.employees.find_one({
+                        "organization_id": organization_id,
+                        "$or": [
+                            {"first_name": {"$regex": employee_name.split()[0] if employee_name else "", "$options": "i"}},
+                            {"employee_id": {"$regex": employee_name, "$options": "i"}}
+                        ]
+                    }, {"_id": 0})
+                    
+                    if employee:
+                        rendering_provider_npi = employee.get('npi', '1234567890')
+                        rendering_provider_name = f"{employee.get('first_name', '')} {employee.get('last_name', '')}".strip()
+                
+                service_lines.append({
+                    "service_date": service_date,
+                    "service_code": service_code,
+                    "cpt_code": service_code,
+                    "charge_amount": charge_amount,
+                    "units": units if units else 1,
+                })
+        
+        # Use business entity NPI as billing provider
+        if business_entity:
+            billing_provider_npi = business_entity.get('business_entity_medicaid_id', '1234567890')
+            billing_provider_name = business_entity.get('agency_name', 'Healthcare Agency')
+        else:
+            billing_provider_npi = '1234567890'  # Placeholder
+            billing_provider_name = 'Healthcare Agency'
+        
+        if not rendering_provider_npi:
+            rendering_provider_npi = '1234567890'  # Placeholder
+            rendering_provider_name = 'Direct Care Worker'
+        
+        # Build claim data
+        claim_data = {
+            "claim_id": f"CLM{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            "patient": {
+                "first_name": patient.get('first_name', ''),
+                "last_name": patient.get('last_name', ''),
+                "date_of_birth": patient.get('date_of_birth', ''),
+                "medicaid_id": patient.get('medicaid_number', ''),
+                "gender": patient.get('gender', 'U'),
+            },
+            "billing_provider_npi": billing_provider_npi,
+            "billing_provider_name": billing_provider_name,
+            "rendering_provider_npi": rendering_provider_npi,
+            "rendering_provider_name": rendering_provider_name,
+            "diagnosis_code_1": "Z7389",  # Example diagnosis code
+            "place_of_service": "12",  # Home
+            "service_lines": service_lines,
+        }
+        
+        # Initialize claim generator
+        sender_id = business_entity.get('business_entity_id', 'SENDER') if business_entity else 'SENDER'
+        claim_generator = ClaimGenerator(
+            sender_id=sender_id,
+            receiver_id="ODMITS",
+            test_mode=True
+        )
+        
+        # Generate EDI file
+        edi_content = claim_generator.generate_claim(claim_data)
+        
+        # Save generated claim to database
+        generated_claim = {
+            "id": str(uuid.uuid4()),
+            "organization_id": organization_id,
+            "claim_data": claim_data,
+            "edi_content": edi_content,
+            "timesheet_ids": request.timesheet_ids,
+            "patient_id": patient_id,
+            "status": "generated",
+            "file_format": "837P",
+            "created_at": datetime.now(timezone.utc),
+        }
+        
+        await db.generated_claims.insert_one(generated_claim)
+        
+        # Return EDI file as downloadable
+        filename = f"837P_claim_{datetime.now().strftime('%Y%m%d_%H%M%S')}.edi"
+        
+        return StreamingResponse(
+            io.StringIO(edi_content),
+            media_type="text/plain",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Generate 837 claim error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Claim generation failed: {str(e)}")
+
+@api_router.get("/claims/generated")
+async def get_generated_claims(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Get list of generated 837P claims for the organization.
+    """
+    try:
+        organization_id = current_user["organization_id"]
+        
+        claims = await db.generated_claims.find({
+            "organization_id": organization_id
+        }, {"_id": 0, "edi_content": 0}).sort("created_at", -1).to_list(length=100)
+        
+        return {"claims": claims}
+        
+    except Exception as e:
+        logger.error(f"Get generated claims error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/claims/generated/{claim_id}/download")
+async def download_generated_claim(
+    claim_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Download a previously generated 837P claim file.
+    """
+    try:
+        organization_id = current_user["organization_id"]
+        
+        claim = await db.generated_claims.find_one({
+            "id": claim_id,
+            "organization_id": organization_id
+        }, {"_id": 0})
+        
+        if not claim:
+            raise HTTPException(status_code=404, detail="Claim not found")
+        
+        edi_content = claim.get('edi_content', '')
+        filename = f"837P_claim_{claim_id}.edi"
+        
+        return StreamingResponse(
+            io.StringIO(edi_content),
+            media_type="text/plain",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Download claim error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/claims/bulk-submit")
+async def bulk_submit_claims(
+    request: Dict[str, Any],
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Bulk submit multiple claims to Ohio Medicaid.
+    
+    NOTE: This is a placeholder for the actual submission functionality.
+    Real submission requires ODM trading partner enrollment and EDI connectivity.
+    """
+    try:
+        organization_id = current_user["organization_id"]
+        claim_ids = request.get('claim_ids', [])
+        
+        if not claim_ids:
+            raise HTTPException(status_code=400, detail="No claims selected for submission")
+        
+        # For now, just mark claims as "submitted" in database
+        # Real implementation would transmit to ODM via SFTP/AS2
+        result = await db.generated_claims.update_many(
+            {
+                "id": {"$in": claim_ids},
+                "organization_id": organization_id
+            },
+            {
+                "$set": {
+                    "status": "submitted",
+                    "submitted_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+        
+        return {
+            "status": "success",
+            "message": f"Successfully marked {result.modified_count} claims as submitted",
+            "modified_count": result.modified_count,
+            "note": "This is a placeholder. Real submission requires ODM trading partner enrollment."
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Bulk submit claims error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/enrollment/status")
+async def get_enrollment_status(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Get ODM trading partner enrollment status and checklist.
+    """
+    try:
+        organization_id = current_user["organization_id"]
+        
+        # Check if enrollment record exists
+        enrollment = await db.odm_enrollment.find_one({
+            "organization_id": organization_id
+        }, {"_id": 0})
+        
+        if not enrollment:
+            # Create default enrollment checklist
+            steps = [
+                {"step_number": 1, "step_name": "Review ODM Trading Partner Information Guide", "description": "Download and review the guide", "completed": False},
+                {"step_number": 2, "step_name": "Review HIPAA ASC X12 Technical Reports", "description": "Review TR3 reports from X12 website", "completed": False},
+                {"step_number": 3, "step_name": "Begin Trading Partner Enrollment", "description": "Use Trading Partner Management Application", "completed": False},
+                {"step_number": 4, "step_name": "Review ODM Companion Guides", "description": "Review 837P companion guide", "completed": False},
+                {"step_number": 5, "step_name": "Coordinate Testing Strategy", "description": "Plan testing with IT and business units", "completed": False},
+                {"step_number": 6, "step_name": "Complete Trading Partner Agreement", "description": "Submit signed ODM Trading Partner Agreement", "completed": False},
+                {"step_number": 7, "step_name": "Complete EDI Connectivity Form", "description": "Submit connectivity form for SFTP/AS2", "completed": False},
+                {"step_number": 8, "step_name": "Verify Trading Partner Number", "description": "Receive 7-digit Sender/Receiver ID from ODM", "completed": False},
+                {"step_number": 9, "step_name": "Provide Test Provider List", "description": "Submit list of up to 5 providers for testing", "completed": False},
+                {"step_number": 10, "step_name": "Submit Test Claims", "description": "Generate and submit test EDI data", "completed": False},
+                {"step_number": 11, "step_name": "Verify EDI Receipts", "description": "Receive 999, 824, 277CA, and 835 responses", "completed": False},
+            ]
+            
+            enrollment = {
+                "id": str(uuid.uuid4()),
+                "organization_id": organization_id,
+                "enrollment_status": "not_started",
+                "steps": steps,
+                "documents": [],
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }
+            
+            await db.odm_enrollment.insert_one(enrollment)
+        
+        return enrollment
+        
+    except Exception as e:
+        logger.error(f"Get enrollment status error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/enrollment/update-step")
+async def update_enrollment_step(
+    request: Dict[str, Any],
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Update a specific enrollment checklist step.
+    """
+    try:
+        organization_id = current_user["organization_id"]
+        step_number = request.get('step_number')
+        completed = request.get('completed', False)
+        notes = request.get('notes', '')
+        
+        if step_number is None:
+            raise HTTPException(status_code=400, detail="step_number is required")
+        
+        # Update the specific step
+        result = await db.odm_enrollment.update_one(
+            {
+                "organization_id": organization_id,
+                "steps.step_number": step_number
+            },
+            {
+                "$set": {
+                    "steps.$.completed": completed,
+                    "steps.$.completed_date": datetime.now(timezone.utc) if completed else None,
+                    "steps.$.notes": notes,
+                    "updated_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Enrollment record or step not found")
+        
+        return {"status": "success", "message": "Step updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update enrollment step error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/enrollment/trading-partner-id")
+async def update_trading_partner_id(
+    request: Dict[str, Any],
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Update ODM trading partner ID once received from ODM.
+    """
+    try:
+        organization_id = current_user["organization_id"]
+        trading_partner_id = request.get('trading_partner_id', '')
+        
+        if not trading_partner_id:
+            raise HTTPException(status_code=400, detail="trading_partner_id is required")
+        
+        result = await db.odm_enrollment.update_one(
+            {"organization_id": organization_id},
+            {
+                "$set": {
+                    "trading_partner_id": trading_partner_id,
+                    "updated_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Enrollment record not found")
+        
+        return {"status": "success", "message": "Trading partner ID updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update trading partner ID error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 
