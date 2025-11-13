@@ -2696,51 +2696,24 @@ async def submit_individuals(current_user: Dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/evv/submit/direct-care-workers")
-async def submit_direct_care_workers():
-    """Submit DirectCareWorker records to Ohio EVV Aggregator"""
+async def submit_direct_care_workers(current_user: Dict = Depends(get_current_user)):
+    """Submit DirectCareWorker/Employee records to EVV Aggregator (REAL IMPLEMENTATION)"""
     try:
-        # Get active business entity
-        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
-        if not entity:
-            raise HTTPException(status_code=404, detail="No active business entity configured")
+        organization_id = current_user["organization_id"]
         
-        # Get all employees
-        employees = await db.employees.find({}, {"_id": 0}).to_list(1000)
+        # Initialize coordinator with real EVV client
+        coordinator = EVVSubmissionCoordinator(db)
         
-        # Export to EVV format
-        exporter = EVVExportOrchestrator()
-        json_export = exporter.export_direct_care_workers(
-            employees,
-            entity['business_entity_id'],
-            entity['business_entity_medicaid_id']
-        )
+        # Submit all employees for organization
+        result = await coordinator.submit_employees_to_evv(organization_id)
         
-        # Submit to aggregator
-        submission_service = EVVSubmissionService()
-        result = submission_service.submit_direct_care_workers(
-            json_export,
-            entity['business_entity_id'],
-            entity['business_entity_medicaid_id']
-        )
-        
-        # Save transmission record
-        if result.get("status") == "success":
-            transmission = EVVTransmission(
-                transaction_id=result['transaction_id'],
-                record_type="Staff",
-                record_count=len(employees),
-                business_entity_id=entity['business_entity_id'],
-                business_entity_medicaid_id=entity['business_entity_medicaid_id'],
-                transmission_datetime=datetime.now(timezone.utc).isoformat(),
-                status="accepted" if not result.get('has_rejections') else "partial",
-                acknowledgement=json.dumps(result.get('acknowledgment', {}))
-            )
-            
-            doc = transmission.model_dump()
-            doc['created_at'] = doc['created_at'].isoformat()
-            await db.evv_transmissions.insert_one(doc)
-        
-        return result
+        return {
+            "success": result.success,
+            "transaction_id": result.transaction_id,
+            "message": result.message,
+            "errors": result.errors,
+            "vendor": coordinator.evv_client.get_vendor_name()
+        }
     except HTTPException:
         raise
     except Exception as e:
