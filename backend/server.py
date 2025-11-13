@@ -2721,76 +2721,60 @@ async def submit_direct_care_workers(current_user: Dict = Depends(get_current_us
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/evv/submit/visits")
-async def submit_visits():
-    """Submit Visit records to Ohio EVV Aggregator"""
+async def submit_visits(
+    request: Dict[str, Any],
+    current_user: Dict = Depends(get_current_user)
+):
+    """Submit Visit records from timesheets to EVV Aggregator (REAL IMPLEMENTATION)"""
     try:
-        # Get active business entity
-        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
-        if not entity:
-            raise HTTPException(status_code=404, detail="No active business entity configured")
+        organization_id = current_user["organization_id"]
+        timesheet_ids = request.get('timesheet_ids', [])
         
-        # Get ready visits
-        visits = await db.evv_visits.find(
-            {"evv_status": {"$in": ["draft", "ready"]}},
-            {"_id": 0}
-        ).to_list(1000)
+        if not timesheet_ids:
+            raise HTTPException(status_code=400, detail="timesheet_ids required")
         
-        if not visits:
-            return {
-                "status": "success",
-                "message": "No visits ready for submission",
-                "record_count": 0
-            }
+        # Initialize coordinator with real EVV client
+        coordinator = EVVSubmissionCoordinator(db)
         
-        # Export to EVV format
-        exporter = EVVExportOrchestrator()
-        json_export = exporter.export_visits(
-            visits,
-            entity['business_entity_id'],
-            entity['business_entity_medicaid_id']
-        )
+        # Submit timesheets to EVV
+        result = await coordinator.submit_batch_to_evv(timesheet_ids, organization_id)
         
-        # Submit to aggregator
-        submission_service = EVVSubmissionService()
-        result = submission_service.submit_visits(
-            json_export,
-            entity['business_entity_id'],
-            entity['business_entity_medicaid_id']
-        )
+        return {
+            "success": result['success_count'] > 0,
+            "total": result['total'],
+            "successful": result['successful'],
+            "failed": result['failed'],
+            "success_count": result['success_count'],
+            "failure_count": result['failure_count'],
+            "message": f"Submitted {result['success_count']} of {result['total']} timesheets to EVV"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting visits: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/evv/verify-before-claim")
+async def verify_evv_before_claim(
+    request: Dict[str, Any],
+    current_user: Dict = Depends(get_current_user)
+):
+    """Verify all timesheets have EVV records before generating 837P claim"""
+    try:
+        organization_id = current_user["organization_id"]
+        timesheet_ids = request.get('timesheet_ids', [])
         
-        # Save transmission record and update visit statuses
-        if result.get("status") == "success":
-            transmission = EVVTransmission(
-                transaction_id=result['transaction_id'],
-                record_type="Visit",
-                record_count=len(visits),
-                business_entity_id=entity['business_entity_id'],
-                business_entity_medicaid_id=entity['business_entity_medicaid_id'],
-                transmission_datetime=datetime.now(timezone.utc).isoformat(),
-                status="accepted" if not result.get('has_rejections') else "partial",
-                acknowledgement=json.dumps(result.get('acknowledgment', {}))
-            )
-            
-            doc = transmission.model_dump()
-            doc['created_at'] = doc['created_at'].isoformat()
-            await db.evv_transmissions.insert_one(doc)
-            
-            # Update visit statuses
-            visit_ids = [v['id'] for v in visits]
-            await db.evv_visits.update_many(
-                {"id": {"$in": visit_ids}},
-                {"$set": {
-                    "evv_status": "submitted",
-                    "transaction_id": result['transaction_id'],
-                    "submission_date": datetime.now(timezone.utc).isoformat()
-                }}
-            )
+        if not timesheet_ids:
+            raise HTTPException(status_code=400, detail="timesheet_ids required")
+        
+        coordinator = EVVSubmissionCoordinator(db)
+        result = await coordinator.verify_evv_before_claim(timesheet_ids, organization_id)
         
         return result
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error submitting visits: {e}")
+        logger.error(f"Error verifying EVV: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/evv/status/{transaction_id}")
