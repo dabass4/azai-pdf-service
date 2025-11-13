@@ -1571,9 +1571,11 @@ Signature: [Signed]"""
             self.log_test("Enrollment Status", False, str(e))
             return False
     
-    def test_enrollment_update_step(self):
+    def test_enrollment_update_step(self, auth_token):
         """Test PUT /api/enrollment/update-step"""
         try:
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            
             # Test valid step update
             update_data = {
                 "step_number": 1,
@@ -1581,7 +1583,7 @@ Signature: [Signed]"""
                 "notes": "Reviewed ODM Trading Partner Information Guide"
             }
             
-            response = requests.put(f"{self.api_url}/enrollment/update-step", json=update_data, timeout=10)
+            response = requests.put(f"{self.api_url}/enrollment/update-step", json=update_data, headers=headers, timeout=10)
             success = response.status_code == 200
             
             if success:
@@ -1599,7 +1601,7 @@ Signature: [Signed]"""
                 "completed": True
             }
             
-            invalid_response = requests.put(f"{self.api_url}/enrollment/update-step", json=invalid_update, timeout=10)
+            invalid_response = requests.put(f"{self.api_url}/enrollment/update-step", json=invalid_update, headers=headers, timeout=10)
             invalid_success = invalid_response.status_code == 404  # Should fail
             
             self.log_test("Enrollment Update Step (Invalid)", invalid_success, f"Status: {invalid_response.status_code}")
