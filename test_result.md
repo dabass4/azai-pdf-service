@@ -430,8 +430,36 @@ frontend:
         agent: "main"
         comment: "Updated Home/Timesheets page with SearchFilter component (search by client/patient/employee, date range filters, submission status filter), Export to CSV button, selection checkboxes (Select All + individual), BulkActionToolbar with Delete action. UI verified via screenshot - all features visible and properly laid out"
 
+backend:
+  - task: "Ohio Medicaid 837P claim generation endpoints"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py, /app/backend/edi_claim_generator.py, /app/backend/edi_x12_builder.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented X12 EDI 837P builder and claim generator. Added endpoints: /api/claims/generate-837 (generate from timesheets), /api/claims/generated (list claims), /api/claims/generated/{id}/download (download EDI), /api/enrollment/status (checklist), /api/enrollment/update-step (update progress). Needs backend testing."
+
+frontend:
+  - task: "Ohio Medicaid 837P Claims UI"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/Claims.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Completely redesigned Claims page with 3 tabs: Generate 837P (select timesheets, generate EDI), Generated Claims (view/download), ODM Enrollment (11-step checklist with progress tracking). Needs frontend testing."
+
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Ohio Medicaid 837P claim generation endpoints"
+    - "Ohio Medicaid 837P Claims UI"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
