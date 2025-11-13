@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { FileText, Plus, Edit, Trash2, Send, CheckCircle, Clock, X, AlertCircle } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Send, CheckCircle, Clock, X, AlertCircle, Download, FileCode, List, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,12 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const Claims = () => {
+  const [activeTab, setActiveTab] = useState("claims"); // claims, generate837, enrollment
   const [claims, setClaims] = useState([]);
+  const [generated837Claims, setGenerated837Claims] = useState([]);
+  const [timesheets, setTimesheets] = useState([]);
+  const [selectedTimesheets, setSelectedTimesheets] = useState([]);
+  const [enrollmentStatus, setEnrollmentStatus] = useState(null);
   const [patients, setPatients] = useState([]);
   const [payers, setPayers] = useState([]);
   const [employees, setEmployees] = useState([]);
