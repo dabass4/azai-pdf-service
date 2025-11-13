@@ -1409,9 +1409,39 @@ Signature: [Signed]"""
         
         return True
     
-    def setup_claims_test_data(self):
+    def setup_test_authentication(self):
+        """Setup test authentication and return access token"""
+        try:
+            # Create a test user and organization
+            signup_data = {
+                "email": f"test_claims_{datetime.now().strftime('%Y%m%d%H%M%S')}@test.com",
+                "password": "testpassword123",
+                "first_name": "Test",
+                "last_name": "User",
+                "organization_name": "Test Claims Organization",
+                "phone": "6145551234"
+            }
+            
+            response = requests.post(f"{self.api_url}/auth/signup", json=signup_data, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                access_token = data.get('access_token')
+                self.log_test("Setup Test Authentication", True, f"Created test user and got token")
+                return access_token
+            else:
+                self.log_test("Setup Test Authentication", False, f"Status: {response.status_code}, Response: {response.text[:200]}")
+                return None
+                
+        except Exception as e:
+            self.log_test("Setup Test Authentication", False, str(e))
+            return None
+    
+    def setup_claims_test_data(self, auth_token):
         """Setup test data for claims testing"""
         try:
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            
             # Create test patient with complete data
             patient_data = {
                 "first_name": "Sarah",
@@ -1430,9 +1460,9 @@ Signature: [Signed]"""
                 "is_complete": True
             }
             
-            patient_response = requests.post(f"{self.api_url}/patients", json=patient_data, timeout=10)
+            patient_response = requests.post(f"{self.api_url}/patients", json=patient_data, headers=headers, timeout=10)
             if patient_response.status_code != 200:
-                self.log_test("Setup Claims Test Data", False, "Failed to create test patient")
+                self.log_test("Setup Claims Test Data", False, f"Failed to create test patient: {patient_response.status_code}")
                 return None
             
             patient = patient_response.json()
@@ -1458,55 +1488,54 @@ Signature: [Signed]"""
                 "is_complete": True
             }
             
-            employee_response = requests.post(f"{self.api_url}/employees", json=employee_data, timeout=10)
+            employee_response = requests.post(f"{self.api_url}/employees", json=employee_data, headers=headers, timeout=10)
             if employee_response.status_code != 200:
-                self.log_test("Setup Claims Test Data", False, "Failed to create test employee")
+                self.log_test("Setup Claims Test Data", False, f"Failed to create test employee: {employee_response.status_code}")
                 return None
             
-            # Create test timesheets with extracted data
-            timesheet_ids = []
-            for i in range(2):
-                timesheet_data = {
-                    "id": str(uuid.uuid4()),
-                    "filename": f"test_timesheet_{i+1}.pdf",
-                    "file_type": "pdf",
-                    "status": "completed",
-                    "patient_id": patient_id,
-                    "extracted_data": {
-                        "client_name": "Sarah Johnson",
-                        "week_of": "2024-01-15 - 2024-01-21",
-                        "employee_entries": [
-                            {
-                                "employee_name": "Robert Davis",
-                                "service_code": "T1019",
-                                "signature": "Yes",
-                                "time_entries": [
-                                    {
-                                        "date": "2024-01-15",
-                                        "time_in": "09:00",
-                                        "time_out": "17:00",
-                                        "hours_worked": "8.0",
-                                        "units": 32
-                                    },
-                                    {
-                                        "date": "2024-01-16",
-                                        "time_in": "09:00",
-                                        "time_out": "17:00",
-                                        "hours_worked": "8.0",
-                                        "units": 32
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                }
-                
-                # Insert timesheet directly into database (simulating processed timesheet)
-                # This is a mock approach since we can't easily upload files in tests
-                timesheet_ids.append(timesheet_data["id"])
+            # For testing purposes, we'll use the upload endpoint to create actual timesheets
+            # Create a simple test timesheet file
+            test_content = """TIMESHEET
+Employee: Robert Davis
+Client: Sarah Johnson
+Service Code: T1019
+
+Date: 2024-01-15
+Time In: 9:00 AM
+Time Out: 5:00 PM
+Hours: 8
+Signature: [Signed]
+
+Date: 2024-01-16
+Time In: 9:00 AM
+Time Out: 5:00 PM
+Hours: 8
+Signature: [Signed]"""
             
-            self.log_test("Setup Claims Test Data", True, f"Created patient, employee, and {len(timesheet_ids)} timesheets")
-            return timesheet_ids
+            import tempfile
+            import os
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf', mode='w')
+            temp_file.write(test_content)
+            temp_file.close()
+            
+            # Upload the timesheet
+            with open(temp_file.name, 'rb') as f:
+                files = {'file': ('claims_test_timesheet.pdf', f, 'application/pdf')}
+                upload_response = requests.post(f"{self.api_url}/timesheets/upload", files=files, headers=headers, timeout=60)
+            
+            # Cleanup temp file
+            os.unlink(temp_file.name)
+            
+            if upload_response.status_code == 200:
+                upload_data = upload_response.json()
+                timesheet_id = upload_data.get('id')
+                timesheet_ids = [timesheet_id] if timesheet_id else []
+                
+                self.log_test("Setup Claims Test Data", True, f"Created patient, employee, and {len(timesheet_ids)} timesheets")
+                return timesheet_ids
+            else:
+                self.log_test("Setup Claims Test Data", False, f"Failed to upload timesheet: {upload_response.status_code}")
+                return []
             
         except Exception as e:
             self.log_test("Setup Claims Test Data", False, str(e))
