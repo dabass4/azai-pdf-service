@@ -1764,15 +1764,17 @@ Signature: [Signed]"""
             self.log_test("Download Generated Claim", False, str(e))
             return False
     
-    def test_bulk_submit_claims(self, claim_ids):
+    def test_bulk_submit_claims(self, claim_ids, auth_token):
         """Test POST /api/claims/bulk-submit"""
         try:
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            
             # Test valid bulk submit
             submit_request = {
                 "claim_ids": claim_ids
             }
             
-            response = requests.post(f"{self.api_url}/claims/bulk-submit", json=submit_request, timeout=10)
+            response = requests.post(f"{self.api_url}/claims/bulk-submit", json=submit_request, headers=headers, timeout=10)
             success = response.status_code == 200
             
             if success:
@@ -1787,7 +1789,7 @@ Signature: [Signed]"""
             
             # Test empty claim IDs
             empty_request = {"claim_ids": []}
-            empty_response = requests.post(f"{self.api_url}/claims/bulk-submit", json=empty_request, timeout=10)
+            empty_response = requests.post(f"{self.api_url}/claims/bulk-submit", json=empty_request, headers=headers, timeout=10)
             empty_success = empty_response.status_code == 400  # Should fail
             
             self.log_test("Bulk Submit Claims (Empty IDs)", empty_success, f"Status: {empty_response.status_code}")
