@@ -1732,11 +1732,13 @@ Signature: [Signed]"""
             self.log_test("Get Generated Claims", False, str(e))
             return False
     
-    def test_download_generated_claim(self, claim_id):
+    def test_download_generated_claim(self, claim_id, auth_token):
         """Test GET /api/claims/generated/{claim_id}/download"""
         try:
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            
             # Test valid claim download (this will likely fail since claim_id is mocked)
-            response = requests.get(f"{self.api_url}/claims/generated/{claim_id}/download", timeout=10)
+            response = requests.get(f"{self.api_url}/claims/generated/{claim_id}/download", headers=headers, timeout=10)
             
             # Since we're using a mock claim_id, we expect 404
             success = response.status_code in [200, 404]
@@ -1752,7 +1754,7 @@ Signature: [Signed]"""
             self.log_test("Download Generated Claim (Valid)", success, details)
             
             # Test non-existent claim ID
-            invalid_response = requests.get(f"{self.api_url}/claims/generated/nonexistent-claim-123/download", timeout=10)
+            invalid_response = requests.get(f"{self.api_url}/claims/generated/nonexistent-claim-123/download", headers=headers, timeout=10)
             invalid_success = invalid_response.status_code == 404  # Should fail
             
             self.log_test("Download Generated Claim (Invalid ID)", invalid_success, f"Status: {invalid_response.status_code}")
