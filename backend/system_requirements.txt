@@ -1,0 +1,4 @@
+# System packages required for the backend
+# This should be included in the Dockerfile or deployment configuration
+
+poppler-utils  # Required for PDF to image conversion (pdf2image)
