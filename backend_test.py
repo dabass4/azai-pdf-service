@@ -1701,10 +1701,11 @@ Signature: [Signed]"""
             self.log_test("Generate 837 Claim", False, str(e))
             return None
     
-    def test_get_generated_claims(self):
+    def test_get_generated_claims(self, auth_token):
         """Test GET /api/claims/generated"""
         try:
-            response = requests.get(f"{self.api_url}/claims/generated", timeout=10)
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            response = requests.get(f"{self.api_url}/claims/generated", headers=headers, timeout=10)
             success = response.status_code == 200
             
             if success:
