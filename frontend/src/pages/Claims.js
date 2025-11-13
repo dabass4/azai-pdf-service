@@ -34,10 +34,40 @@ const Claims = () => {
 
   useEffect(() => {
     fetchClaims();
+    fetchGenerated837Claims();
+    fetchTimesheets();
     fetchPatients();
     fetchPayers();
     fetchEmployees();
+    fetchEnrollmentStatus();
   }, []);
+
+  const fetchGenerated837Claims = async () => {
+    try {
+      const response = await axios.get(`${API}/claims/generated`);
+      setGenerated837Claims(response.data.claims || []);
+    } catch (e) {
+      console.error("Error fetching 837P claims:", e);
+    }
+  };
+
+  const fetchTimesheets = async () => {
+    try {
+      const response = await axios.get(`${API}/timesheets`);
+      setTimesheets(response.data || []);
+    } catch (e) {
+      console.error("Error fetching timesheets:", e);
+    }
+  };
+
+  const fetchEnrollmentStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/enrollment/status`);
+      setEnrollmentStatus(response.data);
+    } catch (e) {
+      console.error("Error fetching enrollment status:", e);
+    }
+  };
 
   const fetchClaims = async () => {
     try {
