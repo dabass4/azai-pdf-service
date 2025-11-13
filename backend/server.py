@@ -3921,7 +3921,7 @@ async def get_enrollment_status(
                 {"step_number": 11, "step_name": "Verify EDI Receipts", "description": "Receive 999, 824, 277CA, and 835 responses", "completed": False},
             ]
             
-            enrollment = {
+            enrollment_doc = {
                 "id": str(uuid.uuid4()),
                 "organization_id": organization_id,
                 "enrollment_status": "not_started",
@@ -3931,15 +3931,22 @@ async def get_enrollment_status(
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
             
-            await db.odm_enrollment.insert_one(enrollment)
+            await db.odm_enrollment.insert_one(enrollment_doc)
+            enrollment = enrollment_doc
         
-        # Convert datetime objects to ISO strings for response
-        if enrollment.get('created_at') and isinstance(enrollment['created_at'], datetime):
-            enrollment['created_at'] = enrollment['created_at'].isoformat()
-        if enrollment.get('updated_at') and isinstance(enrollment['updated_at'], datetime):
-            enrollment['updated_at'] = enrollment['updated_at'].isoformat()
+        # Ensure all datetime fields are strings for JSON serialization
+        response_data = {
+            "id": enrollment.get("id"),
+            "organization_id": enrollment.get("organization_id"),
+            "trading_partner_id": enrollment.get("trading_partner_id"),
+            "enrollment_status": enrollment.get("enrollment_status", "not_started"),
+            "steps": enrollment.get("steps", []),
+            "documents": enrollment.get("documents", []),
+            "created_at": enrollment.get("created_at") if isinstance(enrollment.get("created_at"), str) else enrollment.get("created_at").isoformat() if enrollment.get("created_at") else None,
+            "updated_at": enrollment.get("updated_at") if isinstance(enrollment.get("updated_at"), str) else enrollment.get("updated_at").isoformat() if enrollment.get("updated_at") else None,
+        }
         
-        return enrollment
+        return response_data
         
     except Exception as e:
         logger.error(f"Get enrollment status error: {e}")
