@@ -242,6 +242,84 @@ const Claims = () => {
     }
   };
 
+  // 837P Claim Generation Handlers
+  const handleGenerate837 = async () => {
+    if (selectedTimesheets.length === 0) {
+      toast.error("Please select at least one timesheet");
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API}/claims/generate-837`, {
+        timesheet_ids: selectedTimesheets
+      }, {
+        responseType: 'blob'
+      });
+
+      // Download the EDI file
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `837P_claim_${new Date().getTime()}.edi`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success("837P claim generated successfully!");
+      setSelectedTimesheets([]);
+      await fetchGenerated837Claims();
+    } catch (e) {
+      console.error("Generate 837 error:", e);
+      toast.error(e.response?.data?.detail || "Failed to generate 837P claim");
+    }
+  };
+
+  const handleDownload837 = async (claimId) => {
+    try {
+      const response = await axios.get(`${API}/claims/generated/${claimId}/download`, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `837P_claim_${claimId}.edi`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success("Claim downloaded successfully");
+    } catch (e) {
+      console.error("Download error:", e);
+      toast.error("Failed to download claim");
+    }
+  };
+
+  const handleToggleTimesheetSelection = (timesheetId) => {
+    setSelectedTimesheets(prev => {
+      if (prev.includes(timesheetId)) {
+        return prev.filter(id => id !== timesheetId);
+      } else {
+        return [...prev, timesheetId];
+      }
+    });
+  };
+
+  const handleUpdateEnrollmentStep = async (stepNumber, completed, notes = '') => {
+    try {
+      await axios.put(`${API}/enrollment/update-step`, {
+        step_number: stepNumber,
+        completed: completed,
+        notes: notes
+      });
+      toast.success("Enrollment step updated");
+      await fetchEnrollmentStatus();
+    } catch (e) {
+      console.error("Update step error:", e);
+      toast.error("Failed to update enrollment step");
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       patient_id: "",
