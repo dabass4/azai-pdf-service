@@ -1373,33 +1373,39 @@ Signature: [Signed]"""
         print("\n🏥 Starting Ohio Medicaid 837P Claims Tests")
         print("=" * 60)
         
-        # Step 1: Setup test data (create timesheets with patient data)
-        timesheet_ids = self.setup_claims_test_data()
+        # Step 1: Setup authentication
+        auth_token = self.setup_test_authentication()
+        if not auth_token:
+            print("❌ Failed to setup authentication - stopping claims tests")
+            return False
+        
+        # Step 2: Setup test data (create timesheets with patient data)
+        timesheet_ids = self.setup_claims_test_data(auth_token)
         if not timesheet_ids:
             print("❌ Failed to setup test data - stopping claims tests")
             return False
         
-        # Step 2: Test enrollment endpoints
-        self.test_enrollment_status()
-        self.test_enrollment_update_step()
-        self.test_enrollment_trading_partner_id()
+        # Step 3: Test enrollment endpoints
+        self.test_enrollment_status(auth_token)
+        self.test_enrollment_update_step(auth_token)
+        self.test_enrollment_trading_partner_id(auth_token)
         
-        # Step 3: Test claim generation
-        claim_id = self.test_generate_837_claim(timesheet_ids)
+        # Step 4: Test claim generation
+        claim_id = self.test_generate_837_claim(timesheet_ids, auth_token)
         
-        # Step 4: Test generated claims list
-        self.test_get_generated_claims()
+        # Step 5: Test generated claims list
+        self.test_get_generated_claims(auth_token)
         
-        # Step 5: Test claim download
+        # Step 6: Test claim download
         if claim_id:
-            self.test_download_generated_claim(claim_id)
+            self.test_download_generated_claim(claim_id, auth_token)
         
-        # Step 6: Test bulk submit
+        # Step 7: Test bulk submit
         if claim_id:
-            self.test_bulk_submit_claims([claim_id])
+            self.test_bulk_submit_claims([claim_id], auth_token)
         
-        # Step 7: Test error cases
-        self.test_claims_error_cases()
+        # Step 8: Test error cases
+        self.test_claims_error_cases(auth_token)
         
         return True
     
