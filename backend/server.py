@@ -3927,11 +3927,17 @@ async def get_enrollment_status(
                 "enrollment_status": "not_started",
                 "steps": steps,
                 "documents": [],
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             }
             
             await db.odm_enrollment.insert_one(enrollment)
+        
+        # Convert datetime objects to ISO strings for response
+        if enrollment.get('created_at') and isinstance(enrollment['created_at'], datetime):
+            enrollment['created_at'] = enrollment['created_at'].isoformat()
+        if enrollment.get('updated_at') and isinstance(enrollment['updated_at'], datetime):
+            enrollment['updated_at'] = enrollment['updated_at'].isoformat()
         
         return enrollment
         
