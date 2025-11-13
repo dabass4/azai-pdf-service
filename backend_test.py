@@ -2910,6 +2910,21 @@ def main():
     elif len(sys.argv) > 1 and sys.argv[1] == "evv":
         # Run EVV tests
         return tester.run_evv_tests()
+    elif len(sys.argv) > 1 and sys.argv[1] == "claims":
+        # Run Ohio Medicaid 837P claims tests
+        print("🏥 Testing Ohio Medicaid 837P Claims System")
+        print("Testing new claims generation and enrollment endpoints")
+        print("=" * 80)
+        
+        # Test basic connectivity first
+        if not tester.test_root_endpoint():
+            print("❌ Root endpoint failed - stopping tests")
+            return 1
+        
+        # Run the new claims tests
+        tester.test_ohio_medicaid_837p_claims()
+        
+        return tester.get_results()
     elif len(sys.argv) > 1 and sys.argv[1] == "basic":
         # Run basic timesheet tests
         return tester.run_all_tests()
