@@ -1541,10 +1541,11 @@ Signature: [Signed]"""
             self.log_test("Setup Claims Test Data", False, str(e))
             return None
     
-    def test_enrollment_status(self):
+    def test_enrollment_status(self, auth_token):
         """Test GET /api/enrollment/status"""
         try:
-            response = requests.get(f"{self.api_url}/enrollment/status", timeout=10)
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            response = requests.get(f"{self.api_url}/enrollment/status", headers=headers, timeout=10)
             success = response.status_code == 200
             
             if success:
