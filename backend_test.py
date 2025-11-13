@@ -1611,15 +1611,17 @@ Signature: [Signed]"""
             self.log_test("Enrollment Update Step", False, str(e))
             return False
     
-    def test_enrollment_trading_partner_id(self):
+    def test_enrollment_trading_partner_id(self, auth_token):
         """Test PUT /api/enrollment/trading-partner-id"""
         try:
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            
             # Test valid trading partner ID
             update_data = {
                 "trading_partner_id": "1234567"
             }
             
-            response = requests.put(f"{self.api_url}/enrollment/trading-partner-id", json=update_data, timeout=10)
+            response = requests.put(f"{self.api_url}/enrollment/trading-partner-id", json=update_data, headers=headers, timeout=10)
             success = response.status_code == 200
             
             if success:
@@ -1636,7 +1638,7 @@ Signature: [Signed]"""
                 "trading_partner_id": ""
             }
             
-            empty_response = requests.put(f"{self.api_url}/enrollment/trading-partner-id", json=empty_update, timeout=10)
+            empty_response = requests.put(f"{self.api_url}/enrollment/trading-partner-id", json=empty_update, headers=headers, timeout=10)
             empty_success = empty_response.status_code == 400  # Should fail
             
             self.log_test("Enrollment Trading Partner ID (Empty)", empty_success, f"Status: {empty_response.status_code}")
