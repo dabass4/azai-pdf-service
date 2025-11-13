@@ -1648,15 +1648,17 @@ Signature: [Signed]"""
             self.log_test("Enrollment Trading Partner ID", False, str(e))
             return False
     
-    def test_generate_837_claim(self, timesheet_ids):
+    def test_generate_837_claim(self, timesheet_ids, auth_token):
         """Test POST /api/claims/generate-837"""
         try:
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            
             # Test valid claim generation
             claim_request = {
                 "timesheet_ids": timesheet_ids[:1]  # Use first timesheet
             }
             
-            response = requests.post(f"{self.api_url}/claims/generate-837", json=claim_request, timeout=30)
+            response = requests.post(f"{self.api_url}/claims/generate-837", json=claim_request, headers=headers, timeout=30)
             success = response.status_code == 200
             
             if success:
@@ -1682,14 +1684,14 @@ Signature: [Signed]"""
             
             # Test empty timesheet IDs
             empty_request = {"timesheet_ids": []}
-            empty_response = requests.post(f"{self.api_url}/claims/generate-837", json=empty_request, timeout=10)
+            empty_response = requests.post(f"{self.api_url}/claims/generate-837", json=empty_request, headers=headers, timeout=10)
             empty_success = empty_response.status_code == 400  # Should fail
             
             self.log_test("Generate 837 Claim (Empty IDs)", empty_success, f"Status: {empty_response.status_code}")
             
             # Test non-existent timesheet IDs
             invalid_request = {"timesheet_ids": ["nonexistent-id-123"]}
-            invalid_response = requests.post(f"{self.api_url}/claims/generate-837", json=invalid_request, timeout=10)
+            invalid_response = requests.post(f"{self.api_url}/claims/generate-837", json=invalid_request, headers=headers, timeout=10)
             invalid_success = invalid_response.status_code == 404  # Should fail
             
             self.log_test("Generate 837 Claim (Invalid IDs)", invalid_success, f"Status: {invalid_response.status_code}")
