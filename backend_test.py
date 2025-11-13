@@ -1799,9 +1799,11 @@ Signature: [Signed]"""
             self.log_test("Bulk Submit Claims", False, str(e))
             return False
     
-    def test_claims_error_cases(self):
+    def test_claims_error_cases(self, auth_token):
         """Test various error cases for claims endpoints"""
         try:
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            
             # Test multi-tenant isolation - try to access claims from different organization
             # This would require setting up different organization context, which is complex in this test
             # For now, we'll test basic error cases
@@ -1811,7 +1813,7 @@ Signature: [Signed]"""
                 "timesheet_ids": ["org1-timesheet", "org2-timesheet"]  # Mock IDs from different orgs
             }
             
-            mixed_response = requests.post(f"{self.api_url}/claims/generate-837", json=mixed_org_request, timeout=10)
+            mixed_response = requests.post(f"{self.api_url}/claims/generate-837", json=mixed_org_request, headers=headers, timeout=10)
             mixed_success = mixed_response.status_code in [404, 403]  # Should fail
             
             self.log_test("Claims Multi-Tenant Isolation", mixed_success, f"Status: {mixed_response.status_code}")
