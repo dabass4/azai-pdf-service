@@ -2413,12 +2413,11 @@ async def bulk_submit_claims(request: Dict, organization_id: str = Depends(get_o
 # EVV (Electronic Visit Verification) Endpoints
 # ========================================
 
-from evv_utils import (
-    SequenceManager, PayerProgramValidator, CoordinateValidator,
-    OHIO_PAYERS, OHIO_PAYER_PROGRAMS, OHIO_PROCEDURE_CODES, OHIO_EXCEPTION_CODES
-)
+from evv_utils import EVVDataBuilder
 from evv_export import EVVExportOrchestrator
 from evv_submission import EVVSubmissionService
+from evv_submission_coordinator import EVVSubmissionCoordinator
+from evv_aggregator_factory import get_default_evv_client
 
 # Business Entity Configuration Endpoints
 @api_router.post("/evv/business-entity", response_model=BusinessEntityConfig)
