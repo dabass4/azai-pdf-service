@@ -760,7 +760,7 @@ async def check_or_create_employee(employee_name: str, organization_id: str) -> 
         "message": "Auto-created incomplete profile - please update"
     }
 
-async def extract_timesheet_data(file_path: str, file_type: str, page_number: int = 1, progress_tracker: ExtractionProgress = None) -> tuple[ExtractedData, float, dict]:
+async def extract_timesheet_data(file_path: str, file_type: str, page_number: int = 1, progress_tracker: ExtractionProgress = None) -> Tuple[ExtractedData, float, dict]:
     """Extract data from timesheet using Gemini Vision API with confidence scoring
     
     Args:
