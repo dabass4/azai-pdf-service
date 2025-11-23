@@ -1081,6 +1081,193 @@ async def submit_to_sandata(timesheet: Timesheet) -> dict:
                 if emp_entry.time_entries:
                     for entry in emp_entry.time_entries:
                         time_entries_payload.append({
+
+@api_router.post("/timesheets/upload-enhanced")
+async def upload_timesheet_enhanced(file: UploadFile = File(...), organization_id: str = Depends(get_organization_id)):
+    """
+    Enhanced timesheet upload with real-time WebSocket updates, parallel processing, and confidence scoring
+    Phase 1 improvements implemented
+    """
+    try:
+        # Validate file type
+        file_extension = file.filename.split('.')[-1].lower()
+        if file_extension not in ['pdf', 'jpg', 'jpeg', 'png']:
+            raise HTTPException(status_code=400, detail="Only PDF and image files are supported")
+        
+        # Save file temporarily
+        upload_dir = Path("/tmp/timesheets")
+        upload_dir.mkdir(exist_ok=True)
+        
+        file_id = str(uuid.uuid4())
+        file_path = upload_dir / f"{file_id}.{file_extension}"
+        
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        logger.info(f"File saved: {file_path}")
+        
+        # Check if PDF has multiple pages
+        page_count = 1
+        if file_extension == 'pdf':
+            page_count = await get_pdf_page_count(str(file_path))
+            logger.info(f"PDF has {page_count} page(s)")
+        
+        # Create timesheet records first (so we have IDs for WebSocket tracking)
+        timesheets_to_process = []
+        for page_num in range(1, page_count + 1):
+            page_suffix = f" (Page {page_num}/{page_count})" if page_count > 1 else ""
+            timesheet = Timesheet(
+                filename=f"{file.filename}{page_suffix}",
+                file_type=file_extension,
+                status="processing",
+                organization_id=organization_id
+            )
+            
+            # Save to database
+            doc = timesheet.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            doc['updated_at'] = doc['updated_at'].isoformat()
+            await db.timesheets.insert_one(doc)
+            
+            timesheets_to_process.append((timesheet, page_num))
+        
+        # Process pages in parallel
+        async def process_single_page(timesheet: Timesheet, page_num: int):
+            """Process a single page with progress tracking"""
+            try:
+                # Create progress tracker with WebSocket manager
+                progress_tracker = ExtractionProgress(timesheet.id, ws_manager)
+                await progress_tracker.update(status="starting", progress_percent=5,
+                                            current_step=f"Starting extraction for page {page_num}")
+                
+                # Extract data with progress tracking
+                extracted_data, confidence_score, confidence_details = await extract_timesheet_data(
+                    str(file_path), file_extension, page_num, progress_tracker
+                )
+                
+                timesheet.extracted_data = extracted_data
+                timesheet.status = "completed"
+                
+                # Store confidence information
+                if not hasattr(timesheet, 'metadata'):
+                    timesheet.metadata = {}
+                timesheet.metadata = {
+                    "confidence_score": confidence_score,
+                    "confidence_details": confidence_details,
+                    "recommendation": confidence_details.get("recommendation", "review_recommended")
+                }
+                
+                # Check and auto-register patient and employees
+                registration_results = {
+                    "patient": None,
+                    "employees": [],
+                    "incomplete_profiles": []
+                }
+                
+                if extracted_data and extracted_data.client_name:
+                    # Check/create patient
+                    patient_info = await check_or_create_patient(extracted_data.client_name, organization_id)
+                    if patient_info:
+                        registration_results["patient"] = patient_info
+                        if not patient_info.get("is_complete"):
+                            registration_results["incomplete_profiles"].append({
+                                "type": "patient",
+                                "name": f"{patient_info['first_name']} {patient_info['last_name']}",
+                                "id": patient_info["id"]
+                            })
+                        timesheet.patient_id = patient_info["id"]
+                    
+                    # Check/create employees
+                    if extracted_data.employee_entries:
+                        for emp_entry in extracted_data.employee_entries:
+                            if emp_entry.employee_name:
+                                employee_info = await check_or_create_employee(emp_entry.employee_name, organization_id)
+                                if employee_info:
+                                    registration_results["employees"].append(employee_info)
+                                    if not employee_info.get("is_complete"):
+                                        registration_results["incomplete_profiles"].append({
+                                            "type": "employee",
+                                            "name": f"{employee_info['first_name']} {employee_info['last_name']}",
+                                            "id": employee_info["id"]
+                                        })
+                
+                # Store registration results
+                timesheet.registration_results = registration_results
+                
+                # Auto-submit based on confidence (only if confidence is high)
+                if confidence_score >= 0.95:
+                    submission_result = await submit_to_sandata(timesheet)
+                    if submission_result["status"] == "success":
+                        timesheet.sandata_status = "submitted"
+                    elif submission_result["status"] == "blocked":
+                        timesheet.sandata_status = "blocked"
+                        timesheet.error_message = submission_result.get("message")
+                    else:
+                        timesheet.sandata_status = "error"
+                        timesheet.error_message = submission_result.get("message")
+                else:
+                    timesheet.sandata_status = "pending"
+                    timesheet.error_message = f"Manual review recommended (confidence: {confidence_score:.1%})"
+                
+            except Exception as e:
+                logger.error(f"Processing error for page {page_num}: {e}")
+                timesheet.status = "failed"
+                timesheet.error_message = str(e)
+                
+                # Update progress tracker
+                progress_tracker = ExtractionProgress(timesheet.id, ws_manager)
+                await progress_tracker.error(str(e))
+            
+            # Update database
+            timesheet.updated_at = datetime.now(timezone.utc)
+            update_doc = timesheet.model_dump()
+            update_doc['created_at'] = update_doc['created_at'].isoformat()
+            update_doc['updated_at'] = update_doc['updated_at'].isoformat()
+            
+            await db.timesheets.update_one(
+                {"id": timesheet.id},
+                {"$set": update_doc}
+            )
+            
+            # Clean up temp page image if created
+            try:
+                page_image_path = str(file_path).replace('.pdf', f'_page{page_num}.jpg')
+                Path(page_image_path).unlink(missing_ok=True)
+            except:
+                pass
+            
+            return timesheet
+        
+        # Process all pages in parallel
+        logger.info(f"Processing {len(timesheets_to_process)} pages in parallel")
+        tasks = [process_single_page(ts, page_num) for ts, page_num in timesheets_to_process]
+        created_timesheets = await asyncio.gather(*tasks)
+        
+        # Clean up original temp file
+        try:
+            file_path.unlink()
+        except:
+            pass
+        
+        # Return results
+        if len(created_timesheets) == 1:
+            return created_timesheets[0]
+        else:
+            return {
+                "message": f"Batch processing complete: {len(created_timesheets)} timesheets created",
+                "total_pages": page_count,
+                "timesheets": created_timesheets,
+                "average_confidence": sum(ts.metadata.get("confidence_score", 0) for ts in created_timesheets) / len(created_timesheets) if created_timesheets else 0
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
                             "date": entry.date,
                             "time_in": entry.time_in,
                             "time_out": entry.time_out,
