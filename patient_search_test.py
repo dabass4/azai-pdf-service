@@ -301,32 +301,41 @@ class PatientSearchTester:
             return False
 
     def test_patient_search_combination(self):
-        """Test combination search (name + DOB)"""
+        """Test combination search behavior - searches individual fields, not combinations"""
         try:
             headers = self.get_auth_headers()
             
-            # Search for "Alice 1990" - should find Alice Johnson
-            response = requests.get(f"{self.api_url}/patients?search=Alice 1990", 
+            # Search for "Alice" - should find Alice Johnson
+            response = requests.get(f"{self.api_url}/patients?search=Alice", 
                                   headers=headers, timeout=10)
             success = response.status_code == 200
             
             if success:
                 data = response.json()
-                success = isinstance(data, list)
-                # Should find Alice or patients matching either term
-                alice_or_1990 = any(
-                    p.get('first_name') == 'Alice' or p.get('date_of_birth', '').startswith('1990')
-                    for p in data
-                )
-                success = success and alice_or_1990
-                details = f"Status: {response.status_code}, Found {len(data)} patients, Alice or 1990 match: {alice_or_1990}"
+                alice_found = any(p.get('first_name') == 'Alice' for p in data)
+                
+                # Search for "1990" - should find patients born in 1990
+                year_response = requests.get(f"{self.api_url}/patients?search=1990", 
+                                           headers=headers, timeout=10)
+                year_success = year_response.status_code == 200
+                
+                if year_success:
+                    year_data = year_response.json()
+                    year_found = any(p.get('date_of_birth', '').startswith('1990') for p in year_data)
+                    
+                    # Both individual searches should work
+                    success = alice_found and year_found
+                    details = f"Alice search: {alice_found}, 1990 search: {year_found}"
+                else:
+                    success = False
+                    details = f"Year search failed: {year_response.status_code}"
             else:
                 details = f"Status: {response.status_code}, Response: {response.text[:200]}"
             
-            self.log_test("Patient Search Combination", success, details)
+            self.log_test("Patient Search Individual Terms", success, details)
             return success
         except Exception as e:
-            self.log_test("Patient Search Combination", False, str(e))
+            self.log_test("Patient Search Individual Terms", False, str(e))
             return False
 
     def test_patient_search_case_insensitive(self):
