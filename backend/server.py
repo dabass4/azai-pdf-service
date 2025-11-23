@@ -611,6 +611,9 @@ class Timesheet(BaseModel):
     # Auto-registration results
     registration_results: Optional[Dict] = None  # Patient and employee registration info
     
+    # Phase 1 enhancements: Confidence scoring
+    metadata: Optional[Dict] = None  # Stores confidence_score, confidence_details, recommendation
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
