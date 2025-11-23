@@ -473,7 +473,7 @@ backend:
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Enhanced GET /api/patients endpoint to support date_of_birth search in addition to existing name and medicaid_number search. Updated search query to include DOB field."
+        comment: "Enhanced GET /api/patients endpoint to support date_of_birth search in addition to existing name and medicaid_number search. Updated search query to include DOB field. Backend running successfully."
 
   - task: "Patient details with timesheet history endpoint"
     implemented: true
@@ -485,7 +485,19 @@ backend:
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Created new GET /api/patients/{patient_id}/details endpoint that returns patient profile along with all associated timesheets, total_visits count, and last_visit_date. Includes multi-tenant isolation."
+        comment: "Created new GET /api/patients/{patient_id}/details endpoint that returns patient profile along with all associated timesheets, total_visits count, and last_visit_date. Includes multi-tenant isolation. Backend running successfully."
+
+  - task: "Phase 1 extraction improvements - Backend infrastructure"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/extraction_service.py, /app/backend/websocket_manager.py, /app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created extraction_service.py with ConfidenceScorer class for field-level confidence scoring. Created websocket_manager.py with Socket.IO server for real-time updates. Added WebSocket support to server.py. Updated extract_timesheet_data function to return confidence scores. Created new /api/timesheets/upload-enhanced endpoint with parallel processing and real-time progress updates. Backend fixed and running."
 
 frontend:
   - task: "Patient search UI with real-time DOB search"
@@ -518,6 +530,7 @@ test_plan:
     - "Patient details with timesheet history endpoint"
     - "Patient search UI with real-time DOB search"
     - "Patient details modal with timesheet history"
+    - "Phase 1 extraction improvements - Backend infrastructure"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
