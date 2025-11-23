@@ -971,11 +971,23 @@ Return ONLY the JSON object, no additional text or explanation."""
                         ))
             
             # Create ExtractedData with validated fields
-            return ExtractedData(
+            extracted_data = ExtractedData(
                 client_name=extracted_json.get("client_name"),
                 week_of=extracted_json.get("week_of"),
                 employee_entries=employee_entries
             )
+            
+            # Calculate confidence scores
+            if progress_tracker:
+                await progress_tracker.update(progress_percent=90, current_step="Calculating confidence scores")
+            
+            confidence_score, confidence_details = ConfidenceScorer.score_extraction(extracted_json)
+            logger.info(f"Extraction confidence score: {confidence_score:.2f} ({confidence_details.get('recommendation')})")
+            
+            if progress_tracker:
+                await progress_tracker.complete(extracted_json, confidence_score, confidence_details)
+            
+            return extracted_data, confidence_score, confidence_details
             
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing error: {e}")
