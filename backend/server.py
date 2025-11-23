@@ -994,13 +994,19 @@ Return ONLY the JSON object, no additional text or explanation."""
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing error: {e}")
             logger.error(f"Failed to parse: {response_text}")
-            return ExtractedData()
+            if progress_tracker:
+                await progress_tracker.error(f"JSON parsing error: {str(e)}")
+            return ExtractedData(), 0.0, {}
         except TypeError as e:
             logger.error(f"Type error when creating ExtractedData: {e}")
-            return ExtractedData()
+            if progress_tracker:
+                await progress_tracker.error(f"Type error: {str(e)}")
+            return ExtractedData(), 0.0, {}
             
     except Exception as e:
         logger.error(f"Extraction error: {e}", exc_info=True)
+        if progress_tracker:
+            await progress_tracker.error(str(e))
         raise
 
 async def submit_to_sandata(timesheet: Timesheet) -> dict:
