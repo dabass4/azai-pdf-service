@@ -561,18 +561,18 @@ const Patients = () => {
               
               <div className="grid gap-4" data-testid="patients-list">
                 {patients.map((patient) => (
-                  <Card key={patient.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow" data-testid={`patient-${patient.id}`}>
+                  <Card key={patient.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all cursor-pointer" data-testid={`patient-${patient.id}`}>
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4">
                         {/* Selection Checkbox */}
-                        <div className="pt-1">
+                        <div className="pt-1" onClick={(e) => e.stopPropagation()}>
                           <Checkbox
                             checked={selectedPatients.includes(patient.id)}
                             onCheckedChange={(checked) => handleSelectPatient(patient.id, checked)}
                           />
                         </div>
                         
-                        <div className="flex-1 flex justify-between items-start">
+                        <div className="flex-1 flex justify-between items-start" onClick={() => handleViewDetails(patient.id)}>
                           <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                           <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
@@ -617,7 +617,7 @@ const Patients = () => {
                         </div>
                           </div>
                           
-                          <div className="flex gap-2 ml-4">
+                          <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" onClick={() => handleEdit(patient)} data-testid={`edit-patient-${patient.id}`}>
                               <Edit className="text-blue-600" size={18} />
                             </Button>
