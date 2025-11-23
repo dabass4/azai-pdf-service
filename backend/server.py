@@ -879,8 +879,14 @@ Return ONLY the JSON object, no additional text or explanation."""
             file_contents=[file_content]
         )
         
+        if progress_tracker:
+            await progress_tracker.update(progress_percent=40, current_step="Analyzing timesheet with AI")
+        
         response = await chat.send_message(user_message)
         logger.info(f"LLM Raw Response: {response}")
+        
+        if progress_tracker:
+            await progress_tracker.update(progress_percent=70, current_step="Parsing extracted data")
         
         # Parse JSON from response with better error handling
         try:
