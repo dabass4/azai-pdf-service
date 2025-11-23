@@ -53,6 +53,13 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Import WebSocket manager and Socket.IO
+from websocket_manager import sio, ws_manager
+import socketio
+
+# Create ASGI app with Socket.IO
+socket_app = socketio.ASGIApp(sio, app)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
