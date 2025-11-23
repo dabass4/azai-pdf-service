@@ -497,7 +497,7 @@ const Patients = () => {
           <div className="mb-6">
             <SearchFilter
               onSearch={handleSearch}
-              placeholder="Search by name or Medicaid number..."
+              placeholder="Search by name, Medicaid ID, or date of birth (YYYY-MM-DD)..."
               filters={{
                 is_complete: {
                   type: "select",
