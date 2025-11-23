@@ -785,6 +785,9 @@ async def extract_timesheet_data(file_path: str, file_type: str, page_number: in
         
         if file_type == 'pdf':
             try:
+                if progress_tracker:
+                    await progress_tracker.update(progress_percent=20, current_step="Converting PDF to image")
+                
                 logger.info(f"Converting PDF page {page_number} to image: {file_path}")
                 # Convert specific PDF page to image
                 images = convert_from_path(file_path, first_page=page_number, last_page=page_number, dpi=200)
