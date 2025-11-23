@@ -201,6 +201,22 @@ const Patients = () => {
     }
   };
 
+  const handleViewDetails = async (patientId) => {
+    setLoadingDetails(true);
+    setShowDetailsModal(true);
+    
+    try {
+      const response = await axios.get(`${API}/patients/${patientId}/details`);
+      setSelectedPatientDetails(response.data);
+    } catch (e) {
+      console.error("Error fetching patient details:", e);
+      toast.error("Failed to load patient details");
+      setShowDetailsModal(false);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       first_name: "",
