@@ -757,14 +757,21 @@ async def check_or_create_employee(employee_name: str, organization_id: str) -> 
     }
 
 async def extract_timesheet_data(file_path: str, file_type: str, page_number: int = 1, progress_tracker: ExtractionProgress = None) -> tuple[ExtractedData, float, dict]:
-    """Extract data from timesheet using Gemini Vision API
+    """Extract data from timesheet using Gemini Vision API with confidence scoring
     
     Args:
         file_path: Path to the file
         file_type: Type of file (pdf, jpg, jpeg, png)
         page_number: Page number to extract (for multi-page PDFs)
+        progress_tracker: Optional progress tracker for real-time updates
+    
+    Returns:
+        Tuple of (ExtractedData, confidence_score, confidence_details)
     """
     try:
+        if progress_tracker:
+            await progress_tracker.update(status="processing", progress_percent=10, 
+                                         current_step="Initializing AI model")
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"timesheet-{uuid.uuid4()}",
