@@ -29,6 +29,9 @@ const Patients = () => {
   const [editingPatient, setEditingPatient] = useState(null);
   const [selectedPatients, setSelectedPatients] = useState([]);
   const [searchFilters, setSearchFilters] = useState({});
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedPatientDetails, setSelectedPatientDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
