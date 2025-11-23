@@ -1915,7 +1915,7 @@ async def get_patients(
     """Get all patient profiles with optional search and filters
     
     Args:
-        search: Search by first name, last name, or medicaid number
+        search: Search by first name, last name, medicaid number, or date of birth (YYYY-MM-DD)
         is_complete: Filter by completion status (True/False)
         limit: Maximum number of results to return
         skip: Number of results to skip (for pagination)
@@ -1927,7 +1927,8 @@ async def get_patients(
         query["$or"] = [
             {"first_name": {"$regex": search, "$options": "i"}},
             {"last_name": {"$regex": search, "$options": "i"}},
-            {"medicaid_number": {"$regex": search, "$options": "i"}}
+            {"medicaid_number": {"$regex": search, "$options": "i"}},
+            {"date_of_birth": {"$regex": search, "$options": "i"}}
         ]
     
     # Add completion status filter
