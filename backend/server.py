@@ -13,7 +13,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 import uuid
 from datetime import datetime, timezone, timedelta
 import base64
