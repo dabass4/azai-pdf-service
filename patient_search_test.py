@@ -372,13 +372,12 @@ class PatientSearchTester:
             
             if success:
                 data = response.json()
-                # Check required fields
-                required_fields = ['patient', 'timesheets', 'total_visits', 'last_visit_date']
+                # Check required fields - API returns patient data merged with additional fields
+                required_fields = ['timesheets', 'total_visits', 'last_visit_date', 'id', 'first_name', 'last_name']
                 has_required_fields = all(field in data for field in required_fields)
                 
-                # Check patient data
-                patient_data = data.get('patient', {})
-                patient_valid = patient_data.get('id') == patient_id
+                # Check patient data (merged in response)
+                patient_valid = data.get('id') == patient_id
                 
                 # Check timesheets array
                 timesheets = data.get('timesheets', [])
