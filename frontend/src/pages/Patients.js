@@ -634,6 +634,179 @@ const Patients = () => {
             </>
           )}
         </div>
+
+        {/* Patient Details Modal */}
+        {showDetailsModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowDetailsModal(false)}>
+            <div className="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              {loadingDetails ? (
+                <div className="p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading patient details...</p>
+                </div>
+              ) : selectedPatientDetails ? (
+                <>
+                  {/* Modal Header */}
+                  <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <User size={28} className="text-blue-600" />
+                        {selectedPatientDetails.first_name} {selectedPatientDetails.last_name}
+                      </h2>
+                      <p className="text-gray-600 mt-1">Patient Details & Timesheet History</p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => setShowDetailsModal(false)}>
+                      <X size={24} />
+                    </Button>
+                  </div>
+
+                  {/* Modal Content */}
+                  <div className="p-6">
+                    {/* Patient Information Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                      {/* Basic Info */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-sm font-semibold text-gray-500 uppercase">Basic Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                          <div><span className="font-semibold">Name:</span> {selectedPatientDetails.first_name} {selectedPatientDetails.last_name}</div>
+                          <div><span className="font-semibold">DOB:</span> {selectedPatientDetails.date_of_birth}</div>
+                          <div><span className="font-semibold">Sex:</span> {selectedPatientDetails.sex}</div>
+                          <div><span className="font-semibold">Medicaid:</span> <span className="font-mono">{selectedPatientDetails.medicaid_number}</span></div>
+                          {selectedPatientDetails.is_complete === false && (
+                            <div className="pt-2">
+                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
+                                INCOMPLETE PROFILE
+                              </span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Address Info */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-sm font-semibold text-gray-500 uppercase">Address</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-1 text-sm">
+                          <div>{selectedPatientDetails.address_street || "N/A"}</div>
+                          <div>{selectedPatientDetails.address_city}, {selectedPatientDetails.address_state} {selectedPatientDetails.address_zip}</div>
+                          <div className="pt-2"><span className="font-semibold">Prior Auth:</span> {selectedPatientDetails.prior_auth_number || "N/A"}</div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Medical Info */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-sm font-semibold text-gray-500 uppercase">Medical Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                          <div><span className="font-semibold">ICD-10:</span> {selectedPatientDetails.icd10_code || "N/A"}</div>
+                          {selectedPatientDetails.icd10_description && (
+                            <div className="text-gray-600 text-xs italic">{selectedPatientDetails.icd10_description}</div>
+                          )}
+                          <div className="pt-2"><span className="font-semibold">Physician:</span> {selectedPatientDetails.physician_name || "N/A"}</div>
+                          <div><span className="font-semibold">NPI:</span> <span className="font-mono">{selectedPatientDetails.physician_npi || "N/A"}</span></div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Visit Statistics */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      <Card className="bg-blue-50 border-blue-200">
+                        <CardContent className="p-4 flex items-center gap-4">
+                          <div className="bg-blue-100 p-3 rounded-lg">
+                            <FileText size={28} className="text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Total Visits</p>
+                            <p className="text-3xl font-bold text-blue-600">{selectedPatientDetails.total_visits || 0}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="bg-green-50 border-green-200">
+                        <CardContent className="p-4 flex items-center gap-4">
+                          <div className="bg-green-100 p-3 rounded-lg">
+                            <Calendar size={28} className="text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Last Visit Date</p>
+                            <p className="text-xl font-bold text-green-600">
+                              {selectedPatientDetails.last_visit_date || "No visits yet"}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Timesheet History */}
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <FileText size={24} className="text-blue-600" />
+                        Timesheet History
+                      </h3>
+                      
+                      {selectedPatientDetails.timesheets && selectedPatientDetails.timesheets.length > 0 ? (
+                        <div className="space-y-3">
+                          {selectedPatientDetails.timesheets.map((timesheet) => (
+                            <Card key={timesheet.id} className="hover:shadow-md transition-shadow">
+                              <CardContent className="p-4">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                  <div>
+                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">File</p>
+                                    <p className="text-sm font-mono truncate">{timesheet.filename}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Date</p>
+                                    <p className="text-sm">{timesheet.extracted_data?.date || "N/A"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Time</p>
+                                    <p className="text-sm">
+                                      {timesheet.extracted_data?.time_in && timesheet.extracted_data?.time_out
+                                        ? `${timesheet.extracted_data.time_in} - ${timesheet.extracted_data.time_out}`
+                                        : "N/A"}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Status</p>
+                                    <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                                      timesheet.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                      timesheet.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                      'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                      {timesheet.status?.toUpperCase() || "UNKNOWN"}
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                {timesheet.extracted_data?.employee_name && (
+                                  <div className="mt-3 pt-3 border-t border-gray-100">
+                                    <p className="text-xs text-gray-500">Employee: <span className="text-gray-700 font-medium">{timesheet.extracted_data.employee_name}</span></p>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <Card className="bg-gray-50">
+                          <CardContent className="p-8 text-center">
+                            <FileText size={48} className="mx-auto text-gray-400 mb-3" />
+                            <p className="text-gray-600">No timesheet history for this patient</p>
+                            <p className="text-sm text-gray-500 mt-1">Timesheets will appear here once uploaded</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
