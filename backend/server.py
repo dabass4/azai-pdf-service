@@ -805,10 +805,12 @@ async def extract_timesheet_data(file_path: str, file_type: str, page_number: in
                 logger.warning(f"Cannot process individual pages - PDF conversion failed")
                 # If conversion fails, we can't process individual pages properly
                 # Return empty data with error
+                if progress_tracker:
+                    await progress_tracker.error("PDF conversion failed")
                 return ExtractedData(
                     client_name="Error: PDF conversion failed",
                     employee_entries=[]
-                )
+                ), 0.0, {}
         elif file_type in ['jpg', 'jpeg', 'png']:
             mime_type = f"image/{file_type if file_type != 'jpg' else 'jpeg'}"
         
