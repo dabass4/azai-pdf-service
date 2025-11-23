@@ -41,6 +41,7 @@ from payments import (
     get_plan_features,
     PLANS
 )
+from extraction_service import ConfidenceScorer, ExtractionProgress
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
