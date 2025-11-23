@@ -1993,6 +1993,60 @@ async def delete_patient(patient_id: str, organization_id: str = Depends(get_org
     
     return {"message": "Patient deleted successfully"}
 
+@api_router.get("/patients/{patient_id}/details")
+async def get_patient_details(patient_id: str, organization_id: str = Depends(get_organization_id)):
+    """Get patient details with timesheet history
+    
+    Returns:
+        Patient profile with additional fields:
+        - timesheets: List of all timesheets for this patient
+        - total_visits: Total number of timesheets/visits
+        - last_visit_date: Date of most recent visit
+    """
+    # Get patient
+    patient = await db.patients.find_one({"id": patient_id, "organization_id": organization_id}, {"_id": 0})
+    
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    # Convert ISO string timestamps for patient
+    if isinstance(patient.get('created_at'), str):
+        patient['created_at'] = datetime.fromisoformat(patient['created_at'])
+    if isinstance(patient.get('updated_at'), str):
+        patient['updated_at'] = datetime.fromisoformat(patient['updated_at'])
+    
+    # Get all timesheets for this patient
+    timesheets = await db.timesheets.find(
+        {"patient_id": patient_id, "organization_id": organization_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    
+    # Convert ISO string timestamps for timesheets
+    for timesheet in timesheets:
+        if isinstance(timesheet.get('created_at'), str):
+            timesheet['created_at'] = datetime.fromisoformat(timesheet['created_at'])
+        if isinstance(timesheet.get('updated_at'), str):
+            timesheet['updated_at'] = datetime.fromisoformat(timesheet['updated_at'])
+    
+    # Calculate statistics
+    total_visits = len(timesheets)
+    last_visit_date = None
+    if timesheets:
+        # Get the most recent visit date from extracted_data
+        for ts in timesheets:
+            if ts.get('extracted_data') and ts['extracted_data'].get('date'):
+                visit_date = ts['extracted_data']['date']
+                if not last_visit_date or visit_date > last_visit_date:
+                    last_visit_date = visit_date
+    
+    return {
+        **patient,
+        "timesheets": timesheets,
+        "total_visits": total_visits,
+        "last_visit_date": last_visit_date
+    }
+
+
 # Employee Profile Endpoints
 @api_router.post("/employees", response_model=EmployeeProfile)
 async def create_employee(employee: EmployeeProfile, organization_id: str = Depends(get_organization_id)):
