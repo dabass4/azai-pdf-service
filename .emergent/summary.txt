@@ -1,82 +1,83 @@
 <analysis>
-The trajectory details the evolution of a healthcare timesheet application from a multi-tenant SaaS platform with mocked EVV submissions to a production-ready system capable of real EVV transmissions. The initial work focused on stabilizing the application by fixing multi-tenancy data leaks, standardizing date/time formats, and resolving a critical PDF processing dependency ().
+The trajectory details the implementation of two significant features for a healthcare timesheet application.
 
-A major development phase began with the user's request to implement Ohio Department of Medicaid (ODM) claims submission. This involved building an X12 EDI 837P claim generation system and enhancing the frontend claims page. During this phase, a recurring environmental issue where  was lost on container restarts was diagnosed; the root cause was identified as the ephemeral nature of the Kubernetes containers, and the permanent solution involves contacting platform support to modify the base image.
+First, the engineer addressed the user's request to make patient records searchable. This involved enhancing both the frontend and backend. The backend  was modified to update the  endpoint to support searching by Date of Birth (DOB) and a new endpoint  was created to fetch a patient's full profile along with their timesheet history. On the frontend,  was heavily modified to include a search input for DOB, make patient cards clickable, and display the fetched details in a new modal window. This feature was successfully implemented and tested.
 
-The most critical and recent development was a strategic pivot based on new user information: the application must act as an approved EVV vendor and submit data to aggregators like Sandata *before* claims are sent to ODM. This rendered the mocked EVV system obsolete. The engineer immediately architected and implemented a real, multi-aggregator EVV submission system, replacing the mock endpoints in  with a new . The immediate next step is to test this new live integration, which is currently blocked pending user-provided credentials.
+Second, the user requested an improvement for near real-time timesheet data extraction. After researching and presenting options, the engineer implemented Phase 1 improvements. This was a major architectural change involving the introduction of WebSockets for real-time progress updates. New files (, ) were created to handle the new logic. A new, parallelized endpoint, , was added to . During this implementation, a significant  was introduced by incorrectly inserting the new function code into an existing function. The engineer successfully debugged this by identifying the broken code, reverting the faulty edit, and correctly placing the new function.
+
+Both features were comprehensively tested using backend and frontend testing agents, and all tests passed, confirming the successful implementation and the resolution of the critical syntax bug. The user's primary language is English, and all future responses should be in English.
 </analysis>
 
 <product_requirements>
-The application's primary goal is to streamline timesheet and claims management for healthcare agencies by acting as an approved Electronic Visit Verification (EVV) vendor.
+The application's goal is to be a comprehensive solution for healthcare agencies, focusing on timesheet management, Electronic Visit Verification (EVV), and claims submission.
 
-**Core Requirements:**
-1.  **Timesheet Processing**: Upload PDF/JPG timesheets and automatically extract patient, employee, service, date, and time-in/out data using an AI model.
-2.  **EVV Submission**: Function as an approved EVV aggregator vendor. The system must submit validated timesheet data to third-party EVV aggregators like Sandata, as this is a prerequisite for claim payment by the Ohio Department of Medicaid (ODM).
-3.  **Claims Generation & Submission**: Generate and submit X12 EDI 837P compliant claims to ODM. This step can only occur after successful EVV submission is cross-verified.
-4.  **SaaS Platform**: Operate as a multi-tenant application with JWT-based user authentication, organization-level data isolation, and Stripe-integrated subscription billing.
+**Core Features Implemented:**
+1.  **AI-Powered Timesheet Extraction:** Users can upload PDF/JPG timesheets, and an AI model extracts patient, employee, and service data.
+2.  **Multi-Tenant SaaS:** The platform supports multiple organizations with data isolation, JWT authentication, and Stripe-integrated billing.
+3.  **EVV & Claims Framework:** A production-ready framework exists for submitting EVV data to aggregators (like Sandata) and generating X12 837P claims for the Ohio Department of Medicaid (ODM).
 
-**Implementation So Far:**
-The multi-tenancy, authentication, Stripe payments, and AI-driven timesheet extraction functionalities are complete and stable. A robust system for generating X12 837P claims has been built. Most critically, the initial mocked EVV submission logic has been replaced with a production-ready, extensible multi-aggregator system designed to integrate directly with Sandata.
+**Recent Feature Implementations:**
+1.  **Searchable Patient Records:** A patient directory was implemented, allowing users to search for patients by name, Medicaid ID, or Date of Birth. It includes a detailed view for each patient, showing their profile and associated timesheet history. Patients can be added manually or extracted from timesheets.
+2.  **Real-Time Extraction V1:** To improve processing speed, the timesheet upload process was enhanced with WebSockets for real-time progress feedback, parallel processing for multi-page documents, and confidence scoring for extracted data.
 </product_requirements>
 
 <key_technical_concepts>
-- **Full-stack Frameworks**: React frontend, FastAPI backend, MongoDB database.
-- **AI/Data Processing**: OpenAI Vision for OCR,  with  for PDF handling.
-- **SaaS Architecture**: Multi-tenancy via , JWT authentication, Stripe API for payments.
-- **Healthcare EDI**: Generation of X12 EDI 837P claim files.
-- **EVV Integration**: A new multi-aggregator architecture for submitting data to systems like Sandata via REST APIs.
-- **Testing**: Pytest for backend unit and integration tests.
+- **Frameworks**: FastAPI (Python) for the backend, React for the frontend.
+- **Database**: MongoDB.
+- **Real-time Communication**: WebSockets using  for live progress updates during timesheet extraction.
+- **Asynchronous Programming**:  for parallel processing of PDF pages to speed up data extraction.
+- **Data Processing**:  and  for handling PDF files.
+- **API Design**: RESTful API with specific endpoints for CRUD operations and enhanced, asynchronous tasks.
 </key_technical_concepts>
 
 <code_architecture>
-The application follows a standard monolithic repository structure with separate  and  directories. The backend is a FastAPI application, and the frontend is a React single-page application.
+The application is a monolith with a FastAPI backend and a React frontend. The recent work introduced a more service-oriented approach within the backend for handling complex, long-running tasks like data extraction.
 
 
 
 -   ****
-    -   **Importance**: The main FastAPI application file containing all API endpoints, models, and business logic.
-    -   **Changes**: Initially, mock EVV submission endpoints were defined here. They have been completely replaced with new endpoints that utilize the  for real, live submissions to EVV aggregators. New endpoints for generating and downloading X12 837P EDI claim files were also added.
+    -   **Importance**: The main FastAPI application file. It defines all API endpoints, data models, and core business logic.
+    -   **Summary of Changes**: This file was heavily modified.
+        1.  The  endpoint was updated to allow searching by Date of Birth.
+        2.  A new  endpoint was added to retrieve a patient's profile and their complete timesheet history.
+        3.  A new  endpoint was created to handle the improved parallelized extraction process.
+        4.  WebSocket (Socket.IO) integration was added to provide real-time feedback for the new upload process.
+        5.  The  Pydantic model was updated with a  field to store confidence scores.
+        6.  A critical , caused by incorrectly inserting the  function into the middle of another function, was identified and fixed, restoring backend functionality.
 
 -   ** (New)**
-    -   **Importance**: This is the core of the new, real EVV submission system. It orchestrates the entire process: selecting the correct EVV aggregator (e.g., Sandata) via the factory, preparing the data, and executing the submission.
-    -   **Changes**: Created to replace all previous mock submission logic.
+    -   **Importance**: Decouples the complex data extraction logic from . It contains the function that orchestrates parallel processing of document pages and communicates progress via the WebSocket manager.
+    -   **Summary of Changes**: Created to house the improved timesheet extraction logic, promoting better code organization.
 
 -   ** (New)**
-    -   **Importance**: An implementation of the base aggregator client specifically for Sandata. It handles authentication and data posting to the Sandata API endpoints.
-    -   **Changes**: Created as the first concrete implementation for the new multi-aggregator system. It currently contains placeholder logic for API calls.
-
--   ** &  (New)**
-    -   **Importance**: These files contain the logic for building and generating X12 EDI 837P claim files based on the timesheet data, compliant with ODM specifications.
-    -   **Changes**: Created to fulfill the claims submission requirement.
+    -   **Importance**: Manages the Socket.IO server instance and provides helper functions to send progress updates to the frontend, enabling real-time user feedback.
+    -   **Summary of Changes**: Created to centralize all WebSocket-related functionality.
 
 -   ****
-    -   **Importance**: The primary user interface for managing claims.
-    -   **Changes**: The file was significantly enhanced to include functionality for initiating 837P claim generation, viewing/downloading generated files, and displaying an ODM enrollment checklist to guide users.
+    -   **Importance**: The UI for managing patient records.
+    -   **Summary of Changes**: This component was significantly overhauled. Functionality was added to search by DOB. Patient cards were made clickable, triggering a new . This modal fetches and displays comprehensive patient information and a list of their historical timesheets, retrieved from the new details endpoint.
 
 -   ** (New)**
-    -   **Importance**: Documents the critical  system dependency required for PDF processing.
-    -   **Changes**: Created to diagnose and provide a solution for the recurring issue where the dependency disappears after container restarts. It recommends contacting platform support to add it to the base container image.
+    -   **Importance**: A research document comparing different OCR and data extraction technologies.
+    -   **Summary of Changes**: Created to provide the user with a data-driven basis for deciding on the timesheet extraction improvement strategy.
 </code_architecture>
 
 <pending_tasks>
-- **Acquire Production Credentials**: Obtain and configure Sandata API credentials for a real agency to enable live EVV submission testing.
-- **Implement Real API Calls**: Populate the placeholder methods in  with actual authenticated API requests to Sandata's endpoints.
-- **Frontend UI/UX Polish**: Further refine the landing page and multi-step forms based on user feedback.
-- **Stripe Webhook Configuration**: Set up and test Stripe webhooks in a production environment to handle subscription status changes automatically.
+- **Acquire Production Credentials**: Obtain and configure Sandata API credentials to enable live EVV submission testing.
+- **Implement Real API Calls**: Replace placeholder logic in  with actual authenticated API requests to Sandata.
+- **Stripe Webhook Configuration**: Set up and test Stripe webhooks for production use.
 </pending_tasks>
 
 <current_work>
-The most recent and critical work involved a pivot from a mocked Electronic Visit Verification (EVV) system to a production-ready implementation. This was driven by the user's clarification that successful data submission to an EVV aggregator like Sandata is a mandatory prerequisite for submitting claims to the Ohio Department of Medicaid (ODM).
+The most recent work focused on implementing two major user-requested features, both of which are now complete and fully tested.
 
-To address this, a new, extensible multi-aggregator architecture was designed and implemented in the backend. This involved creating several new files:
--   : Defines the abstract base class for any EVV aggregator.
--   : The first concrete implementation for the Sandata aggregator.
--   : A factory to select the appropriate aggregator client based on configuration.
--   : A high-level service that orchestrates the entire submission process, replacing the previous mock logic.
+First, a comprehensive patient search feature was built. This included backend changes in  to add a new patient details endpoint () and enhance the existing patient list endpoint to support searching by Date of Birth. The corresponding frontend page, , was updated with a new UI allowing users to search and view detailed patient profiles, including timesheet history, in a modal window.
 
-The existing mock EVV submission endpoints in  () were completely refactored to use this new . After implementation, a minor import error in  was identified from the logs and quickly resolved. The backend service was successfully restarted and is now running with the new, real EVV submission framework. The system is now technically capable of performing live submissions but is awaiting real agency credentials for Sandata to be configured and tested. A  file was created to document the required environment variables.
+Second, a Phase 1 performance enhancement for timesheet extraction was implemented. This involved a significant architectural refactor, creating new  and  files. A new endpoint, , was added to  to handle uploads with parallel processing and send real-time progress updates to the client via WebSockets. A critical  introduced during this development was successfully debugged and resolved.
+
+Both the backend and frontend functionalities for these new features passed all automated tests, confirming they are working as expected and ready for user review.
 </current_work>
 
 <optional_next_step>
-The next logical step is to test the newly implemented Sandata EVV submission flow. I will need you to provide the necessary API credentials for the agency you want to transmit data for.
+The patient search and enhanced timesheet extraction features are fully implemented and tested. The next step is for the user to review these new features and provide feedback or approve them.
 </optional_next_step>
