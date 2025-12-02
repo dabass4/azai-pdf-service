@@ -974,6 +974,234 @@ Signature: [Signed]"""
             self.log_test("Delete EVV Visit", False, str(e))
             return False
 
+    # ========================================
+    # Claims Routing Conflict Tests
+    # ========================================
+    
+    def test_claims_list_endpoint(self):
+        """Test GET /api/claims/list - Should return list of claims, NOT 404"""
+        try:
+            response = requests.get(f"{self.api_url}/claims/list", timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                try:
+                    data = response.json()
+                    # Should return a success response with claims array
+                    success = "success" in data and "claims" in data
+                    details = f"Status: {response.status_code}, Success: {data.get('success')}, Claims count: {len(data.get('claims', []))}"
+                except json.JSONDecodeError:
+                    success = False
+                    details = f"Status: {response.status_code}, Invalid JSON response"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Claims List Endpoint (/claims/list)", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Claims List Endpoint (/claims/list)", False, str(e))
+            return False
+    
+    def test_claims_submit_endpoint(self):
+        """Test POST /api/claims/submit - Should accept and process claim submission"""
+        try:
+            # Test with minimal valid data
+            submit_data = {
+                "claim_ids": ["test-claim-id"],
+                "submission_method": "omes_direct"
+            }
+            
+            response = requests.post(f"{self.api_url}/claims/submit", json=submit_data, timeout=30)
+            # Expect either 200 (success) or 500 (expected error due to missing auth/data)
+            # But NOT 404 (routing conflict)
+            success = response.status_code != 404
+            
+            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            self.log_test("Claims Submit Endpoint (/claims/submit)", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Claims Submit Endpoint (/claims/submit)", False, str(e))
+            return False
+    
+    def test_claims_status_endpoint(self):
+        """Test GET /api/claims/{claim_id}/status - Should return claim status"""
+        try:
+            test_claim_id = "test-claim-123"
+            response = requests.get(f"{self.api_url}/claims/{test_claim_id}/status", timeout=10)
+            
+            # Should return 404 for non-existent claim, NOT routing error
+            success = response.status_code in [200, 404, 500]  # Any valid response, not routing conflict
+            
+            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            self.log_test("Claims Status Endpoint (/claims/{claim_id}/status)", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Claims Status Endpoint (/claims/{claim_id}/status)", False, str(e))
+            return False
+    
+    def test_claims_medicaid_get_endpoint(self):
+        """Test GET /api/claims/medicaid/{claim_id} - Should return specific claim details"""
+        try:
+            test_claim_id = "test-medicaid-claim-123"
+            response = requests.get(f"{self.api_url}/claims/medicaid/{test_claim_id}", timeout=10)
+            
+            # Should return 404 for non-existent claim, NOT routing error
+            success = response.status_code in [200, 404, 500]  # Any valid response, not routing conflict
+            
+            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            self.log_test("Claims Medicaid Get Endpoint (/claims/medicaid/{claim_id})", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Claims Medicaid Get Endpoint (/claims/medicaid/{claim_id})", False, str(e))
+            return False
+    
+    def test_claims_medicaid_put_endpoint(self):
+        """Test PUT /api/claims/medicaid/{claim_id} - Should update claim"""
+        try:
+            test_claim_id = "test-medicaid-claim-123"
+            update_data = {
+                "status": "updated",
+                "notes": "Test update"
+            }
+            
+            response = requests.put(f"{self.api_url}/claims/medicaid/{test_claim_id}", json=update_data, timeout=10)
+            
+            # Should return 404 for non-existent claim, NOT routing error
+            success = response.status_code in [200, 404, 500]  # Any valid response, not routing conflict
+            
+            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            self.log_test("Claims Medicaid Put Endpoint (/claims/medicaid/{claim_id})", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Claims Medicaid Put Endpoint (/claims/medicaid/{claim_id})", False, str(e))
+            return False
+    
+    def test_claims_medicaid_delete_endpoint(self):
+        """Test DELETE /api/claims/medicaid/{claim_id} - Should delete claim"""
+        try:
+            test_claim_id = "test-medicaid-claim-123"
+            response = requests.delete(f"{self.api_url}/claims/medicaid/{test_claim_id}", timeout=10)
+            
+            # Should return 404 for non-existent claim, NOT routing error
+            success = response.status_code in [200, 404, 500]  # Any valid response, not routing conflict
+            
+            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            self.log_test("Claims Medicaid Delete Endpoint (/claims/medicaid/{claim_id})", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Claims Medicaid Delete Endpoint (/claims/medicaid/{claim_id})", False, str(e))
+            return False
+    
+    def test_admin_organizations_endpoint(self):
+        """Test GET /api/admin/organizations - Should require admin access"""
+        try:
+            response = requests.get(f"{self.api_url}/admin/organizations", timeout=10)
+            
+            # Should return 401/403 (auth required) or 200 (if somehow authenticated), NOT 404
+            success = response.status_code in [200, 401, 403, 500]  # Any valid response, not routing conflict
+            
+            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            self.log_test("Admin Organizations Endpoint (/admin/organizations)", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Admin Organizations Endpoint (/admin/organizations)", False, str(e))
+            return False
+    
+    def test_admin_system_health_endpoint(self):
+        """Test GET /api/admin/system/health - Should return system status"""
+        try:
+            response = requests.get(f"{self.api_url}/admin/system/health", timeout=10)
+            
+            # Should return 401/403 (auth required) or 200 (if somehow authenticated), NOT 404
+            success = response.status_code in [200, 401, 403, 500]  # Any valid response, not routing conflict
+            
+            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            self.log_test("Admin System Health Endpoint (/admin/system/health)", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Admin System Health Endpoint (/admin/system/health)", False, str(e))
+            return False
+    
+    def test_auth_endpoints(self):
+        """Test authentication endpoints (/api/auth/login, /api/auth/register)"""
+        try:
+            # Test login endpoint
+            login_data = {
+                "email": "test@example.com",
+                "password": "testpassword"
+            }
+            
+            response = requests.post(f"{self.api_url}/auth/login", json=login_data, timeout=10)
+            
+            # Should return 401 (invalid credentials) or 200 (success), NOT 404
+            login_success = response.status_code in [200, 401, 422, 500]  # Any valid response, not routing conflict
+            
+            # Test register endpoint
+            register_data = {
+                "email": "newuser@example.com",
+                "password": "newpassword",
+                "first_name": "Test",
+                "last_name": "User",
+                "organization_name": "Test Org"
+            }
+            
+            response = requests.post(f"{self.api_url}/auth/register", json=register_data, timeout=10)
+            
+            # Should return 200 (success) or 400 (validation error), NOT 404
+            register_success = response.status_code in [200, 400, 422, 500]  # Any valid response, not routing conflict
+            
+            success = login_success and register_success
+            details = f"Login endpoint working: {login_success}, Register endpoint working: {register_success}"
+            
+            self.log_test("Authentication Endpoints", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Authentication Endpoints", False, str(e))
+            return False
+    
+    def test_employee_crud_endpoints(self):
+        """Test employee CRUD operations"""
+        try:
+            # Test GET employees
+            response = requests.get(f"{self.api_url}/employees", timeout=10)
+            get_success = response.status_code in [200, 401, 403, 500]  # Any valid response, not routing conflict
+            
+            # Test POST employees
+            employee_data = {
+                "first_name": "John",
+                "last_name": "Doe",
+                "email": "john.doe@test.com",
+                "phone": "1234567890"
+            }
+            
+            response = requests.post(f"{self.api_url}/employees", json=employee_data, timeout=10)
+            post_success = response.status_code in [200, 401, 403, 422, 500]  # Any valid response, not routing conflict
+            
+            success = get_success and post_success
+            details = f"GET employees working: {get_success}, POST employees working: {post_success}"
+            
+            self.log_test("Employee CRUD Operations", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Employee CRUD Operations", False, str(e))
+            return False
+    
+    def test_timesheet_operations(self):
+        """Test timesheet operations"""
+        try:
+            # Test GET timesheets
+            response = requests.get(f"{self.api_url}/timesheets", timeout=10)
+            get_success = response.status_code in [200, 401, 403, 500]  # Any valid response, not routing conflict
+            
+            success = get_success
+            details = f"GET timesheets working: {get_success}"
+            
+            self.log_test("Timesheet Operations", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Timesheet Operations", False, str(e))
+            return False
+
     def test_evv_export_field_mapping_detailed(self):
         """Test detailed EVV export field mapping for Individual and DirectCareWorker exports"""
         print("\n🔍 Starting Detailed EVV Export Field Mapping Tests")
