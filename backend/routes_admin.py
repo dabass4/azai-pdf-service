@@ -112,14 +112,15 @@ async def list_organizations(
         
         # Get user counts per organization
         for org in organizations:
+            org_id = org.get("id", org.get("organization_id"))
             user_count = await database.users.count_documents(
-                {"organization_id": org["organization_id"]}
+                {"organization_id": org_id}
             )
             org["user_count"] = user_count
             
             # Get timesheet count
             timesheet_count = await database.timesheets.count_documents(
-                {"organization_id": org["organization_id"]}
+                {"organization_id": org_id}
             )
             org["timesheet_count"] = timesheet_count
         
