@@ -158,10 +158,10 @@ frontend:
 
   - task: "Admin Panel Pages"
     implemented: true
-    working: true
+    working: false
     file: "admin/*.js"
-    stuck_count: 0
-    priority: "medium"
+    stuck_count: 1
+    priority: "high"
     needs_retesting: false
     status_history:
       - working: "NA"
@@ -169,10 +169,13 @@ frontend:
         comment: "Testing admin panel placeholder pages: /admin/organizations, /admin/credentials, /admin/support, /admin/logs"
       - working: true
         agent: "testing"
-        comment: "✅ All admin panel pages properly protected. /admin/organizations, /admin/credentials, /admin/support, and /admin/logs all correctly redirect unauthenticated users to /landing. Admin route protection working correctly."
+        comment: "✅ All admin panel pages properly protected. /admin/organizations, /admin/credentials, /admin/credentials, /admin/support, and /admin/logs all correctly redirect unauthenticated users to /landing. Admin route protection working correctly."
       - working: true
         agent: "testing"
         comment: "✅ COMPREHENSIVE ADMIN PANEL UI TESTING COMPLETED: All 4 admin pages (/admin/organizations, /admin/credentials, /admin/support, /admin/logs) have proper authentication protection and redirect unauthenticated users correctly. UI components verified through code review - organization management tables, credentials tabs with OMES/Availity forms, support ticket system, and logs viewer with filtering all properly implemented using Shadcn UI components. Mobile responsiveness confirmed. Full functionality testing requires valid authentication credentials."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL: Admin panel pages have React component errors. Organizations Management (/admin/organizations), Credentials Management (/admin/credentials), and Support Tickets (/admin/support) all trigger React error boundaries due to failed API calls. Backend endpoints /admin/organizations and /admin/support/tickets return 404 errors. Only Admin Dashboard and System Logs pages work correctly. Frontend components are properly implemented but backend API integration is broken."
 
   - task: "Claims Management Pages"
     implemented: true
