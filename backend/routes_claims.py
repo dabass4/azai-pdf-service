@@ -380,3 +380,126 @@ async def test_availity_connection(
             status_code=500,
             detail=f"Availity test failed: {str(e)}"
         )
+
+
+
+
+# ==================== CLAIMS LIFECYCLE ====================
+
+@router.post("/create-from-timesheet")
+async def create_claim_from_timesheet(
+    timesheet_id: str,
+    current_user: dict = Depends(get_current_user)
+) -> dict:
+    """
+    Create a claim record from a timesheet
+    """
+    try:
+        from server import db as database
+        from claims_service import ClaimsService
+        
+        organization_id = current_user.get("organization_id", "default-org")
+        claims_service = ClaimsService(database, organization_id)
+        
+        claim_id = await claims_service.create_claim_from_timesheet(timesheet_id)
+        
+        return {
+            "success": True,
+            "claim_id": claim_id,
+            "timesheet_id": timesheet_id
+        }
+    
+    except Exception as e:
+        logger.error(f"Create claim failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/list")
+async def list_claims(
+    status: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+) -> dict:
+    """
+    List all claims for organization
+    """
+    try:
+        from server import db as database
+        
+        organization_id = current_user.get("organization_id", "default-org")
+        
+        query = {"organization_id": organization_id}
+        if status:
+            query["status"] = status
+        
+        total = await database.claims.count_documents(query)
+        claims = await database.claims.find(query).skip(skip).limit(limit).to_list(length=limit)
+        
+        return {
+            "success": True,
+            "total": total,
+            "claims": claims
+        }
+    
+    except Exception as e:
+        logger.error(f"List claims failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/process-835")
+async def process_835_remittance(
+    filename: str,
+    current_user: dict = Depends(get_current_user)
+) -> dict:
+    """
+    Process an 835 remittance advice file from SFTP
+    """
+    try:
+        from server import db as database
+        from claims_service import ClaimsService
+        
+        organization_id = current_user.get("organization_id", "default-org")
+        
+        # Download file from SFTP
+        sftp_client = OMESSFTPClient()
+        content = sftp_client.download_response_file(filename)
+        
+        # Process remittance
+        claims_service = ClaimsService(database, organization_id)
+        result = await claims_service.process_835_remittance(filename, content)
+        
+        return result
+    
+    except Exception as e:
+        logger.error(f"Process 835 failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/remittances")
+async def list_remittances(
+    skip: int = 0,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+) -> dict:
+    """
+    List all remittance advice records
+    """
+    try:
+        from server import db as database
+        
+        organization_id = current_user.get("organization_id", "default-org")
+        
+        query = {"organization_id": organization_id}
+        total = await database.remittances.count_documents(query)
+        remittances = await database.remittances.find(query).skip(skip).limit(limit).to_list(length=limit)
+        
+        return {
+            "success": True,
+            "total": total,
+            "remittances": remittances
+        }
+    
+    except Exception as e:
+        logger.error(f"List remittances failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
