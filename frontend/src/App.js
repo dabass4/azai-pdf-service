@@ -878,6 +878,10 @@ function App() {
                   <Route path="/admin/credentials" element={<AdminCredentials />} />
                   <Route path="/admin/support" element={<AdminSupport />} />
                   <Route path="/admin/logs" element={<AdminLogs />} />
+                  
+                  {/* Claims Routes */}
+                  <Route path="/eligibility-check" element={<EligibilityCheck />} />
+                  <Route path="/claim-tracking" element={<ClaimTracking />} />
                 </Routes>
               </ProtectedRoute>
             } />
