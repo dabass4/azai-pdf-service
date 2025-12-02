@@ -113,11 +113,14 @@ const LandingPage = () => {
 
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
-          Healthcare Timesheet Management
-          <br />
-          <span className="text-blue-600">Made Simple</span>
-        </h1>
+        <div className="mb-6">
+          <h1 className="text-6xl md:text-7xl font-bold text-blue-600 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            AZAI
+          </h1>
+          <p className="text-2xl md:text-3xl font-semibold text-gray-900">
+            Healthcare Timesheet Management Made Simple
+          </p>
+        </div>
         <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
           AI-powered timesheet scanning and submission for Ohio Medicaid providers. 
           Sandata integration, EVV compliance, and automated workflows.
