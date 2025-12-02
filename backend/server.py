@@ -4253,6 +4253,10 @@ async def update_trading_partner_id(
 from routes_claims import router as claims_router
 api_router.include_router(claims_router)
 
+# Import and include admin router
+from routes_admin import router as admin_router
+api_router.include_router(admin_router)
+
 # Include the router in the main app
 app.include_router(api_router)
 
