@@ -2528,7 +2528,7 @@ async def get_claims(organization_id: str = Depends(get_organization_id)):
     
     return claims
 
-@api_router.get("/claims/{claim_id}", response_model=MedicaidClaim)
+@api_router.get("/claims/medicaid/{claim_id}", response_model=MedicaidClaim)
 async def get_claim(claim_id: str, organization_id: str = Depends(get_organization_id)):
     """Get specific claim by ID"""
     claim = await db.claims.find_one({"id": claim_id, "organization_id": organization_id}, {"_id": 0})
@@ -2544,7 +2544,7 @@ async def get_claim(claim_id: str, organization_id: str = Depends(get_organizati
     
     return claim
 
-@api_router.put("/claims/{claim_id}", response_model=MedicaidClaim)
+@api_router.put("/claims/medicaid/{claim_id}", response_model=MedicaidClaim)
 async def update_claim(claim_id: str, claim_update: MedicaidClaim, organization_id: str = Depends(get_organization_id)):
     """Update claim"""
     claim_update.id = claim_id
@@ -2565,7 +2565,7 @@ async def update_claim(claim_id: str, claim_update: MedicaidClaim, organization_
     
     return claim_update
 
-@api_router.post("/claims/{claim_id}/submit")
+@api_router.post("/claims/medicaid/{claim_id}/submit")
 async def submit_claim(claim_id: str, organization_id: str = Depends(get_organization_id)):
     """
     Submit claim to Ohio Medicaid portal
@@ -2619,7 +2619,7 @@ async def submit_claim(claim_id: str, organization_id: str = Depends(get_organiz
         logger.error(f"Claim submission error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.delete("/claims/{claim_id}")
+@api_router.delete("/claims/medicaid/{claim_id}")
 async def delete_claim(claim_id: str, organization_id: str = Depends(get_organization_id)):
     """Delete a claim"""
     result = await db.claims.delete_one({"id": claim_id, "organization_id": organization_id})
