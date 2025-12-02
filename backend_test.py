@@ -270,6 +270,36 @@ Signature: [Signed]"""
         
         return self.get_results()
 
+    def run_claims_routing_tests(self):
+        """Run comprehensive claims routing tests to verify routing conflict fix"""
+        print("\n🏥 Starting Claims Routing Conflict Tests")
+        print(f"Testing against: {self.api_url}")
+        print("=" * 60)
+        
+        # Test basic connectivity first
+        if not self.test_root_endpoint():
+            print("❌ Root endpoint failed - stopping claims tests")
+            return self.get_results()
+        
+        # Test Claims Management Endpoints (PRIORITY - was broken before)
+        self.test_claims_list_endpoint()
+        self.test_claims_submit_endpoint()
+        self.test_claims_status_endpoint()
+        self.test_claims_medicaid_get_endpoint()
+        self.test_claims_medicaid_put_endpoint()
+        self.test_claims_medicaid_delete_endpoint()
+        
+        # Test Admin Endpoints (verify still working)
+        self.test_admin_organizations_endpoint()
+        self.test_admin_system_health_endpoint()
+        
+        # Test Core Functionality (regression check)
+        self.test_auth_endpoints()
+        self.test_employee_crud_endpoints()
+        self.test_timesheet_operations()
+        
+        return self.get_results()
+
     def run_evv_tests(self):
         """Run comprehensive EVV API tests"""
         print("\n🏥 Starting Ohio Medicaid EVV Backend Tests")
