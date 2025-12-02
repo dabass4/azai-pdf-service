@@ -522,15 +522,21 @@ Signature: [Signed]"""
                 return False
             
             response = self.make_request('GET', '/claims/list')
-            success = response.status_code == 200
             
-            if success:
+            # Check if it's a 404 (endpoint not found) vs 200 with empty results
+            if response.status_code == 404:
+                # This might be a routing issue - let's check if the endpoint exists
+                details = f"Status: {response.status_code}, Response: {response.text[:200]} - Claims endpoint may not be properly mounted"
+                success = False
+            elif response.status_code == 200:
                 data = response.json()
                 has_success_field = 'success' in data and data.get('success') == True
                 claims_count = len(data.get('claims', [])) if 'claims' in data else 0
                 details = f"Status: {response.status_code}, Success: {has_success_field}, Claims count: {claims_count}"
+                success = True
             else:
                 details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+                success = False
             
             self.log_test("List Claims", success, details)
             return success
