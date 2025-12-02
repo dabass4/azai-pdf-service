@@ -594,11 +594,11 @@ Signature: [Signed]"""
             return False
 
     def test_unauthorized_access(self) -> bool:
-        """Test endpoints without authentication"""
+        """Test endpoints that require authentication"""
         try:
-            # Make request without any auth headers
+            # Test claims endpoint which requires get_current_user
             headers = {}
-            response = requests.get(f"{self.api_url}/patients", headers=headers, timeout=30)
+            response = requests.get(f"{self.api_url}/claims/list", headers=headers, timeout=30)
             success = response.status_code == 401  # Should be unauthorized
             
             # Log actual response for debugging
