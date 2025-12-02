@@ -44,7 +44,7 @@ async def create_super_admin(email: str, password: str, first_name: str = "Super
         user_doc = {
             "id": user_id,
             "email": email,
-            "password": hashed_password,
+            "password_hash": hashed_password,
             "first_name": first_name,
             "last_name": last_name,
             "organization_id": "super_admin",  # Special org ID for super admins
