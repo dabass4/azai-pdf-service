@@ -3435,8 +3435,8 @@ async def create_checkout(
         session = create_checkout_session(
             organization_id=organization_id,
             plan=request.plan,
-            success_url=f"https://caresheet.preview.emergentagent.com/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"https://caresheet.preview.emergentagent.com/payment/cancelled",
+            success_url=f"https://odm-claims-hub.preview.emergentagent.com/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"https://odm-claims-hub.preview.emergentagent.com/payment/cancelled",
             customer_email=current_user["email"]
         )
         
@@ -3464,7 +3464,7 @@ async def create_portal(current_user: Dict = Depends(get_current_user)):
         # Create billing portal session
         session = create_billing_portal_session(
             customer_id=org["stripe_customer_id"],
-            return_url="https://caresheet.preview.emergentagent.com/"
+            return_url="https://odm-claims-hub.preview.emergentagent.com/"
         )
         
         return session
