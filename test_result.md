@@ -138,4 +138,6 @@ test_plan:
 agent_communication:
   - agent: "testing"
     message: "Starting comprehensive backend API testing for healthcare timesheet management application. Will test authentication, CRUD operations, claims connections, and admin endpoints."
+  - agent: "testing"
+    message: "Backend testing completed. 16/18 tests passed. CRITICAL ISSUE: Claims routing conflict between server.py and routes_claims.py causing /claims/list to return 404. Minor issues: OMES SFTP timeout (external service), PDF processing poppler dependency. All core functionality working."
 
