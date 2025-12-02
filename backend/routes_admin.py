@@ -107,7 +107,7 @@ async def list_organizations(
         total = await database.organizations.count_documents(query)
         
         # Get organizations
-        cursor = database.organizations.find(query).skip(skip).limit(limit)
+        cursor = database.organizations.find(query, {"_id": 0}).skip(skip).limit(limit)
         organizations = await cursor.to_list(length=limit)
         
         # Get user counts per organization
