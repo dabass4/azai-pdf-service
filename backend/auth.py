@@ -23,7 +23,7 @@ def verify_password(password: str, hashed: str) -> bool:
     """Verify a password against its hash"""
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
-def create_access_token(user_id: str, email: str, organization_id: str, role: str) -> str:
+def create_access_token(user_id: str, email: str, organization_id: str, role: str, is_admin: bool = False) -> str:
     """Create a JWT access token"""
     expiration = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
     
@@ -32,6 +32,7 @@ def create_access_token(user_id: str, email: str, organization_id: str, role: st
         'email': email,
         'organization_id': organization_id,
         'role': role,
+        'is_admin': is_admin,
         'exp': expiration,
         'iat': datetime.now(timezone.utc)
     }
