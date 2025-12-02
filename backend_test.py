@@ -14,6 +14,9 @@ class HealthcareTimesheetAPITester:
         self.tests_run = 0
         self.tests_passed = 0
         self.test_results = []
+        self.auth_token = None
+        self.test_user_email = None
+        self.test_organization_id = None
 
     def log_test(self, name, success, details=""):
         """Log test result"""
