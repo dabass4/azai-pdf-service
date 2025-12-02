@@ -865,6 +865,15 @@ function App() {
                   <Route path="/service-codes" element={<ServiceCodes />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/timesheet/edit/:id" element={<TimesheetEditor />} />
+                  
+                  {/* Admin Routes */}
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/organizations" element={<AdminOrganizations />} />
+                  <Route path="/admin/organizations/create" element={<AdminCreateOrg />} />
+                  <Route path="/admin/organizations/:organizationId/credentials" element={<AdminCredentials />} />
+                  <Route path="/admin/credentials" element={<AdminCredentials />} />
+                  <Route path="/admin/support" element={<AdminSupport />} />
+                  <Route path="/admin/logs" element={<AdminLogs />} />
                 </Routes>
               </ProtectedRoute>
             } />
