@@ -31,6 +31,10 @@ import AdminSupport from "@/pages/admin/AdminSupport";
 import AdminLogs from "@/pages/admin/AdminLogs";
 import AdminCreateOrg from "@/pages/admin/AdminCreateOrg";
 
+// Claims pages
+import EligibilityCheck from "@/pages/EligibilityCheck";
+import ClaimTracking from "@/pages/ClaimTracking";
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
