@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 import uuid
 
-class TimesheetAPITester:
+class HealthcareTimesheetAPITester:
     def __init__(self, base_url="https://caresheet.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
