@@ -76,9 +76,9 @@ backend:
 
   - task: "Claims Management"
     implemented: true
-    working: false
+    working: true
     file: "routes_claims.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
@@ -88,6 +88,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL: Claims routing conflict detected. /claims/list returns 404 'Claim not found' due to route conflict between server.py and routes_claims.py. Main server has /claims/{claim_id} which matches /claims/list first."
+      - working: true
+        agent: "testing"
+        comment: "✅ ROUTING CONFLICT RESOLVED: All claims endpoints now working correctly. /claims/list returns 401 (auth required) instead of 404. /claims/submit, /claims/medicaid/{claim_id} endpoints all respond properly. The change from /claims/{claim_id} to /claims/medicaid/{claim_id} in server.py fixed the routing conflict."
 
   - task: "Admin Endpoints"
     implemented: true
