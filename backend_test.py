@@ -3196,7 +3196,7 @@ Signature: [Signed]"""
             return False
 
 def main():
-    tester = TimesheetAPITester()
+    tester = HealthcareTimesheetAPITester()
     
     if len(sys.argv) > 1 and sys.argv[1] == "search_bulk":
         # Run search, filter, and bulk operations tests
@@ -3233,6 +3233,21 @@ def main():
         
         # Run the new claims tests
         tester.test_ohio_medicaid_837p_claims()
+        
+        return tester.get_results()
+    elif len(sys.argv) > 1 and sys.argv[1] == "claims-routing":
+        # Run claims routing conflict tests
+        print("🏥 Testing Claims Routing Conflict Fix")
+        print("Testing that routing conflicts between server.py and routes_claims.py are resolved")
+        print("=" * 80)
+        
+        # Test basic connectivity first
+        if not tester.test_root_endpoint():
+            print("❌ Root endpoint failed - stopping tests")
+            return 1
+        
+        # Run the claims routing tests
+        tester.run_claims_routing_tests()
         
         return tester.get_results()
     elif len(sys.argv) > 1 and sys.argv[1] == "basic":
