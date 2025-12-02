@@ -58,6 +58,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ Timesheet management working: list and upload endpoints functional. Minor: PDF processing has poppler dependency issue but upload succeeds"
+      - working: true
+        agent: "testing"
+        comment: "✅ PDF PROCESSING WITH POPPLER-UTILS VERIFIED: All 5 PDF processing tests passed. Poppler-utils v22.12.0 detected and working correctly. PDF upload endpoint functional - PDFs are successfully converted to images using pdf2image + poppler. Multi-page PDF processing working. No poppler dependency errors. Minor: Data validation issue in timesheet retrieval endpoints (extracted_data field format) - upload works correctly."
 
   - task: "Claims Connection Tests"
     implemented: true
