@@ -20,7 +20,7 @@ class EligibilityRequest(BaseModel):
     date_of_birth: date
     gender: Optional[Gender] = None
     service_type_code: str = Field(default="30", description="30=Health Benefit Plan Coverage")
-    provider_npi: str = Field(..., regex=r"^\d{10}$")
+    provider_npi: str = Field(..., pattern=r"^\d{10}$")
     
 
 class CoveragePeriod(BaseModel):
