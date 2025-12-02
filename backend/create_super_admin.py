@@ -37,6 +37,22 @@ async def create_super_admin(email: str, password: str, first_name: str = "Super
             print(f"❌ User with email {email} already exists!")
             return False
         
+        # Create super admin organization if it doesn't exist
+        org_exists = await db.organizations.find_one({"id": "super_admin"})
+        if not org_exists:
+            org_doc = {
+                "id": "super_admin",
+                "name": "Platform Administration",
+                "contact_email": email,
+                "status": "active",
+                "plan": "enterprise",
+                "subscription_status": "active",
+                "features": ["admin_panel", "all_features"],
+                "created_at": datetime.now(timezone.utc)
+            }
+            await db.organizations.insert_one(org_doc)
+            print("   ✓ Created super admin organization")
+        
         # Create super admin user
         user_id = str(uuid.uuid4())
         hashed_password = hash_password(password)
@@ -48,6 +64,7 @@ async def create_super_admin(email: str, password: str, first_name: str = "Super
             "first_name": first_name,
             "last_name": last_name,
             "organization_id": "super_admin",  # Special org ID for super admins
+            "role": "super_admin",  # Required for login
             "is_admin": True,  # Super admin flag
             "is_active": True,
             "created_at": datetime.now(timezone.utc)
