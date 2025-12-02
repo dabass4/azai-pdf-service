@@ -125,13 +125,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Authentication Endpoints"
-    - "Patient Management"
-    - "Employee Management"
-    - "Timesheet Management"
-    - "Claims Connection Tests"
-    - "Admin Endpoints"
-  stuck_tasks: []
+    - "Claims Management"
+  stuck_tasks:
+    - "Claims Management"
   test_all: false
   test_priority: "high_first"
 
