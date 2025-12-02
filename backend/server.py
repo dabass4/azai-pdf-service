@@ -4249,6 +4249,10 @@ async def update_trading_partner_id(
         logger.error(f"Update trading partner ID error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Import and include claims router
+from routes_claims import router as claims_router
+api_router.include_router(claims_router)
+
 # Include the router in the main app
 app.include_router(api_router)
 
