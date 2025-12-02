@@ -220,20 +220,26 @@ async def submit_claims(
     This will generate 837 files from timesheet data and submit
     """
     try:
+        from server import db as database
+        from claims_service import ClaimsService
+        
         organization_id = current_user.get("organization_id", "default-org")
         
-        # TODO: Retrieve claim data from database using claim_ids
-        # TODO: Generate 837 EDI files from claim data
-        # TODO: Submit via chosen method
+        # Initialize claims service
+        claims_service = ClaimsService(database, organization_id)
         
-        return {
-            "success": True,
-            "message": f"Claim submission initiated for {len(request.claim_ids)} claims",
-            "method": request.submission_method,
-            "claim_ids": request.claim_ids,
-            "submitted_at": datetime.utcnow().isoformat(),
-            "status": "processing"
-        }
+        # Submit based on method
+        if request.submission_method == "omes_direct":
+            result = await claims_service.submit_claims_omes(request.claim_ids)
+        elif request.submission_method == "availity":
+            result = await claims_service.submit_claims_availity(request.claim_ids)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid submission method: {request.submission_method}"
+            )
+        
+        return result
     
     except Exception as e:
         logger.error(f"Claim submission failed: {str(e)}")
