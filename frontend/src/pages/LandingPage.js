@@ -98,7 +98,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <FileText className="text-blue-600" size={32} />
-            <h1 className="text-2xl font-bold text-gray-900">Timesheet Scanner</h1>
+            <h1 className="text-2xl font-bold text-gray-900">AZAI</h1>
           </div>
           <div className="flex gap-3">
             <Button variant="ghost" onClick={() => navigate('/login')}>
