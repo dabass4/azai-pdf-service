@@ -187,9 +187,15 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus: 
+    - "Application Loading & Navigation"
+    - "Authentication Flow"
+    - "Core Pages Rendering"
+    - "Admin Panel Pages"
+    - "Claims Management Pages"
+    - "UI/UX Responsiveness"
   stuck_tasks: []
-  test_all: false
+  test_all: true
   test_priority: "high_first"
 
 agent_communication:
