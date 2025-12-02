@@ -476,9 +476,9 @@ const Home = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Timesheet Scanner
+            AZAI
           </h1>
-          <p className="text-lg text-gray-600">Upload timesheets and automatically submit to Sandata</p>
+          <p className="text-lg text-gray-600">Healthcare Timesheet Management Made Simple</p>
         </div>
 
         {/* Upload Section */}
