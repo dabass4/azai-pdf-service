@@ -23,6 +23,14 @@ import ServiceCodes from "@/pages/ServiceCodes";
 import Settings from "@/pages/Settings";
 import { formatDateForDisplay } from "./utils/dateUtils";
 
+// Admin pages
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminOrganizations from "@/pages/admin/AdminOrganizations";
+import AdminCredentials from "@/pages/admin/AdminCredentials";
+import AdminSupport from "@/pages/admin/AdminSupport";
+import AdminLogs from "@/pages/admin/AdminLogs";
+import AdminCreateOrg from "@/pages/admin/AdminCreateOrg";
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
