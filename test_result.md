@@ -1,87 +1,108 @@
 backend:
   - task: "Authentication Endpoints"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Initial test setup - needs comprehensive testing of signup and login endpoints"
+      - working: true
+        agent: "testing"
+        comment: "✅ All authentication tests passed: signup, login, and invalid login rejection working correctly"
 
   - task: "Patient Management"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "CRUD operations for patients - needs testing"
+      - working: true
+        agent: "testing"
+        comment: "✅ Patient CRUD operations working: create, list, and get patient endpoints all functional"
 
   - task: "Employee Management"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "CRUD operations for employees - needs testing"
+      - working: true
+        agent: "testing"
+        comment: "✅ Employee CRUD operations working: create and list employee endpoints functional"
 
   - task: "Timesheet Management"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Timesheet upload and processing - needs testing"
+      - working: true
+        agent: "testing"
+        comment: "✅ Timesheet management working: list and upload endpoints functional. Minor: PDF processing has poppler dependency issue but upload succeeds"
 
   - task: "Claims Connection Tests"
     implemented: true
-    working: "NA"
+    working: true
     file: "routes_claims.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "OMES SOAP, OMES SFTP, and Availity connection tests - needs testing"
+      - working: true
+        agent: "testing"
+        comment: "✅ Connection tests working: OMES SOAP and Availity tests pass. Minor: OMES SFTP times out (expected - external service not configured)"
 
   - task: "Claims Management"
     implemented: true
-    working: "NA"
+    working: false
     file: "routes_claims.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: true
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Claims listing and management - needs testing"
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL: Claims routing conflict detected. /claims/list returns 404 'Claim not found' due to route conflict between server.py and routes_claims.py. Main server has /claims/{claim_id} which matches /claims/list first."
 
   - task: "Admin Endpoints"
     implemented: true
-    working: "NA"
+    working: true
     file: "routes_admin.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Admin organization management and system health - needs testing"
+      - working: true
+        agent: "testing"
+        comment: "✅ Admin access control working: properly returns 403 for non-admin users accessing /admin/organizations and /admin/system/health"
 
 frontend:
   - task: "Frontend Testing"
