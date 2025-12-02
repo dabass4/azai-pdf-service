@@ -601,7 +601,9 @@ Signature: [Signed]"""
             response = requests.get(f"{self.api_url}/patients", headers=headers, timeout=30)
             success = response.status_code == 401  # Should be unauthorized
             
-            details = f"Status: {response.status_code} (expected 401)"
+            # Log actual response for debugging
+            response_text = response.text[:200] if response.text else "No response body"
+            details = f"Status: {response.status_code} (expected 401), Response: {response_text}"
             self.log_test("Unauthorized Access Handling", success, details)
             return success
             
