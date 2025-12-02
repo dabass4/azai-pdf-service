@@ -50,7 +50,7 @@ class ClaimStatusRequest(BaseModel):
     patient_last_name: str
     patient_first_name: str
     patient_dob: date
-    provider_npi: str = Field(..., regex=r"^\d{10}$")
+    provider_npi: str = Field(..., pattern=r"^\d{10}$")
     service_date: Optional[date] = None
 
 
