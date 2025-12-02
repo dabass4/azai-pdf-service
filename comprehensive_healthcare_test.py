@@ -596,9 +596,17 @@ Signature: [Signed]"""
     def test_unauthorized_access(self) -> bool:
         """Test endpoints that require authentication"""
         try:
-            # Test claims endpoint which requires get_current_user
+            # Test claims eligibility endpoint which requires get_current_user
             headers = {}
-            response = requests.get(f"{self.api_url}/claims/list", headers=headers, timeout=30)
+            eligibility_data = {
+                "member_id": "123456789012",
+                "first_name": "Test",
+                "last_name": "Patient",
+                "date_of_birth": "1990-01-01",
+                "provider_npi": "1234567890"
+            }
+            response = requests.post(f"{self.api_url}/claims/eligibility/verify", 
+                                   json=eligibility_data, headers=headers, timeout=30)
             success = response.status_code == 401  # Should be unauthorized
             
             # Log actual response for debugging
