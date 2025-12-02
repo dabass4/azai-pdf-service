@@ -112,7 +112,7 @@ const Navigation = () => {
 
           {/* App Title for Mobile */}
           <div className="md:hidden flex items-center">
-            <h1 className="text-lg font-bold text-gray-900">Timesheet Scanner</h1>
+            <h1 className="text-lg font-bold text-gray-900">AZAI</h1>
           </div>
         </div>
 
