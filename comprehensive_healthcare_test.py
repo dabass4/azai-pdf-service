@@ -596,15 +596,10 @@ Signature: [Signed]"""
     def test_unauthorized_access(self) -> bool:
         """Test endpoints without authentication"""
         try:
-            # Temporarily remove auth token
-            temp_token = self.auth_token
-            self.auth_token = None
-            
-            response = self.make_request('GET', '/patients')
+            # Make request without any auth headers
+            headers = {}
+            response = requests.get(f"{self.api_url}/patients", headers=headers, timeout=30)
             success = response.status_code == 401  # Should be unauthorized
-            
-            # Restore auth token
-            self.auth_token = temp_token
             
             details = f"Status: {response.status_code} (expected 401)"
             self.log_test("Unauthorized Access Handling", success, details)
