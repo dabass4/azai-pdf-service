@@ -3669,7 +3669,8 @@ async def signup(request: SignupRequest):
             user_id=user.id,
             email=user.email,
             organization_id=org.id,
-            role=user.role
+            role=user.role,
+            is_admin=False
         )
         
         # Return response
