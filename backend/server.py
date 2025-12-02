@@ -3734,7 +3734,8 @@ async def login(request: LoginRequest):
             user_id=user_doc["id"],
             email=user_doc["email"],
             organization_id=user_doc["organization_id"],
-            role=user_doc["role"]
+            role=user_doc["role"],
+            is_admin=user_doc.get("is_admin", False)
         )
         
         # Return response
