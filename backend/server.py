@@ -2312,7 +2312,7 @@ async def get_patient(patient_id: str, organization_id: str = Depends(get_organi
 
 @api_router.put("/patients/{patient_id}", response_model=PatientProfile)
 async def update_patient(patient_id: str, patient_update: PatientProfileUpdate, organization_id: str = Depends(get_organization_id)):
-    """Update patient profile"""
+    """Update patient profile and auto-sync with all related timesheets"""
     # Get existing patient
     existing = await db.patients.find_one({"id": patient_id, "organization_id": organization_id}, {"_id": 0})
     if not existing:
@@ -2329,6 +2329,42 @@ async def update_patient(patient_id: str, patient_update: PatientProfileUpdate, 
     
     # Get updated patient
     updated_patient = await db.patients.find_one({"id": patient_id, "organization_id": organization_id}, {"_id": 0})
+    
+    # AUTO-SYNC: Update all timesheets that reference this patient
+    if update_data.get('first_name') or update_data.get('last_name') or update_data.get('medicaid_number'):
+        full_name = f"{updated_patient.get('first_name', '')} {updated_patient.get('last_name', '')}".strip()
+        
+        # Find all timesheets with this patient
+        timesheets_to_update = await db.timesheets.find({
+            "organization_id": organization_id,
+            "patient_id": patient_id
+        }, {"_id": 0}).to_list(1000)
+        
+        # Update each timesheet's extracted_data with corrected patient info
+        for timesheet in timesheets_to_update:
+            if timesheet.get('extracted_data') and isinstance(timesheet['extracted_data'], dict):
+                # Update client name
+                if full_name:
+                    timesheet['extracted_data']['client_name'] = full_name
+                
+                # Mark as auto-corrected
+                if 'metadata' not in timesheet or not isinstance(timesheet.get('metadata'), dict):
+                    timesheet['metadata'] = {}
+                timesheet['metadata']['patient_auto_corrected'] = True
+                timesheet['metadata']['patient_corrected_at'] = datetime.now(timezone.utc).isoformat()
+                
+                # Update the timesheet
+                await db.timesheets.update_one(
+                    {"id": timesheet['id']},
+                    {"$set": {
+                        "extracted_data": timesheet['extracted_data'],
+                        "metadata": timesheet.get('metadata', {}),
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+        
+        logger.info(f"Auto-synced {len(timesheets_to_update)} timesheets with updated patient info: {full_name}")
+    
     return PatientProfile(**updated_patient)
 
 @api_router.delete("/patients/{patient_id}")
