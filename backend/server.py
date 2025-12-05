@@ -997,7 +997,7 @@ Return ONLY a valid JSON object with this exact structure:
           "date": "date as shown (e.g., '10/6', '10-6', 'Monday', 'Mon', '6')",
           "time_in": "time format as shown",
           "time_out": "time format as shown",
-          "hours_worked": "number of hours"
+          "hours_worked": "hours in decimal format (e.g., 8.5, 0.58) - system will convert to hours and minutes"
         }
       ]
     }
