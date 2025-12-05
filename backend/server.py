@@ -1702,6 +1702,49 @@ async def delete_timesheet(timesheet_id: str, organization_id: str = Depends(get
     
     return {"message": "Timesheet deleted successfully"}
 
+
+@api_router.post("/timesheets/{timesheet_id}/rescan")
+async def rescan_timesheet(timesheet_id: str, organization_id: str = Depends(get_organization_id)):
+    """
+    Re-scan/re-process a timesheet to update extracted data
+    This is useful when:
+    - OCR initially extracted incorrect data
+    - User wants to retry extraction with improved AI
+    - File was processed with errors
+    """
+    try:
+        # Get the timesheet
+        timesheet_doc = await db.timesheets.find_one(
+            {"id": timesheet_id, "organization_id": organization_id}, 
+            {"_id": 0}
+        )
+        
+        if not timesheet_doc:
+            raise HTTPException(status_code=404, detail="Timesheet not found")
+        
+        # Check if original file still exists (stored files are temporary)
+        filename = timesheet_doc.get('filename', '')
+        file_type = timesheet_doc.get('file_type', 'pdf')
+        
+        # Note: This requires the original file - in production, you'd store files permanently
+        # For now, return a message that re-scanning requires re-upload
+        
+        logger.info(f"Re-scan requested for timesheet {timesheet_id}")
+        
+        return {
+            "message": "Re-scanning functionality requires file re-upload",
+            "suggestion": "Please delete this timesheet and upload the file again for improved extraction",
+            "timesheet_id": timesheet_id,
+            "filename": filename
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Re-scan error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/timesheets/{timesheet_id}/resubmit")
 async def resubmit_timesheet(timesheet_id: str):
     """Manually resubmit timesheet to Sandata with validation"""
