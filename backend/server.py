@@ -727,7 +727,11 @@ class TimeEntry(BaseModel):
     date: Optional[str] = None
     time_in: Optional[str] = None
     time_out: Optional[str] = None
-    hours_worked: Optional[str] = None
+    hours_worked: Optional[str] = None  # Decimal hours (legacy)
+    hours: Optional[int] = None  # Hours component (e.g., 8)
+    minutes: Optional[int] = None  # Minutes component (e.g., 30)
+    formatted_hours: Optional[str] = None  # Human readable (e.g., "8 hr 30 min")
+    total_minutes: Optional[int] = None  # Total minutes (e.g., 510)
     units: Optional[int] = None  # Calculated 15-minute units
     
 
