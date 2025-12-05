@@ -1047,6 +1047,17 @@ TIME FORMAT RULES:
 - Examples: "1800", "18:00", "6:00 PM", "8:30" all acceptable
 - Watch for handwritten times that might be unclear
 
+HOURS WORKED FORMAT:
+- Extract as DECIMAL hours (e.g., 8.5, 10.25, 0.58)
+- System will automatically convert to "X hr Y min" format
+- If document shows "8:30" (hours:minutes), convert to 8.5 decimal
+- If document shows "8 hr 30 min", convert to 8.5 decimal
+- Examples:
+  * 8 hours 30 minutes = 8.5
+  * 45 minutes = 0.75
+  * 35 minutes = 0.58
+  * 10 hours 15 minutes = 10.25
+
 ORDERING:
 - Maintain the exact order entries appear in the document
 - If John's entry appears before Mary's, list John first
