@@ -1050,14 +1050,14 @@ TIME FORMAT RULES:
 
 HOURS WORKED FORMAT:
 - Extract as DECIMAL hours (e.g., 8.5, 10.25, 0.58)
-- System will automatically convert to "X hr Y min" format
+- System will automatically convert to "H:MM" format (e.g., 8:30, 0:36)
 - If document shows "8:30" (hours:minutes), convert to 8.5 decimal
 - If document shows "8 hr 30 min", convert to 8.5 decimal
 - Examples:
-  * 8 hours 30 minutes = 8.5
-  * 45 minutes = 0.75
-  * 35 minutes = 0.58
-  * 10 hours 15 minutes = 10.25
+  * 8 hours 30 minutes = 8.5 → displays as 8:30
+  * 45 minutes = 0.75 → displays as 0:45
+  * 35 minutes = 0.58 → displays as 0:35
+  * 10 hours 15 minutes = 10.25 → displays as 10:15
 
 ORDERING:
 - Maintain the exact order entries appear in the document
