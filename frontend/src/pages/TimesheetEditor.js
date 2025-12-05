@@ -375,9 +375,11 @@ const TimesheetEditor = () => {
                             <Label htmlFor={`hours_${empIndex}_${entryIndex}`} className="text-xs">Hours</Label>
                             <Input
                               id={`hours_${empIndex}_${entryIndex}`}
-                              value={entry.hours_worked || ""}
+                              value={entry.formatted_hours || entry.hours_worked || ""}
                               onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "hours_worked", e.target.value)}
-                              placeholder="8.0"
+                              placeholder="8 hr 30 min"
+                              readOnly
+                              className="bg-gray-100"
                               data-testid={`hours-${empIndex}-${entryIndex}`}
                             />
                           </div>
