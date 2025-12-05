@@ -492,6 +492,49 @@ class PatientProfile(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+
+class PatientProfileUpdate(BaseModel):
+    """Patient profile update with all optional fields"""
+    model_config = ConfigDict(extra="ignore")
+    
+    # Basic Information
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    sex: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    is_newborn: Optional[bool] = None
+    
+    # Registration status
+    is_complete: Optional[bool] = None
+    
+    # Address
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    address_latitude: Optional[float] = None
+    address_longitude: Optional[float] = None
+    address_type: Optional[str] = None
+    timezone: Optional[str] = None
+    
+    # Medical Information
+    prior_auth_number: Optional[str] = None
+    icd10_code: Optional[str] = None
+    icd10_description: Optional[str] = None
+    physician_name: Optional[str] = None
+    physician_npi: Optional[str] = None
+    medicaid_number: Optional[str] = None
+    patient_other_id: Optional[str] = None
+    pims_id: Optional[str] = None
+    
+    # Phone Numbers
+    phone_numbers: Optional[List[PatientPhone]] = None
+    
+    # Responsible Party
+    responsible_party: Optional[PatientResponsibleParty] = None
+    sequence_id: Optional[str] = None
+
+
 class BillableService(BaseModel):
     """Billable service with toggle status"""
     service_code: str
