@@ -949,13 +949,33 @@ CRITICAL INSTRUCTIONS:
 - Extract ALL employees and ALL their time entries
 - Group time entries by employee, but keep employees in order they appear
 
-DATE EXTRACTION RULES:
-- **LOOK FOR WEEK INFORMATION** at the top of timesheet (e.g., "Week of 10/6/2024", "10/6 - 10/12", "Week ending 10/12")
-- Extract dates EXACTLY as shown (don't convert or interpret)
-- Common formats: "10/6", "10-6", "Monday", "Mon", "M", "6", "10/6/24"
-- Include day names if present: "Monday 10/6", "Mon", "M"
-- DO NOT try to convert to full dates - extract as-is
-- System will parse dates using week context
+DATE EXTRACTION RULES (CRITICAL):
+- **ALWAYS LOOK FOR WEEK INFORMATION FIRST** at the top of the timesheet
+- Week formats: "Week of 10/6/2024", "10/6/2024 - 10/12/2024", "Week ending 10/12/2024"
+- If you see a week range, capture it EXACTLY in the "week_of" field
+- For individual dates, extract in COMPLETE format when possible:
+  * BEST: "10/6/2024" or "10-06-2024" (full date with year)
+  * GOOD: "10/6" or "10-06" (month/day)
+  * OKAY: "Monday", "Mon", "M" (day name)
+  * LAST RESORT: "6" (day number only)
+- If the document shows "Monday 10/6/2024", extract as "10/6/2024"
+- If only day number is shown, check nearby dates for context
+- ALWAYS try to find the year - check corners, headers, footers
+- Common date separators: / - . (space)
+
+NAME EXTRACTION RULES (CRITICAL):
+- Extract FULL names - First Middle Last if present
+- Look for multiple name formats:
+  * "Smith, John" → extract as "John Smith"
+  * "John Smith" → extract as "John Smith"
+  * "J. Smith" → extract as "J. Smith"
+  * "SMITH JOHN" (all caps) → extract as "John Smith" (capitalize properly)
+- Check for common OCR errors:
+  * "0" (zero) instead of "O" in names
+  * "1" (one) instead of "I" or "l"
+  * "5" instead of "S"
+- If a name appears unclear, include all readable characters
+- Employee signatures may contain initials - extract full name from printed section
 
 TIME FORMAT RULES:
 - Extract times EXACTLY as shown in the document
@@ -964,6 +984,7 @@ TIME FORMAT RULES:
 - 12-hour format: "8:30 AM", "5:45 PM", "8:30", "5:45"
 - DO NOT convert - extract as-is, system will normalize
 - Examples: "1800", "18:00", "6:00 PM", "8:30" all acceptable
+- Watch for handwritten times that might be unclear
 
 ORDERING:
 - Maintain the exact order entries appear in the document
