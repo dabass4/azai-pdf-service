@@ -1455,7 +1455,18 @@ async def upload_timesheet(file: UploadFile = File(...), organization_id: str = 
             
             # Extract data for this specific page
             try:
-                extracted_data = await extract_timesheet_data(str(file_path), file_extension, page_num)
+                # extract_timesheet_data returns (ExtractedData, confidence_score, metadata)
+                result = await extract_timesheet_data(str(file_path), file_extension, page_num)
+                if isinstance(result, tuple):
+                    extracted_data, confidence_score, metadata = result
+                    # Store confidence and metadata
+                    timesheet.metadata = {
+                        "confidence_score": confidence_score,
+                        "confidence_details": metadata
+                    }
+                else:
+                    extracted_data = result
+                
                 timesheet.extracted_data = extracted_data
                 timesheet.status = "completed"
                 
