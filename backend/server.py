@@ -1554,7 +1554,7 @@ async def upload_timesheet(file: UploadFile = File(...), organization_id: str = 
         logger.error(f"Upload error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/timesheets", response_model=List[Timesheet])
+@api_router.get("/timesheets")
 async def get_timesheets(
     search: Optional[str] = None,
     date_from: Optional[str] = None,
@@ -1602,12 +1602,12 @@ async def get_timesheets(
     
     timesheets = await db.timesheets.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     
-    # Convert ISO string timestamps back to datetime objects
+    # Convert datetime objects to ISO strings for JSON serialization
     for ts in timesheets:
-        if isinstance(ts.get('created_at'), str):
-            ts['created_at'] = datetime.fromisoformat(ts['created_at'])
-        if isinstance(ts.get('updated_at'), str):
-            ts['updated_at'] = datetime.fromisoformat(ts['updated_at'])
+        if isinstance(ts.get('created_at'), datetime):
+            ts['created_at'] = ts['created_at'].isoformat()
+        if isinstance(ts.get('updated_at'), datetime):
+            ts['updated_at'] = ts['updated_at'].isoformat()
     
     return timesheets
 
