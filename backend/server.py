@@ -1126,19 +1126,23 @@ Return ONLY the JSON object, no additional text or explanation."""
                                     units, calculated_hours = calculate_units_from_times(normalized_time_in, normalized_time_out)
                                     
                                     # Use calculated hours if available, otherwise use extracted value
-                                    hours_worked = str(calculated_hours) if calculated_hours is not None else entry.get("hours_worked")
+                                    hours_worked_decimal = calculated_hours if calculated_hours is not None else entry.get("hours_worked")
                                     
-                                    # Create TimeEntry with normalized times and calculated units
+                                    # Convert decimal hours to hours and minutes
+                                    hours_minutes = decimal_hours_to_hours_minutes(hours_worked_decimal)
+                                    
+                                    # Create TimeEntry with normalized times, calculated units, and formatted hours
                                     time_entry = TimeEntry(
                                         date=entry.get("date"),
                                         time_in=normalized_time_in,
                                         time_out=normalized_time_out,
-                                        hours_worked=hours_worked
+                                        hours_worked=str(hours_worked_decimal) if hours_worked_decimal else None,  # Keep for backward compatibility
+                                        hours=hours_minutes['hours'],
+                                        minutes=hours_minutes['minutes'],
+                                        formatted_hours=hours_minutes['formatted'],
+                                        total_minutes=hours_minutes['total_minutes'],
+                                        units=units
                                     )
-                                    
-                                    # Add units as custom attribute (will be used for billing)
-                                    if units is not None:
-                                        time_entry.units = units
                                     
                                     time_entries.append(time_entry)
                         
