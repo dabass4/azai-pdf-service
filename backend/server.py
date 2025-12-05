@@ -424,6 +424,55 @@ class EmployeeProfile(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+
+class EmployeeProfileUpdate(BaseModel):
+    """Employee profile update with all optional fields"""
+    model_config = ConfigDict(extra="ignore")
+    
+    # Basic Information
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    middle_name: Optional[str] = None
+    ssn: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    sex: Optional[str] = None
+    
+    # Registration status
+    is_complete: Optional[bool] = None
+    
+    # Contact Information
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    
+    # Employment Information
+    employee_id: Optional[str] = None
+    hire_date: Optional[str] = None
+    job_title: Optional[str] = None
+    department: Optional[str] = None
+    hourly_rate: Optional[float] = None
+    employment_status: Optional[str] = None
+    
+    # EVV DCW Fields
+    staff_pin: Optional[str] = None
+    staff_other_id: Optional[str] = None
+    staff_position: Optional[str] = None
+    
+    # Emergency Contact
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
+    
+    # Certifications & Licenses
+    certifications: Optional[str] = None
+    license_number: Optional[str] = None
+    license_expiration: Optional[str] = None
+    sequence_id: Optional[str] = None
+
+
 class PatientPhone(BaseModel):
     """Patient phone number"""
     phone_type: str  # Mobile, Home, Work, Emergency
