@@ -2240,25 +2240,25 @@ async def get_patient(patient_id: str, organization_id: str = Depends(get_organi
     return patient
 
 @api_router.put("/patients/{patient_id}", response_model=PatientProfile)
-async def update_patient(patient_id: str, patient_update: PatientProfile, organization_id: str = Depends(get_organization_id)):
+async def update_patient(patient_id: str, patient_update: PatientProfileUpdate, organization_id: str = Depends(get_organization_id)):
     """Update patient profile"""
-    patient_update.id = patient_id
-    patient_update.organization_id = organization_id
-    patient_update.updated_at = datetime.now(timezone.utc)
+    # Get existing patient
+    existing = await db.patients.find_one({"id": patient_id, "organization_id": organization_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Patient not found")
     
-    doc = patient_update.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    doc['updated_at'] = doc['updated_at'].isoformat()
+    # Only update fields that are provided
+    update_data = patient_update.model_dump(exclude_unset=True)
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
     result = await db.patients.update_one(
         {"id": patient_id, "organization_id": organization_id},
-        {"$set": doc}
+        {"$set": update_data}
     )
     
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Patient not found")
-    
-    return patient_update
+    # Get updated patient
+    updated_patient = await db.patients.find_one({"id": patient_id, "organization_id": organization_id}, {"_id": 0})
+    return PatientProfile(**updated_patient)
 
 @api_router.delete("/patients/{patient_id}")
 async def delete_patient(patient_id: str, organization_id: str = Depends(get_organization_id)):
