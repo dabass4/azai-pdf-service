@@ -649,6 +649,47 @@ async def list_support_tickets(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+@router.patch("/support/tickets/{ticket_id}")
+async def update_support_ticket_status(
+    ticket_id: str,
+    status: str = Query(..., pattern="^(open|in_progress|resolved|closed)$"),
+    admin: dict = Depends(require_admin)
+) -> dict:
+    """
+    Update support ticket status
+    
+    Admin only endpoint
+    """
+    try:
+        from server import db as database
+        
+        result = await database.support_tickets.update_one(
+            {"ticket_id": ticket_id},
+            {"$set": {
+                "status": status,
+                "updated_at": datetime.now(timezone.utc),
+                "updated_by": admin["user_id"]
+            }}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        return {
+            "success": True,
+            "ticket_id": ticket_id,
+            "status": status
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update support ticket error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 # ==================== ANALYTICS ====================
 
 @router.get("/analytics/overview")
