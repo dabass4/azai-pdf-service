@@ -377,7 +377,7 @@ const TimesheetEditor = () => {
                               id={`hours_${empIndex}_${entryIndex}`}
                               value={entry.formatted_hours || entry.hours_worked || ""}
                               onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "hours_worked", e.target.value)}
-                              placeholder="8 hr 30 min"
+                              placeholder="8:30"
                               readOnly
                               className="bg-gray-100"
                               data-testid={`hours-${empIndex}-${entryIndex}`}
