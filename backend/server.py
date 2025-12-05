@@ -1539,13 +1539,23 @@ async def upload_timesheet(file: UploadFile = File(...), organization_id: str = 
             pass
         
         # Return result based on number of pages processed
-        if len(created_timesheets) == 1:
-            return created_timesheets[0]
+        # Convert to dict for JSON serialization without validation
+        result_timesheets = []
+        for ts in created_timesheets:
+            ts_dict = ts.model_dump()
+            if isinstance(ts_dict.get('created_at'), datetime):
+                ts_dict['created_at'] = ts_dict['created_at'].isoformat()
+            if isinstance(ts_dict.get('updated_at'), datetime):
+                ts_dict['updated_at'] = ts_dict['updated_at'].isoformat()
+            result_timesheets.append(ts_dict)
+        
+        if len(result_timesheets) == 1:
+            return result_timesheets[0]
         else:
             return {
-                "message": f"Batch processing complete: {len(created_timesheets)} timesheets created",
+                "message": f"Batch processing complete: {len(result_timesheets)} timesheets created",
                 "total_pages": page_count,
-                "timesheets": created_timesheets
+                "timesheets": result_timesheets
             }
         
     except HTTPException:
