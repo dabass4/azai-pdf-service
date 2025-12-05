@@ -631,15 +631,18 @@ async def list_support_tickets(
         if priority:
             query["priority"] = priority
         
-        tickets = await database.support_tickets.find(query).sort(
+        tickets = await database.support_tickets.find(query, {"_id": 0}).sort(
             "created_at", -1
         ).limit(limit).to_list(length=limit)
         
-        return {
-            "success": True,
-            "total": len(tickets),
-            "tickets": tickets
-        }
+        # Convert datetime to ISO strings
+        for ticket in tickets:
+            if isinstance(ticket.get('created_at'), datetime):
+                ticket['created_at'] = ticket['created_at'].isoformat()
+            if isinstance(ticket.get('updated_at'), datetime):
+                ticket['updated_at'] = ticket['updated_at'].isoformat()
+        
+        return tickets
     
     except Exception as e:
         logger.error(f"List support tickets error: {str(e)}")
