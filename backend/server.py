@@ -44,6 +44,63 @@ from payments import (
 )
 from extraction_service import ConfidenceScorer, ExtractionProgress
 
+
+# Utility function to convert decimal hours to hours and minutes
+def decimal_hours_to_hours_minutes(decimal_hours: float) -> dict:
+    """
+    Convert decimal hours to hours and minutes
+    
+    Args:
+        decimal_hours: Hours in decimal format (e.g., 0.58, 8.5, 10.25)
+    
+    Returns:
+        dict with 'hours', 'minutes', and 'formatted' string
+        
+    Examples:
+        0.58 -> {'hours': 0, 'minutes': 35, 'formatted': '0 hr 35 min'}
+        8.5 -> {'hours': 8, 'minutes': 30, 'formatted': '8 hr 30 min'}
+        10.25 -> {'hours': 10, 'minutes': 15, 'formatted': '10 hr 15 min'}
+    """
+    if decimal_hours is None:
+        return {'hours': 0, 'minutes': 0, 'formatted': '0 hr 0 min'}
+    
+    try:
+        decimal_hours = float(decimal_hours)
+    except (ValueError, TypeError):
+        return {'hours': 0, 'minutes': 0, 'formatted': '0 hr 0 min'}
+    
+    hours = int(decimal_hours)
+    minutes = round((decimal_hours - hours) * 60)
+    
+    # Handle rounding edge case (59.5 minutes -> 60 minutes = 1 hour)
+    if minutes >= 60:
+        hours += 1
+        minutes = 0
+    
+    formatted = f"{hours} hr {minutes} min"
+    
+    return {
+        'hours': hours,
+        'minutes': minutes,
+        'formatted': formatted,
+        'total_minutes': hours * 60 + minutes
+    }
+
+def hours_minutes_to_decimal(hours: int, minutes: int) -> float:
+    """
+    Convert hours and minutes to decimal hours
+    
+    Args:
+        hours: Number of hours
+        minutes: Number of minutes
+    
+    Returns:
+        Decimal hours (e.g., 8 hr 30 min -> 8.5)
+    """
+    return hours + (minutes / 60)
+
+
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
