@@ -777,7 +777,7 @@ const Home = () => {
                                         <td className="px-4 py-3 text-sm text-gray-700">{entry.service_code || "N/A"}</td>
                                         <td className="px-4 py-3 text-sm text-gray-900">{entry.time_in || "N/A"}</td>
                                         <td className="px-4 py-3 text-sm text-gray-900">{entry.time_out || "N/A"}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-700">{entry.hours_worked || "N/A"}</td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">{entry.formatted_hours || entry.hours_worked || "N/A"}</td>
                                         <td className="px-4 py-3 text-sm font-bold text-blue-900">{entry.units}</td>
                                         <td className="px-4 py-3 text-sm text-gray-700">
                                           {entry.signature === "Yes" ? "✓" : "✗"}
