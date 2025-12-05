@@ -2451,25 +2451,25 @@ async def get_employee(employee_id: str, organization_id: str = Depends(get_orga
     return employee
 
 @api_router.put("/employees/{employee_id}", response_model=EmployeeProfile)
-async def update_employee(employee_id: str, employee_update: EmployeeProfile, organization_id: str = Depends(get_organization_id)):
+async def update_employee(employee_id: str, employee_update: EmployeeProfileUpdate, organization_id: str = Depends(get_organization_id)):
     """Update employee profile"""
-    employee_update.id = employee_id
-    employee_update.organization_id = organization_id
-    employee_update.updated_at = datetime.now(timezone.utc)
+    # Get existing employee
+    existing = await db.employees.find_one({"id": employee_id, "organization_id": organization_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Employee not found")
     
-    doc = employee_update.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    doc['updated_at'] = doc['updated_at'].isoformat()
+    # Only update fields that are provided
+    update_data = employee_update.model_dump(exclude_unset=True)
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
     result = await db.employees.update_one(
         {"id": employee_id, "organization_id": organization_id},
-        {"$set": doc}
+        {"$set": update_data}
     )
     
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Employee not found")
-    
-    return employee_update
+    # Get updated employee
+    updated_employee = await db.employees.find_one({"id": employee_id, "organization_id": organization_id}, {"_id": 0})
+    return EmployeeProfile(**updated_employee)
 
 @api_router.delete("/employees/{employee_id}")
 async def delete_employee(employee_id: str, organization_id: str = Depends(get_organization_id)):
