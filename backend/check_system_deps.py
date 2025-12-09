@@ -1,149 +1,65 @@
 #!/usr/bin/env python3
 """
-System Dependencies Checker
-Verifies all required system packages are installed before starting the application.
-Run this at container startup to detect missing dependencies early.
+Check if all system dependencies are installed
+Run this to verify the environment before starting the application
 """
 
 import subprocess
 import sys
-import os
-from typing import Dict, List, Tuple
+import shutil
 
-# Color codes for terminal output
-RED = '\033[91m'
-GREEN = '\033[92m'
-YELLOW = '\033[93m'
-BLUE = '\033[94m'
-RESET = '\033[0m'
-
-def check_command(command: str) -> bool:
-    """Check if a command is available in PATH"""
-    try:
-        subprocess.run(['which', command], 
-                      stdout=subprocess.PIPE, 
-                      stderr=subprocess.PIPE, 
-                      check=True)
+def check_command(command, package_name):
+    """Check if a command exists in PATH"""
+    if shutil.which(command):
+        print(f"✅ {command} found")
         return True
-    except subprocess.CalledProcessError:
+    else:
+        print(f"❌ {command} NOT found - install {package_name}")
         return False
 
-def check_system_package(package: str) -> bool:
-    """Check if a system package is installed"""
+def check_poppler():
+    """Check poppler-utils installation and version"""
     try:
-        subprocess.run(['dpkg', '-l', package],
-                      stdout=subprocess.PIPE,
-                      stderr=subprocess.PIPE,
-                      check=True)
+        result = subprocess.run(
+            ['pdftoppm', '-v'],
+            capture_output=True,
+            text=True,
+            stderr=subprocess.STDOUT
+        )
+        version_line = result.stdout.split('\n')[0]
+        print(f"✅ poppler-utils: {version_line}")
         return True
-    except subprocess.CalledProcessError:
+    except FileNotFoundError:
+        print("❌ poppler-utils NOT installed")
         return False
-
-def check_python_import(module: str) -> bool:
-    """Check if a Python module can be imported"""
-    try:
-        __import__(module)
-        return True
-    except ImportError:
-        return False
-
-def print_header(text: str):
-    """Print a formatted header"""
-    print(f"\n{BLUE}{'=' * 70}{RESET}")
-    print(f"{BLUE}{text:^70}{RESET}")
-    print(f"{BLUE}{'=' * 70}{RESET}\n")
-
-def print_check(name: str, passed: bool, note: str = ""):
-    """Print a check result"""
-    status = f"{GREEN}✓ PASS{RESET}" if passed else f"{RED}✗ FAIL{RESET}"
-    print(f"{name:40} {status}")
-    if note and not passed:
-        print(f"{' ' * 40} {YELLOW}→ {note}{RESET}")
 
 def main():
-    """Run all system dependency checks"""
-    print_header("SYSTEM DEPENDENCIES CHECK")
+    print("Checking system dependencies...\n")
     
-    all_passed = True
-    critical_failures = []
-    
-    # Check critical system packages
-    print(f"{BLUE}Checking System Packages:{RESET}\n")
-    
-    system_checks = [
-        ("poppler-utils (pdftoppm)", 
-         check_command('pdftoppm'),
-         "CRITICAL: Required for PDF processing",
-         True),  # Critical
-        ("poppler-utils (pdfinfo)", 
-         check_command('pdfinfo'),
-         "CRITICAL: Required for PDF metadata",
-         True),  # Critical
-        ("libjpeg", 
-         check_system_package('libjpeg62-turbo'),
-         "Required for image processing",
-         False),
-        ("libpng", 
-         check_system_package('libpng16-16'),
-         "Required for image processing",
-         False),
-        ("libssl", 
-         check_system_package('libssl3'),
-         "Required for cryptography",
-         False),
+    dependencies = [
+        ("pdftoppm", "poppler-utils"),
+        ("pdfinfo", "poppler-utils"),
     ]
     
-    for name, passed, note, is_critical in system_checks:
-        print_check(name, passed, note if not passed else "")
-        if not passed:
-            all_passed = False
-            if is_critical:
-                critical_failures.append((name, note))
+    all_ok = True
+    for cmd, pkg in dependencies:
+        if not check_command(cmd, pkg):
+            all_ok = False
     
-    # Check Python packages
-    print(f"\n{BLUE}Checking Python Packages:{RESET}\n")
+    print()
+    if not check_poppler():
+        all_ok = False
     
-    python_checks = [
-        ("pdf2image", "pdf2image", "Requires poppler-utils", True),
-        ("Pillow (PIL)", "PIL", "Image processing", False),
-        ("cryptography", "cryptography", "Security", False),
-        ("numpy", "numpy", "Numerical computing", False),
-        ("pandas", "pandas", "Data processing", False),
-    ]
-    
-    for name, module, note, is_critical in python_checks:
-        passed = check_python_import(module)
-        print_check(name, passed, note if not passed else "")
-        if not passed:
-            all_passed = False
-            if is_critical:
-                critical_failures.append((name, note))
-    
-    # Print summary
-    print_header("SUMMARY")
-    
-    if all_passed:
-        print(f"{GREEN}✓ All system dependencies are installed and working{RESET}\n")
+    print("\n" + "="*60)
+    if all_ok:
+        print("✅ ALL SYSTEM DEPENDENCIES INSTALLED")
+        print("="*60)
         return 0
     else:
-        print(f"{RED}✗ Some dependencies are missing{RESET}\n")
-        
-        if critical_failures:
-            print(f"{RED}CRITICAL FAILURES:{RESET}")
-            for name, note in critical_failures:
-                print(f"  • {name}: {note}")
-            
-            print(f"\n{YELLOW}TO FIX IMMEDIATELY:{RESET}")
-            print(f"  sudo apt-get update && sudo apt-get install -y poppler-utils")
-            
-            print(f"\n{YELLOW}PERMANENT FIX NEEDED:{RESET}")
-            print(f"  Contact Emergent support to add poppler-utils to base image")
-            print(f"  Discord: https://discord.gg/VzKfwCXC4A")
-            print(f"  Email: support@emergent.sh")
-            print()
-        
+        print("❌ MISSING DEPENDENCIES")
+        print("Run: sudo bash /app/backend/install_system_deps.sh")
+        print("="*60)
         return 1
 
 if __name__ == "__main__":
-    exit_code = main()
-    sys.exit(exit_code)
+    sys.exit(main())
