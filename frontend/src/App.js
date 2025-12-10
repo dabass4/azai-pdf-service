@@ -862,6 +862,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/timesheets" element={<Home />} />
+                  <Route path="/clock-in" element={<ManualClockIn />} />
                   <Route path="/patients" element={<Patients />} />
                   <Route path="/employees" element={<Employees />} />
                   <Route path="/payers" element={<Payers />} />
