@@ -50,9 +50,11 @@ const AdminCredentials = () => {
   const fetchOrganizations = async () => {
     try {
       const response = await axios.get(`${API}/admin/organizations`);
-      setOrganizations(response.data);
-      if (response.data.length > 0) {
-        setSelectedOrg(response.data[0].id);
+      // API returns { organizations: [...] }
+      const orgs = response.data.organizations || [];
+      setOrganizations(orgs);
+      if (orgs.length > 0) {
+        setSelectedOrg(orgs[0].id);
       }
     } catch (e) {
       console.error('Error fetching organizations:', e);
