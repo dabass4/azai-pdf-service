@@ -85,6 +85,7 @@ const Navigation = () => {
           {/* User Info & Logout */}
           {isAuthenticated && (
             <div className="hidden md:flex items-center gap-4 ml-auto">
+              <NotificationBell />
               <div className="text-right">
                 <p className="text-sm font-semibold text-gray-900">{user?.first_name} {user?.last_name}</p>
                 <p className="text-xs text-gray-600">{organization?.name}</p>
