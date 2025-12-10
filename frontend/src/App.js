@@ -898,6 +898,7 @@ function App() {
         </BrowserRouter>
       </div>
     </AuthProvider>
+    </NotificationProvider>
   );
 }
 
