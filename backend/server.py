@@ -777,6 +777,7 @@ class Timesheet(BaseModel):
     status: str = "processing"  # processing, completed, failed, submitted
     sandata_status: Optional[str] = None  # pending, submitted, error, blocked
     error_message: Optional[str] = None
+    entry_method: Optional[str] = "scanned"  # "manual" or "scanned" - determines if geofencing is required
     
     # Linked patient
     patient_id: Optional[str] = None  # Link to patient profile
