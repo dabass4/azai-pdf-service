@@ -160,7 +160,7 @@ async def manual_clock_in(
                 "patient_id": request.patient_id,
                 "patient_name": f"{patient['first_name']} {patient['last_name']}",
                 "event_type": "clock_in",
-                "violation_time": clock_in_time,
+                "violation_time": clock_in_time.isoformat(),
                 "distance_meters": server_validation["distance_meters"],
                 "distance_feet": server_validation["distance_feet"],
                 "allowed_radius_feet": server_validation["allowed_radius_feet"],
@@ -171,7 +171,7 @@ async def manual_clock_in(
                     "address": f"{patient.get('address_street', '')}, {patient.get('address_city', '')}"
                 },
                 "status": "pending",
-                "created_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.geofence_violations.insert_one(violation)
             
