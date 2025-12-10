@@ -4606,6 +4606,11 @@ api_router.include_router(admin_router)
 from routes_geofencing import router as geofencing_router
 api_router.include_router(geofencing_router)
 
+# Import and include manual clock router
+from routes_manual_clock import router as manual_clock_router, set_db as set_manual_clock_db
+api_router.include_router(manual_clock_router)
+set_manual_clock_db(db)  # Inject database
+
 # Include the router in the main app
 app.include_router(api_router)
 
