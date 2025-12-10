@@ -122,6 +122,8 @@ async def manual_clock_in(
         timesheet_id = str(uuid.uuid4())
         clock_in_time = datetime.fromisoformat(request.timestamp.replace('Z', '+00:00'))
         
+        created_now = datetime.now(timezone.utc)
+        
         timesheet = {
             "id": timesheet_id,
             "organization_id": organization_id,
@@ -131,17 +133,17 @@ async def manual_clock_in(
             "employee_name": f"{employee['first_name']} {employee['last_name']}",
             "entry_method": "manual",
             "status": "active",  # Active shift
-            "clock_in_time": clock_in_time,
+            "clock_in_time": clock_in_time.isoformat(),
             "clock_in_latitude": request.location.latitude,
             "clock_in_longitude": request.location.longitude,
             "clock_in_accuracy": request.location.accuracy,
-            "clock_in_timestamp": clock_in_time,
+            "clock_in_timestamp": clock_in_time.isoformat(),
             "clock_in_geofence_valid": server_validation["valid"],
             "clock_in_distance_feet": server_validation["distance_feet"],
             "clock_out_time": None,
             "requires_supervisor_approval": not server_validation["valid"],
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
+            "created_at": created_now.isoformat(),
+            "updated_at": created_now.isoformat()
         }
         
         # Insert timesheet
