@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import SearchFilter from "@/components/SearchFilter";
 import BulkActionToolbar from "@/components/BulkActionToolbar";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import NotificationBell from "@/components/NotificationBell";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import LandingPage from "@/pages/LandingPage";
