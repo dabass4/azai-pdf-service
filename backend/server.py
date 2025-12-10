@@ -4618,6 +4618,11 @@ from routes_authorizations import router as authorizations_router, set_db as set
 api_router.include_router(authorizations_router)
 set_authorizations_db(db)  # Inject database
 
+# Import and include notifications router
+from routes_notifications import router as notifications_router, set_db as set_notifications_db
+api_router.include_router(notifications_router)
+set_notifications_db(db)  # Inject database
+
 # Include the router in the main app
 app.include_router(api_router)
 
