@@ -4613,6 +4613,11 @@ from routes_manual_clock import router as manual_clock_router, set_db as set_man
 api_router.include_router(manual_clock_router)
 set_manual_clock_db(db)  # Inject database
 
+# Import and include authorizations router
+from routes_authorizations import router as authorizations_router, set_db as set_authorizations_db
+api_router.include_router(authorizations_router)
+set_authorizations_db(db)  # Inject database
+
 # Include the router in the main app
 app.include_router(api_router)
 
