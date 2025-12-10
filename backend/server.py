@@ -4623,6 +4623,11 @@ from routes_notifications import router as notifications_router, set_db as set_n
 api_router.include_router(notifications_router)
 set_notifications_db(db)  # Inject database
 
+# Import and include extended notifications router (read/unread tracking)
+from routes_notifications_extended import router as notifications_ext_router, set_db as set_notifications_ext_db
+api_router.include_router(notifications_ext_router)
+set_notifications_ext_db(db)  # Inject database
+
 # Include the router in the main app
 app.include_router(api_router)
 
