@@ -279,11 +279,11 @@ async def manual_clock_out(
         
         # Update timesheet
         update_data = {
-            "clock_out_time": clock_out_time,
+            "clock_out_time": clock_out_time.isoformat(),
             "clock_out_latitude": request.location.latitude,
             "clock_out_longitude": request.location.longitude,
             "clock_out_accuracy": request.location.accuracy,
-            "clock_out_timestamp": clock_out_time,
+            "clock_out_timestamp": clock_out_time.isoformat(),
             "clock_out_geofence_valid": server_validation["valid"],
             "clock_out_distance_feet": server_validation["distance_feet"],
             "hours_worked": hours_decimal,
@@ -291,7 +291,7 @@ async def manual_clock_out(
             "minutes": minutes,
             "formatted_hours": f"{hours}:{minutes:02d}",
             "status": "completed",
-            "updated_at": datetime.now(timezone.utc)
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }
         
         # If clock out violated geofence, flag for review
