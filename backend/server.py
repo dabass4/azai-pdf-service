@@ -4602,6 +4602,10 @@ api_router.include_router(claims_router)
 from routes_admin import router as admin_router
 api_router.include_router(admin_router)
 
+# Import and include geofencing router
+from routes_geofencing import router as geofencing_router
+api_router.include_router(geofencing_router)
+
 # Include the router in the main app
 app.include_router(api_router)
 
