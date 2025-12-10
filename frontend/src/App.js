@@ -17,12 +17,14 @@ import Patients from "@/pages/Patients";
 import Employees from "@/pages/Employees";
 import TimesheetEditor from "@/pages/TimesheetEditor";
 import ManualClockIn from "@/pages/ManualClockIn";
+import NotificationCenter from "@/pages/NotificationCenter";
+import NotificationPreferences from "@/pages/NotificationPreferences";
 import Payers from "@/pages/Payers";
 import Claims from "@/pages/Claims";
 import EVVManagement from "@/pages/EVVManagement";
 import ServiceCodes from "@/pages/ServiceCodes";
 import Settings from "@/pages/Settings";
-import { formatDateForDisplay } from "./utils/dateUtils";
+import { formatDateForDisplay} from "./utils/dateUtils";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
