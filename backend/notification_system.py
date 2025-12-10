@@ -187,6 +187,7 @@ class NotificationService:
             recipients: List of user IDs or ["all"] for all users
         """
         # Create notification
+        # ALWAYS send email alongside in-app notification
         notification = Notification(
             organization_id=organization_id,
             type=notification_type,
@@ -195,7 +196,8 @@ class NotificationService:
             message=message,
             source=source,
             recipients=recipients or ["all"],
-            send_email=send_email,
+            send_email=True,  # Always send email
+            send_in_app=True,  # Always show in app
             priority=priority,
             metadata=metadata,
             created_by=created_by
