@@ -838,8 +838,9 @@ const Home = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <div className="App">
+    <NotificationProvider>
+      <AuthProvider>
+        <div className="App">
         <BrowserRouter>
           <Routes>
             {/* Public Routes - redirect to /timesheets if authenticated */}
