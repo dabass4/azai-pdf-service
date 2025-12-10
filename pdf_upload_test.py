@@ -64,41 +64,72 @@ class PDFUploadTester:
             return False
 
     def create_realistic_test_pdf(self):
-        """Create a realistic test PDF content that mimics a timesheet"""
+        """Create a realistic test PDF content that mimics a timesheet using ReportLab"""
         try:
-            # Create realistic timesheet content
-            test_content = """TIMESHEET - HEALTHCARE SERVICES
-            
-Employee Information:
-Name: Sarah Johnson
-Employee ID: EMP001
-Service Code: HHA001
-
-Client Information:
-Client Name: Mary Williams
-Week of: 12/16/2024 - 12/22/2024
-
-Daily Time Entries:
-Monday 12/16/2024    8:00 AM - 4:00 PM    8.0 hours
-Tuesday 12/17/2024   9:00 AM - 5:00 PM    8.0 hours  
-Wednesday 12/18/2024 8:30 AM - 4:30 PM    8.0 hours
-Thursday 12/19/2024  8:00 AM - 4:00 PM    8.0 hours
-Friday 12/20/2024    8:00 AM - 3:00 PM    7.0 hours
-
-Total Hours: 39.0
-Signature: [Signed] Sarah Johnson
-Date: 12/22/2024
-
-Service Details:
-- Personal Care Services
-- Home Health Aide
-- Medicaid Approved Services
-"""
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import letter
             
             # Create temporary PDF file
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf', mode='w')
-            temp_file.write(test_content)
-            temp_file.close()
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+            temp_file.close()  # Close so ReportLab can write to it
+            
+            # Create PDF with ReportLab
+            c = canvas.Canvas(temp_file.name, pagesize=letter)
+            width, height = letter
+            
+            # Title
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(50, height - 50, "TIMESHEET - HEALTHCARE SERVICES")
+            
+            # Employee Information
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, height - 100, "Employee Information:")
+            c.setFont("Helvetica", 10)
+            c.drawString(50, height - 120, "Name: Sarah Johnson")
+            c.drawString(50, height - 135, "Employee ID: EMP001")
+            c.drawString(50, height - 150, "Service Code: HHA001")
+            
+            # Client Information
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, height - 180, "Client Information:")
+            c.setFont("Helvetica", 10)
+            c.drawString(50, height - 200, "Client Name: Mary Williams")
+            c.drawString(50, height - 215, "Week of: 12/16/2024 - 12/22/2024")
+            
+            # Daily Time Entries
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, height - 245, "Daily Time Entries:")
+            c.setFont("Helvetica", 10)
+            
+            entries = [
+                "Monday 12/16/2024    8:00 AM - 4:00 PM    8.0 hours",
+                "Tuesday 12/17/2024   9:00 AM - 5:00 PM    8.0 hours",
+                "Wednesday 12/18/2024 8:30 AM - 4:30 PM    8.0 hours", 
+                "Thursday 12/19/2024  8:00 AM - 4:00 PM    8.0 hours",
+                "Friday 12/20/2024    8:00 AM - 3:00 PM    7.0 hours"
+            ]
+            
+            y_pos = height - 265
+            for entry in entries:
+                c.drawString(50, y_pos, entry)
+                y_pos -= 15
+            
+            # Total and Signature
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(50, y_pos - 20, "Total Hours: 39.0")
+            c.drawString(50, y_pos - 40, "Signature: [Signed] Sarah Johnson")
+            c.drawString(50, y_pos - 55, "Date: 12/22/2024")
+            
+            # Service Details
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, y_pos - 85, "Service Details:")
+            c.setFont("Helvetica", 10)
+            c.drawString(50, y_pos - 105, "- Personal Care Services")
+            c.drawString(50, y_pos - 120, "- Home Health Aide")
+            c.drawString(50, y_pos - 135, "- Medicaid Approved Services")
+            
+            # Save the PDF
+            c.save()
             
             print(f"📄 Created test PDF: {temp_file.name}")
             return temp_file.name
