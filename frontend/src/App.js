@@ -865,6 +865,8 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/timesheets" element={<Home />} />
                   <Route path="/clock-in" element={<ManualClockIn />} />
+                  <Route path="/notifications" element={<NotificationCenter />} />
+                  <Route path="/notification-preferences" element={<NotificationPreferences />} />
                   <Route path="/patients" element={<Patients />} />
                   <Route path="/employees" element={<Employees />} />
                   <Route path="/payers" element={<Payers />} />
