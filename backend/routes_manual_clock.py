@@ -313,7 +313,7 @@ async def manual_clock_out(
                 "patient_id": timesheet["patient_id"],
                 "patient_name": timesheet["patient_name"],
                 "event_type": "clock_out",
-                "violation_time": clock_out_time,
+                "violation_time": clock_out_time.isoformat(),
                 "distance_meters": server_validation["distance_meters"],
                 "distance_feet": server_validation["distance_feet"],
                 "allowed_radius_feet": server_validation["allowed_radius_feet"],
@@ -323,7 +323,7 @@ async def manual_clock_out(
                     "longitude": patient['address_longitude']
                 },
                 "status": "pending",
-                "created_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.geofence_violations.insert_one(violation)
         
