@@ -1,183 +1,256 @@
 <analysis>**original_problem_statement:**
-The user wants to integrate their healthcare timesheet application with the Ohio Department of Medicaid (ODM) for claims processing. This involves connecting to ODM's SOAP and SFTP services for real-time and batch transactions. Additionally, the user wants to add support for submitting claims through the Availity clearinghouse.
+The user wants to integrate their healthcare timesheet application, now named AZAI, with the Ohio Department of Medicaid (ODM) for claims processing via SOAP and SFTP, and with the Availity clearinghouse. To manage the system, a dedicated Admin Panel was requested for the software provider's staff to handle client accounts and credentials.
 
-To manage the system and its various client organizations, the user requested the creation of a dedicated Admin Panel (Option A). This panel should allow the software provider's staff to manage client accounts, credentials, troubleshoot issues, and monitor system health without affecting other tenants.
+The implementation was planned in phases:
+1.  **Phase 1:** Build the Admin Panel foundation.
+2.  **Phase 2:** Implement the core claims integration logic (ODM and Availity).
+3.  **Phase 3:** Create the user-facing UI for claims management.
 
-The user approved a multi-phase implementation plan:
-1.  **Phase 1:** Build the Admin Panel foundation (backend and frontend scaffolding).
-2.  **Phase 2:** Implement the core claims integration logic (backend services for ODM and Availity).
-3.  **Phase 3:** Create the user-facing UI for claims management (eligibility checks, status tracking).
-
-Finally, the user requested a comprehensive test of the application and a summary report to prepare the codebase for upload to GitHub.
+The user has since approved a plan to:
+1.  Fix outstanding bugs identified during testing.
+2.  Build a complete mock ODM system for demonstration and testing purposes, as real credentials are not yet available.
+3.  Begin implementing the X12 EDI generation logic in parallel.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack solution with a React frontend, FastAPI backend, and MongoDB database. It includes features for timesheet management, patient/employee records, and a multi-tenant architecture.
+The application is a full-stack solution (React/FastAPI/MongoDB) renamed to AZAI. The initial scaffolding for the Admin Panel and Claims UI has been fully built out with functional, albeit not fully integrated, frontend pages using Shadcn UI components.
 
-Scaffolding for the new features has been created:
--   A new  directory holds placeholder modules for ODM (SOAP, SFTP, X12) and Availity integrations.
--   An Admin Panel has been partially implemented with a new  for API endpoints, a  directory with placeholder UI pages, and routing in .
--   A new claims module exists with  and  in the backend, along with placeholder pages in the frontend for  and .
--   Environment variables for the new integrations have been added to the  file.
+Key features and fixes from this session include:
+- A recurring, critical scanner (PDF timesheet upload) failure was debugged multiple times. The root cause was identified as the  system dependency not being persistent. Fixes were also applied to the data extraction and serialization logic.
+- The format for displaying worked hours was changed from decimal to a user-preferred H:MM format (e.g., 8:30) across the application.
+- An auto-sync feature was added to propagate edits from employee/patient profiles to all associated timesheets.
+- A super admin account was created, and a login bug related to missing JWT fields () and incomplete organization data was resolved.
 
 **Last working item**:
-    - Last item agent was working: The agent was in the process of conducting a comprehensive test of the application as requested by the user. The backend testing agent discovered a critical API routing conflict where the generic route  was overriding more specific routes like . The agent attempted to fix this by prefixing the conflicting routes in  with  and restarted the backend.
+    - Last item agent was working: The agent was attempting to make the installation of  permanent to fix the unstable PDF scanner functionality. The user instructed the agent to stop and restart all application services to test if the dependency would persist. The agent executed the stop and start commands but did not verify if  was still installed after the restart.
     - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? both
+    - Which testing method agent to use? main agent to test via curl, writing a small test file or use python -c
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Critical backend API routing conflict. (P0)
-  - Issue 2: Newly created frontend pages have incorrect syntax or are empty placeholders. (P1)
+  - Issue 1:  dependency is not persistent. (P0)
+  - Issue 2: Backend API issues identified during testing require full verification. (P1)
+  - Issue 3: Frontend Admin Panel integration issues. (P2)
   
   **Issues Detail:**
   - **Issue 1:** 
-     - **Description**: A routing conflict exists in the backend API. The dynamic route  (defined in ) intercepts requests intended for specific claim-related paths like  (defined in ), because FastAPI interprets list as a valid . This effectively breaks the new claims module endpoints.
-     - **Attempted fixes**: The agent modified  to change the conflicting routes from  to . The backend service was restarted after this change.
+     - **Description**: The  package, a critical dependency for the PDF timesheet scanner (), is not installed permanently in the container. It disappears after environment restarts, causing the entire scanning feature to fail with a PDF conversion failed error. This is a highly recurring issue.
+     - **Attempted fixes**: The agent manually re-installed  multiple times. An  script was created, but it was not integrated into the application's automatic startup process (e.g., supervisor). The last action was a manual restart of services, which does not solve the persistence problem.
      - **Next debug checklist**: 
-       1. Re-run the backend testing agent () to verify that the routing conflict is resolved.
-       2. Specifically check the test results for the claims endpoints (, , etc.) to ensure they are now accessible and function as expected.
-       3. Confirm no new regressions were introduced by the route change.
-     - **Why fix this issue and what will be achieved with the fix?**: Fixing this is critical to make the new claims management and admin panel features functional. It will unblock all API endpoints defined in .
+       1. Verify if  is currently installed by running .
+       2. If not, investigate how to run the  script automatically when the container starts. A common method is to add a  to the  section of the supervisor configuration file.
+       3. Find the supervisor config file (likely in ).
+       4. Modify the config to execute the installation script before starting the main backend process.
+       5. Restart the application and verify  persists.
+     - **Why fix this issue and what will be achieved with the fix?**: This is a critical blocker. Fixing it will stabilize the application's core feature (timesheet scanning) and prevent recurring failures.
      - **Status**: IN PROGRESS
+     - **Is recurring issue?**: Y
+     - **Should Test frontend/backend/both after fix?**: backend
+     - **Blocked on other issue**: None
+
+  - **Issue 2:** 
+     - **Description**: Previous backend testing revealed several bugs. While fixes were applied, they need to be re-tested to ensure they are robust.
+       - The  and  UPDATE endpoints required a full data object;  models with optional fields were created as a fix.
+       - The  GET endpoint failed due to a serialization error with . The agent bypassed this by changing the response model to , which is a temporary workaround, not a true fix.
+     - **Next debug checklist**: 
+       1. Re-run backend tests, specifically targeting the  and  endpoints with partial data to confirm the fix.
+       2. Investigate the root cause of corrupted  being saved to the database during timesheet upload. Fix the data saving logic in the upload endpoint instead of bypassing validation on the read endpoint.
+     - **Why fix this issue and what will be achieved with this?**: This will improve API stability and remove technical debt, preventing future data corruption.
+     - **Status**: TESTING PENDING
      - **Is recurring issue?**: N
      - **Should Test frontend/backend/both after fix?**: backend
      - **Blocked on other issue**: None
 
-  - **Issue 2:**
-     - **Description**: The agent's initial attempt to create several new frontend pages for the admin panel and claims UI resulted in files with JSX syntax errors (improperly escaped quotes). After attempting a fix with  that worsened the problem, the agent deleted and recreated the files. While the frontend now compiles, the recreated pages are minimal placeholders lacking any real UI or logic.
-     - **Attempted fixes**: Files were deleted and recreated with basic Hello World style content.
+  - **Issue 3:** 
+     - **Description**: Frontend tests showed the Admin Panel pages were failing due to backend API integration issues. Several underlying backend bugs (missing  in JWT,  serialization) were fixed, but the end-to-end flow from the frontend has not been re-verified.
      - **Next debug checklist**: 
-        1. Manually inspect the content of the new frontend pages in , , and .
-        2. Begin implementing the actual UI components as planned in Phase 1 and Phase 3.
-     - **Why fix this issue and what will be achieved with this?**: The application is not feature-complete until these placeholder pages are built out into functional user interfaces.
-     - **Status**: NOT STARTED
-     - **Is recurring issue?**: Y
+       1. Use the frontend testing agent to perform a targeted test of the Admin Panel pages (, , etc.).
+       2. Verify that a logged-in admin user can now view and interact with these pages without Admin access required errors or other API failures.
+     - **Why fix this issue and what will be achieved with this?**: This will confirm that the Admin Panel, a key feature, is fully functional.
+     - **Status**: USER VERIFICATION PENDING
+     - **Is recurring issue?**: N
      - **Should Test frontend/backend/both after fix?**: frontend
      - **Blocked on other issue**: None
 
 **In progress Task List**:
-  - **Task 1**: Comprehensive Application Testing (P0)
-     - **Where to resume**: The backend test run was halted by the routing conflict bug. The next step is to re-run the backend tests to validate the fix. Once the backend passes, proceed to run the frontend testing agent ().
-     - **What will be achieved with this?**: This will fulfill the user's request for a fully tested, stable application and produce a summary report, making the codebase ready for forking to GitHub.
+  - **Task 1**: Make  installation permanent. (P0)
+     - **Where to resume**: The application has just been restarted. The agent needs to verify if  is installed and, if not, modify the supervisor configuration to run the installation script on startup.
+     - **What will be achieved with this?**: A stable and reliable timesheet scanning feature.
      - **Status**: IN PROGRESS
-     - **Should Test frontend/backend/both after fix?**: both
-     - **Blocked on something**: Issue 1 (Critical backend API routing conflict).
+     - **Should Test frontend/backend/both after fix?**: backend
+     - **Blocked on something**: None
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **Complete Admin Panel Frontend (P0):**
-    -   Implement the UI and logic for the placeholder pages:
-        -   : Form to view/update OMES/Availity credentials per organization.
-        -   : Table to list, create, and manage client organizations.
-        -   : Basic support ticket management system.
-        -   : A viewer for system and error logs.
--   **Implement User-Facing Claims UI (P1):**
-    -   Build out the frontend placeholder pages:
-        -   : A form to perform real-time patient eligibility checks via the backend API.
-        -   : A dashboard to view the status of submitted claims.
+-   **Build Mock ODM Integration (P0):** As requested by the user, create a mock backend system that simulates the ODM SOAP and SFTP services. This will allow for end-to-end testing of the claims workflow without real credentials.
+    -   Create new endpoints like  and .
+    -   These endpoints should return realistic mock responses (e.g., eligibility success/failure, claim acceptance/rejection).
+    -   Update the frontend and backend services to point to these mock endpoints.
+-   **Implement X12 EDI Generation Logic (P1):** Begin building the logic in  to create 837P claim files from timesheet data, based on the EDI specifications. This does not require credentials.
 
 **Future Tasks:**
--   **Implement Backend Claims Logic (P2):**
-    -   Once the user provides credentials, replace placeholder logic in the integration clients (, , ) with actual authenticated API/SFTP calls.
-    -   Enhance the X12 generation logic in  and implement parsers for response files (e.g., 835 remittances).
-    -   Set up automated SFTP polling for batch response files from ODM.
+-   **Implement Real Backend Claims Logic (P2):** Once the user provides credentials, replace the mock ODM logic with actual authenticated API/SFTP calls in  and . This also includes the Availity integration.
+-   **Implement 835 Remittance Parsing (P3):** Develop logic to parse 835 response files from ODM to update claim statuses.
+-   **Automated SFTP Polling (P4):** Set up a background job to periodically check the ODM SFTP server for new response files.
 
 **Completed work in this session**
--   **Integration Scaffolding:**
-    -   Analyzed ODM EDI documents and researched Availity integration playbooks.
-    -   Created a complete backend directory structure for ODM and Availity integrations under .
-    -   Added placeholder environment variables to  for all required credentials.
--   **Admin Panel Foundation:**
-    -   Created backend API endpoints for admin functions in .
-    -   Created a script () to provision the first super admin user.
-    -   Created placeholder frontend pages and added routing in  for the admin section.
--   **Claims Module Foundation:**
-    -   Created backend API endpoints for claims processing in  and a  for business logic.
-    -   Created placeholder frontend pages (, ) and added routes.
--   **Bug Identification:**
-    -   Identified and attempted a fix for a critical backend routing conflict discovered during testing.
-    -   Identified and fixed frontend JSX syntax errors that were preventing the application from compiling.
--   **Documentation:**
-    -   Created several summary and documentation files (, , , etc.).
+- **Critical Bug Fixes:**
+  - Resolved a backend API routing conflict that was blocking the claims module.
+  - Fixed a recurring timesheet upload failure by identifying issues with  dependency, tuple unpacking in the extraction logic, and data serialization.
+  - Resolved a critical login bug for the super admin by adding the  flag to the JWT and ensuring all required organization fields are created.
+- **Feature Implementation & Refinement:**
+  - **Admin Panel & Claims UI:** Built out all placeholder frontend pages (, , etc.) into functional UIs.
+  - **Hours Format:** Changed the display of worked hours from decimals to H:MM format (e.g., 8:30) application-wide (, , ).
+  - **Auto-Sync:** Implemented logic in  to automatically update timesheet data when linked  or  profiles are edited.
+- **Application Branding:**
+  - Renamed the application to AZAI across the codebase (, , , ).
+- **Testing & Documentation:**
+  - Performed comprehensive backend and frontend testing, which identified the bugs fixed in this session.
+  - Created user-facing documentation, including .
+
+**Earlier issues found/mentioned but not fixed**
+   - **Issue 1:**
+     - **Description**: The root cause of corrupted  in the MongoDB  collection has not been addressed. The agent used a workaround by changing the  GET endpoint's response model to  to bypass Pydantic validation. This is technical debt and risks future errors.
+     - **Debug checklist**:
+       1. Review the  function and the upload endpoint in .
+       2. Analyze how the  object is constructed and saved to MongoDB.
+       3. Ensure the data structure being saved always matches the Pydantic  model.
+     - **Why to solve this issue and what will be achieved with this?**: To ensure data integrity, prevent unpredictable frontend errors, and remove the need for the current workaround.
+     - **Should Test frontend/backend/both after fix?**: backend
+     - **Is recurring issue?**: N
+
+**Known issue recurrence from previous fork**
+  - **Issue recurrence in previous fork**: An issue with creating correct JSX syntax was mentioned in the previous fork. This seems to be resolved.
+  - **Recurrence count**: A new recurring issue has emerged in this session: the  dependency disappearing after restarts. This has occurred at least 3 times.
+  - **Status**: IN PROGRESS
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frameworks**: FastAPI (Python) for the backend, React for the frontend.
+-   **Frameworks**: FastAPI (Python), React.
 -   **Database**: MongoDB.
--   **API Design**: RESTful API with a multi-tenant structure and a new set of admin-only endpoints. Route prefixing was used to resolve a conflict.
--   **Integrations**: Planned integrations with external systems via SOAP, SFTP, and REST APIs (ODM & Availity).
--   **EDI Standards**: X12 format for healthcare claims (837P, 835, etc.).
+-   **API Design**: RESTful API. Key fixes involved Pydantic models for partial updates (), JWT token payloads (), and bypassing serialization errors.
+-   **System Dependencies**: Management of external binaries like  has become a critical task.
 
 **key DB schema**
--   **Organization**: Will be updated to store credentials for ODM and Availity.
--   **User**: A  field will be used to distinguish between regular users and .
--   **MedicaidClaim**: New models defined in  for handling claim data.
+  - **TimeEntry**: (in  Pydantic models)
+    - New fields were added:  (int),  (int),  (str, e.g., 8:30). The old  (str, decimal format) is still present.
 
 **changes in tech stack**
--   No new libraries have been installed yet, but an X12 parsing library for Python (e.g., ) is planned for the implementation of Phase 2.
+-   No new libraries have been permanently added. The focus has been on stabilizing the existing environment, particularly the  system dependency.
 
 **All files of reference**
--   : Core application file, modified to include new routers and fix a route conflict.
--   : Contains all new API endpoints for claims management.
--   : Contains all new API endpoints for the admin panel.
--   : Main frontend router, modified to include routes for admin and claims pages.
--   : Directory containing all the placeholder files for the ODM and Availity integrations.
--   , , : New but currently empty/placeholder frontend components.
+-   : The most heavily modified file, containing fixes for uploads, data models, hours calculation, and auto-sync logic.
+-   : Fixed bugs related to admin authorization and  serialization.
+-   : Updated to display hours in the new H:MM format.
+-   : Updated the main timesheet list to use the new hours format and renamed the app.
+-   , : Updated with the new app name AZAI.
+-   Installing system dependencies...
+Installing poppler-utils...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  liblcms2-2 libopenjp2-7 libpoppler126 poppler-data
+Suggested packages:
+  liblcms2-utils ghostscript fonts-japanese-mincho | fonts-ipafont-mincho
+  fonts-arphic-ukai fonts-arphic-uming fonts-nanum
+The following NEW packages will be installed:
+  liblcms2-2 libopenjp2-7 libpoppler126 poppler-data poppler-utils
+0 upgraded, 5 newly installed, 0 to remove and 2 not upgraded.
+Need to get 3850 kB of archives.
+After this operation, 20.1 MB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian bookworm/main arm64 poppler-data all 0.4.12-1 [1601 kB]
+Get:2 http://deb.debian.org/debian bookworm/main arm64 liblcms2-2 arm64 2.14-2 [143 kB]
+Get:3 http://deb.debian.org/debian bookworm/main arm64 libopenjp2-7 arm64 2.5.0-2+deb12u2 [176 kB]
+Get:4 http://deb.debian.org/debian bookworm/main arm64 libpoppler126 arm64 22.12.0-2+deb12u1 [1753 kB]
+Get:5 http://deb.debian.org/debian bookworm/main arm64 poppler-utils arm64 22.12.0-2+deb12u1 [177 kB]
+Fetched 3850 kB in 0s (23.1 MB/s)
+Selecting previously unselected package poppler-data.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 38368 files and directories currently installed.)
+Preparing to unpack .../poppler-data_0.4.12-1_all.deb ...
+Unpacking poppler-data (0.4.12-1) ...
+Selecting previously unselected package liblcms2-2:arm64.
+Preparing to unpack .../liblcms2-2_2.14-2_arm64.deb ...
+Unpacking liblcms2-2:arm64 (2.14-2) ...
+Selecting previously unselected package libopenjp2-7:arm64.
+Preparing to unpack .../libopenjp2-7_2.5.0-2+deb12u2_arm64.deb ...
+Unpacking libopenjp2-7:arm64 (2.5.0-2+deb12u2) ...
+Selecting previously unselected package libpoppler126:arm64.
+Preparing to unpack .../libpoppler126_22.12.0-2+deb12u1_arm64.deb ...
+Unpacking libpoppler126:arm64 (22.12.0-2+deb12u1) ...
+Selecting previously unselected package poppler-utils.
+Preparing to unpack .../poppler-utils_22.12.0-2+deb12u1_arm64.deb ...
+Unpacking poppler-utils (22.12.0-2+deb12u1) ...
+Setting up liblcms2-2:arm64 (2.14-2) ...
+Setting up poppler-data (0.4.12-1) ...
+Setting up libopenjp2-7:arm64 (2.5.0-2+deb12u2) ...
+Setting up libpoppler126:arm64 (22.12.0-2+deb12u1) ...
+Setting up poppler-utils (22.12.0-2+deb12u1) ...
+Processing triggers for libc-bin (2.36-9+deb12u13) ...
+Processing triggers for fontconfig (2.14.1-4) ...
+✅ poppler-utils installed successfully
+✅ All system dependencies verified
+pdftoppm version 22.12.0
+System dependencies installation complete!: New script created to solve the  issue, but not yet integrated into startup.
+
+**Areas that need refactoring**
+-   The  endpoint in  uses  to avoid validation errors on corrupted database entries. This should be reverted to  once the data corruption issue is fixed at the source (upload endpoint).
 
 **key api endpoints**
--   **/api/admin/**: A new set of endpoints for managing the entire application (e.g., ).
--   **/api/claims/**: Endpoints for the new claims workflow (e.g., , ).
--   **/api/claims/medicaid/{claim_id}**: An existing endpoint that was renamed from  to resolve a routing conflict.
+-   : Endpoint for uploading PDF timesheets. Was repeatedly broken and fixed.
+-   : (NEW) Endpoint to re-trigger the OCR process for an existing timesheet.
+-   , : Endpoints for authentication. Were debugged for frontend network errors.
+-   : Admin endpoint for listing organizations. Was fixed to handle JWT roles and  serialization.
+-   : (NEW - PATCH) Endpoint to update the status of a support ticket.
 
 **Critical Info for New Agent**
--   The immediate priority is to verify the fix for the backend routing conflict. Re-run the backend testing agent to confirm the claims API is now working correctly.
--   The user wants a fully tested application ready for a GitHub repository. A complete testing cycle (backend then frontend) must be completed.
--   The agent has a recurring issue with generating correct JSX syntax. All newly created or modified frontend files should be carefully checked for syntax errors.
--   All external integrations (ODM, Availity) are currently placeholders. Implementation is blocked until the user provides the necessary credentials. The agent has already provided the user with instructions on how to obtain them.
+-   **Your immediate priority is to permanently fix the  installation.** The timesheet scanner is the app's core feature, and it is currently unstable. Do not assume it is fixed. Verify its presence after any system change. The user has repeatedly reported this failure.
+-   After stabilizing the environment, proceed with the user's latest request: build a **mock ODM integration** and start the **X12 EDI generation**.
+-   The network error on the login page was a misinterpretation by the user; it's actually a standard Invalid credentials response. Be prepared to clarify this again if it comes up.
+-   Do not get sidetracked by other minor fixes until the  and mock ODM tasks are addressed.
 
 **documents created in this job**
 -   
 -   
 -   
 -   
--    (Updated)
+-   
+-   
 
 **Last 10 User Messages and any pending user messages**
-1.  **all**: Confirmed the plan to implement all three phases (Admin, Claims Backend, Claims UI).
-2.  **next step implimentation**: Requested to continue with the next implementation step.
-3.  **Are we able to build a website where we can deploy to?**: Asked about deployment capabilities.
-4.  **is the app going to be divided into 2 sections?...**: Inquired about the architecture, leading to the decision to build the Admin Panel.
-5.  **Option A**: Chose to build the Admin Panel.
-6.  **Yes**: Confirmed starting Phase 1 implementation.
-7.  **1) Yes 2) Include instructions...**: Approved the detailed plan for Phase 1 and credential acquisition.
-8.  **[URL]**: Provided the link to the final ODM document.
-9.  **Here is a llink...**: Indicated a link was being shared.
-10. **1) I have OH/ID Logins...**: Provided context on their current access and asked for guidance on obtaining SOAP/SFTP credentials.
+1.  **scanner not working**: User reported the core feature was broken. (IN PROGRESS)
+2.  **why is poppler not stable**: User questioned the recurring failure of a key dependency. (IN PROGRESS)
+3.  **what is the password**: User asked for login credentials. (Completed)
+4.  **is poppler in container**: User checking on the status of the fix. (Completed - agent confirmed it wasn't)
+5.  **install poppler permanently**: User gave a clear instruction to make the fix persistent. (IN PROGRESS)
+6.  **stop the application**: User requested a service stop. (Completed)
+7.  **now again start**: User requested a service start. (Completed)
+8.  **restart app and test poppler**: User re-iterated the need for a permanent fix and verification. (NOT STARTED - agent restarted but didn't test)
 
-There are no pending user messages. The agent is currently executing the last user request to run a complete test.
+There are no pending messages, but the last user instruction to test the permanent fix is the highest priority.
 
 **Project Health Check:**
--   **Broken**: The backend claims API was non-functional due to a routing conflict. A fix has been applied but requires verification.
--   **Mocked**: All new frontend pages (Admin Panel, Claims UI) are non-functional placeholders. All external EDI/API integrations (ODM, Availity) are placeholders pending credentials.
+-   **Broken**: The core PDF scanning feature is fundamentally unstable due to the non-persistent  dependency. This is a critical failure.
+-   **Mocked**: All external integrations (ODM, Availity) remain placeholders. The user has requested the creation of a more robust mock system.
 
-**3rd Party Integrations**:
--   **Stripe**: Existing integration for payments.
--   **Sandata**: Existing integration for EVV submissions.
--   **Ohio Department of Medicaid (ODM)**: New, planned integration via SOAP and SFTP for direct claims processing. Requires user-provided credentials.
--   **Availity**: New, planned integration as a clearinghouse alternative. Requires user-provided credentials.
+**3rd Party Integrations**
+-   **Ohio Department of Medicaid (ODM)**: Planned integration (SOAP/SFTP). **BLOCKED** on user-provided credentials. A mock implementation has been requested.
+-   **Availity**: Planned integration. **BLOCKED** on user-provided credentials.
+-   **Stripe**: Existing integration.
+-   **Sandata**: Existing integration.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES
+-   **Testing agent used after significant changes**: YES, backend and frontend agents were used, which uncovered several critical bugs.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: None saved permanently. The testing agent generates temporary test files during its run.
--   **Known regressions**: A critical backend API routing conflict was introduced and subsequently found during testing.
+-   **Test files created**: None.
+-   **Known regressions**: The  installation is a major regression that occurs after every environment restart.
 
-**What agent forgot to execute**
--   The agent has not yet installed the required Python library for X12 EDI parsing (e.g., ) and updated .
--   After fixing the frontend compilation errors, the agent left the new pages as minimal placeholders instead of building out the basic UI structure.
--   The agent did not re-run the backend test to verify the routing fix, leaving the testing task incomplete.</analysis>
+**Credentials to test flow:**
+-   **Role**: Super Admin
+-   **URL**: 
+-   **Email**: 
+-   **Password**: </analysis>

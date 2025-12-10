@@ -15,7 +15,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 
 class PDFPopplerTester:
-    def __init__(self, base_url="https://odm-claims-hub.preview.emergentagent.com"):
+    def __init__(self, base_url="https://azai-claims.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
