@@ -735,6 +735,24 @@ class TimeEntry(BaseModel):
     total_minutes: Optional[int] = None  # Total minutes (e.g., 510)
     units: Optional[int] = None  # Calculated 15-minute units
     
+    # Geofencing fields (only for manual clock in/out)
+    clock_in_latitude: Optional[float] = None
+    clock_in_longitude: Optional[float] = None
+    clock_in_accuracy: Optional[float] = None
+    clock_in_timestamp: Optional[datetime] = None
+    clock_in_geofence_valid: Optional[bool] = None
+    clock_in_distance_feet: Optional[float] = None
+    
+    clock_out_latitude: Optional[float] = None
+    clock_out_longitude: Optional[float] = None
+    clock_out_accuracy: Optional[float] = None
+    clock_out_timestamp: Optional[datetime] = None
+    clock_out_geofence_valid: Optional[bool] = None
+    clock_out_distance_feet: Optional[float] = None
+    
+    # Entry method tracking
+    entry_method: Optional[str] = None  # "manual" or "scanned"
+    
 
 class EmployeeEntry(BaseModel):
     """Single employee's complete timesheet data"""
