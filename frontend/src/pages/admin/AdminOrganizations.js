@@ -37,7 +37,8 @@ const AdminOrganizations = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API}/admin/organizations`);
-      setOrganizations(response.data);
+      // API returns { organizations: [...] }
+      setOrganizations(response.data.organizations || []);
     } catch (e) {
       console.error('Error fetching organizations:', e);
       toast.error('Failed to load organizations');
