@@ -1693,7 +1693,7 @@ async def upload_timesheet(file: UploadFile = File(...), organization_id: str = 
         logger.error(f"Upload error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/timesheets")
+@api_router.get("/timesheets", response_model=List[Timesheet])
 async def get_timesheets(
     search: Optional[str] = None,
     date_from: Optional[str] = None,
