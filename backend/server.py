@@ -1560,7 +1560,8 @@ async def upload_timesheet(file: UploadFile = File(...), organization_id: str = 
                 filename=f"{file.filename}{page_suffix}",
                 file_type=file_extension,
                 status="processing",
-                organization_id=organization_id
+                organization_id=organization_id,
+                entry_method="scanned"  # Mark as scanned - no geofencing required
             )
             
             # Save to database
