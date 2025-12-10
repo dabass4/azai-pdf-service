@@ -38,7 +38,7 @@ python create_super_admin.py --email admin@medicaidservices.com --password Secur
 ## Step 2: Login to Admin Panel
 
 ### Access URL
-**Production URL:** `https://azai-claims.preview.emergentagent.com`
+**Production URL:** `https://timesheet-claims.preview.emergentagent.com`
 
 ### Login Steps:
 1. Navigate to the application URL
