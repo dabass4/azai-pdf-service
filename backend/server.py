@@ -62,12 +62,12 @@ def decimal_hours_to_hours_minutes(decimal_hours: float) -> dict:
         10.25 -> {'hours': 10, 'minutes': 15, 'formatted': '10:15'}
     """
     if decimal_hours is None:
-        return {'hours': 0, 'minutes': 0, 'formatted': '0:00'}
+        return {'hours': 0, 'minutes': 0, 'formatted': '0:00', 'total_minutes': 0}
     
     try:
         decimal_hours = float(decimal_hours)
     except (ValueError, TypeError):
-        return {'hours': 0, 'minutes': 0, 'formatted': '0:00'}
+        return {'hours': 0, 'minutes': 0, 'formatted': '0:00', 'total_minutes': 0}
     
     hours = int(decimal_hours)
     minutes = round((decimal_hours - hours) * 60)
