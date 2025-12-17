@@ -3777,11 +3777,14 @@ async def create_checkout(
             raise HTTPException(status_code=404, detail="Organization not found")
         
         # Create checkout session
+        # Get app URL from environment (for payment redirects)
+        app_url = os.environ.get("APP_URL", "https://timesheet-claims.preview.emergentagent.com")
+        
         session = create_checkout_session(
             organization_id=organization_id,
             plan=request.plan,
-            success_url=f"https://timesheet-claims.preview.emergentagent.com/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"https://timesheet-claims.preview.emergentagent.com/payment/cancelled",
+            success_url=f"{app_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{app_url}/payment/cancelled",
             customer_email=current_user["email"]
         )
         
