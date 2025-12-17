@@ -3809,10 +3809,13 @@ async def create_portal(current_user: Dict = Depends(get_current_user)):
         if not org.get("stripe_customer_id"):
             raise HTTPException(status_code=400, detail="No active subscription")
         
+        # Get app URL from environment (for billing portal return)
+        app_url = os.environ.get("APP_URL", "https://timesheet-claims.preview.emergentagent.com")
+        
         # Create billing portal session
         session = create_billing_portal_session(
             customer_id=org["stripe_customer_id"],
-            return_url="https://timesheet-claims.preview.emergentagent.com/"
+            return_url=f"{app_url}/"
         )
         
         return session
