@@ -1,0 +1,105 @@
+PDF SERVICE - RAILWAY DEPLOYMENT QUICK START
+=============================================
+
+Total Time: 15 minutes
+Cost: FREE (within $5 Railway credit)  
+Location: /app/pdf-service/
+
+STEP 1: PUSH TO GITHUB (3 min)
+-------------------------------
+
+1. Create new repo at: https://github.com/new
+   Name: pdf-service
+   Visibility: Public (for free tier)
+
+2. Run these commands:
+
+   cd /app/pdf-service
+   git remote add origin https://github.com/YOUR_USERNAME/pdf-service.git
+   git branch -M main
+   git push -u origin main
+
+   Replace YOUR_USERNAME with your GitHub username!
+
+STEP 2: DEPLOY TO RAILWAY (5 min)
+----------------------------------
+
+1. Go to: https://railway.app
+2. Click "Login" -> Sign in with GitHub  
+3. Click "New Project"
+4. Select "Deploy from GitHub repo"
+5. Choose: pdf-service
+6. Click "Deploy"
+7. Wait 2-3 minutes
+
+Your service is now live!
+
+STEP 3: CONFIGURE API KEY (2 min)
+----------------------------------
+
+1. Railway dashboard -> Click your service
+2. Go to "Variables" tab
+3. Click "Add Variable"
+4. Add:
+   PDF_SERVICE_API_KEY = your-secure-key-here
+
+Generate secure key:
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+
+STEP 4: GET YOUR SERVICE URL (1 min)
+-------------------------------------
+
+1. Railway -> Settings tab
+2. Scroll to "Domains"
+3. Click "Generate Domain"
+4. Copy URL (example):
+   https://pdf-service-production-xxxx.up.railway.app
+
+SAVE THIS URL!
+
+STEP 5: TEST SERVICE (2 min)
+-----------------------------
+
+curl https://YOUR-RAILWAY-URL/health
+
+Expected:
+{"status": "healthy", "poppler_installed": true}
+
+STEP 6: INTEGRATE WITH MAIN APP (5 min)
+----------------------------------------
+
+See: /app/backend/INTEGRATION_GUIDE.md
+
+Quick setup:
+1. Add to .env:
+   PDF_SERVICE_URL=https://your-railway-url
+   PDF_SERVICE_API_KEY=your-key
+
+2. Install httpx:
+   pip install httpx
+
+3. Use pdf_service_client.py (already created)
+
+HELPFUL DOCUMENTS
+-----------------
+
+/app/pdf-service/
+  - DEPLOYMENT_CHECKLIST.md
+  - README.md
+  - main.py
+
+/app/backend/
+  - INTEGRATION_GUIDE.md  
+  - pdf_service_client.py
+
+SUCCESS CHECKLIST
+-----------------
+
+[ ] Code pushed to GitHub
+[ ] Service deployed on Railway  
+[ ] Health check returns "healthy"
+[ ] API key configured
+[ ] Railway URL saved
+
+READY TO START!
+Begin with Step 1 above.
