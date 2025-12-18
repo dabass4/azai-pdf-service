@@ -545,6 +545,17 @@ class PatientResponsibleParty(BaseModel):
     phone_number: Optional[str] = None
     email: Optional[str] = None
 
+
+class OtherInsurance(BaseModel):
+    """Other insurance information for a patient (TPL - Third Party Liability)"""
+    insurance_name: str = ""
+    subscriber_type: str = "Person"  # Person or Non-Person Entity
+    relationship_to_patient: str = ""  # Self, Spouse, Child, Other
+    group_number: str = ""
+    policy_number: str = ""
+    policy_type: str = ""  # Primary, Secondary, Tertiary
+
+
 class PatientProfile(BaseModel):
     """Patient profile with all required information including EVV compliance"""
     model_config = ConfigDict(extra="ignore")
