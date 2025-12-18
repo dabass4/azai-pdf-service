@@ -595,7 +595,10 @@ const Patients = () => {
                             </p>
                             {patient.icd10_description && <p className="text-gray-600 text-xs italic">{patient.icd10_description}</p>}
                             <p className="pt-2"><span className="font-semibold">Physician:</span> {patient.physician_name}</p>
-                            <p><span className="font-semibold">NPI:</span> <span className="font-mono">{patient.physician_npi}</span></p>
+                            <p className="flex items-center gap-1">
+                              <span className="font-semibold">NPI:</span> 
+                              <PhysicianBadge npi={patient.physician_npi} name={patient.physician_name} />
+                            </p>
                           </div>
                         </div>
                           </div>
