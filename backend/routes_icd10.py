@@ -245,18 +245,30 @@ async def lookup_icd10_code(code: str):
         search_url = f"https://www.icd10data.com/search?s={code}"
         html_content = await fetch_icd10_page(search_url)
         
-        # Parse billability and description
+        # First try to get data from parsed search results (most accurate)
+        results = parse_search_results(html_content)
+        
+        # Look for exact code match in results
+        exact_match = None
+        for result in results:
+            if result.code.upper() == code.upper():
+                exact_match = result
+                break
+        
+        if exact_match:
+            # Use the exact match data
+            return ICD10LookupResponse(
+                code=code,
+                description=exact_match.description,
+                is_billable=exact_match.is_billable,
+                billable_text="Billable/Specific Code" if exact_match.is_billable else "Non-Billable/Non-Specific Code",
+                source_url=exact_match.url,
+                error=None
+            )
+        
+        # Fallback: parse from raw HTML
         is_billable, billable_text = parse_billability(html_content, code)
         description = parse_code_description(html_content, code)
-        
-        # If description not found well, try to extract from search results
-        if description == "Description not found":
-            results = parse_search_results(html_content)
-            for result in results:
-                if result.code.upper() == code.upper():
-                    description = result.description
-                    is_billable = result.is_billable
-                    break
         
         return ICD10LookupResponse(
             code=code,
