@@ -123,11 +123,7 @@ These fields are marked with asterisk (*) and are MANDATORY before saving.
    - latitude: -90 to 90
    - longitude: -180 to 180
 
-5. **Prior Authorization:**
-   - Alphanumeric, 1-50 characters
-   - May include hyphens, underscores
-
-6. **ICD-10 Code:**
+5. **ICD-10 Code:**
    - Format: Letter + 2-7 alphanumeric (e.g., A00.0, M79.3)
    - Must be valid ICD-10 code
 
