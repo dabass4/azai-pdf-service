@@ -2691,6 +2691,8 @@ async def get_employee(employee_id: str, organization_id: str = Depends(get_orga
 @api_router.put("/employees/{employee_id}", response_model=EmployeeProfile)
 async def update_employee(employee_id: str, employee_update: EmployeeProfileUpdate, organization_id: str = Depends(get_organization_id)):
     """Update employee profile and auto-sync with all related timesheets"""
+    from validation_utils import validate_employee_required_fields
+    
     # Get existing employee
     existing = await db.employees.find_one({"id": employee_id, "organization_id": organization_id}, {"_id": 0})
     if not existing:
@@ -2700,6 +2702,23 @@ async def update_employee(employee_id: str, employee_update: EmployeeProfileUpda
     update_data = employee_update.model_dump(exclude_unset=True)
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
+    # Merge with existing data for validation
+    merged_data = {**existing, **update_data}
+    
+    # Validate if is_complete is being set to True
+    if update_data.get('is_complete') == True:
+        is_valid, errors = validate_employee_required_fields(merged_data)
+        if not is_valid:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "Cannot mark profile complete. Required fields marked with (*) are missing.",
+                    "missing_fields": errors,
+                    "required_by": "Ohio Medicaid (ODM) and Electronic Visit Verification (EVV)"
+                }
+            )
+    
+    # Update in database
     result = await db.employees.update_one(
         {"id": employee_id, "organization_id": organization_id},
         {"$set": update_data}
