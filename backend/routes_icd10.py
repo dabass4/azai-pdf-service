@@ -172,49 +172,83 @@ def parse_code_description(html_content: str, code: str) -> str:
 
 def parse_search_results(html_content: str) -> list[ICD10SearchResult]:
     """
-    Parse search results from icd10data.com search page
+    Parse search results from icd10data.com search page.
+    
+    The page structure shows code entries like:
+    <a href="/ICD10CM/Codes/.../F32.8">ICD-10-CM Diagnosis Code F32.8</a>
+    Followed by description text and then billability indicators.
     """
     soup = BeautifulSoup(html_content, 'html.parser')
     results = []
+    seen_codes = set()
     
-    # Find all links that point to ICD codes
-    code_pattern = re.compile(r'/ICD10CM/Codes/[^"]+')
-    
-    # Look for code entries in the search results
-    # The format typically shows code followed by description
-    for link in soup.find_all('a', href=code_pattern):
+    # Find all bold links that contain "ICD-10-CM Diagnosis Code"
+    # These are the main code entries (not nested list items)
+    for strong_link in soup.find_all('strong'):
+        link = strong_link.find('a')
+        if not link:
+            continue
+            
         href = link.get('href', '')
-        text = link.get_text(strip=True)
-        
-        # Skip navigation links and empty text
-        if not text or 'convert to' in text.lower():
+        if '/ICD10CM/Codes/' not in href:
             continue
         
-        # Extract the code from the URL
-        # URL format: /ICD10CM/Codes/F01-F99/F30-F39/F32-/F32.9
+        # Extract code from URL
         code_match = re.search(r'/([A-Z][0-9]{2}(?:\.[A-Z0-9]{1,4})?)$', href)
-        if code_match:
-            code = code_match.group(1)
+        if not code_match:
+            continue
             
-            # Check if it's a billable code by looking at nearby text
-            parent = link.parent
-            if parent:
-                parent_text = parent.get_text()
-                is_billable = "Billable" in parent_text and "Non-Billable" not in parent_text
+        code = code_match.group(1)
+        if code in seen_codes:
+            continue
+        seen_codes.add(code)
+        
+        # Get description - look for the h2 heading that follows
+        description = "No description"
+        parent_container = strong_link.parent
+        
+        # Try to find h2 nearby (sibling or child)
+        if parent_container:
+            h2 = parent_container.find_next('h2')
+            if h2:
+                desc_text = h2.get_text(strip=True)
+                if desc_text and len(desc_text) > 3:
+                    description = desc_text
+        
+        # Determine billability - look for the text between this code and the next code entry
+        # Find the raw text after this code's link until the next ICD-10 code header
+        is_billable = True  # Default to billable
+        
+        # Get the string representation of this element and the following siblings
+        next_sibling_text = ""
+        for sibling in strong_link.next_siblings:
+            if hasattr(sibling, 'get_text'):
+                sibling_text = sibling.get_text()
             else:
-                is_billable = True  # Default assumption
+                sibling_text = str(sibling)
             
-            # Get description from the h2 inside the link's context or the link text itself
-            description = text if text != code else "No description"
+            # Stop if we hit another strong (next code entry)
+            if hasattr(sibling, 'name') and sibling.name == 'strong':
+                break
+                
+            next_sibling_text += sibling_text
             
-            # Only add if we found a valid code
-            if code and not any(r.code == code for r in results):
-                results.append(ICD10SearchResult(
-                    code=code,
-                    description=description,
-                    is_billable=is_billable,
-                    url=f"https://www.icd10data.com{href}"
-                ))
+            # Only check first 500 chars to avoid confusion with other codes
+            if len(next_sibling_text) > 500:
+                break
+        
+        # Check billability in the text following this code
+        if "Non-Billable" in next_sibling_text:
+            is_billable = False
+        elif "Billable/Specific Code" in next_sibling_text or "Billable" in next_sibling_text:
+            is_billable = True
+        
+        results.append(ICD10SearchResult(
+            code=code,
+            description=description,
+            is_billable=is_billable,
+            url=f"https://www.icd10data.com{href}"
+        ))
     
     return results
 
