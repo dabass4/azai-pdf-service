@@ -262,6 +262,16 @@ const PhysicianLookup = ({
                 isLoading={isLoading}
               />
             </div>
+            {/* Use this physician button */}
+            {lookupResult?.name && !lookupResult?.error && nameValue !== lookupResult.name && (
+              <button
+                type="button"
+                onClick={() => onNameChange(lookupResult.name)}
+                className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 shrink-0"
+              >
+                Use Name
+              </button>
+            )}
           </div>
           
           {lookupResult && !lookupResult.is_pecos_certified && !lookupResult.error && (
