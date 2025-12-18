@@ -165,34 +165,6 @@ const PhysicianLookup = ({
     lookupNPI(physician.npi);
   };
 
-  // PECOS Badge component
-  const PECOSBadge = ({ isEnrolled, status }) => {
-    if (isLoading) {
-      return (
-        <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          Checking...
-        </span>
-      );
-    }
-
-    if (isEnrolled) {
-      return (
-        <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
-          <CheckCircle className="h-3 w-3" />
-          PECOS Certified
-        </span>
-      );
-    }
-
-    return (
-      <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">
-        <XCircle className="h-3 w-3" />
-        {status || "Not PECOS Certified"}
-      </span>
-    );
-  };
-
   return (
     <div className="space-y-4">
       {/* Physician Name Field */}
