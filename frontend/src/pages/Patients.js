@@ -699,7 +699,13 @@ const Patients = () => {
                             <div className="text-gray-600 text-xs italic">{selectedPatientDetails.icd10_description}</div>
                           )}
                           <div className="pt-2"><span className="font-semibold">Physician:</span> {selectedPatientDetails.physician_name || "N/A"}</div>
-                          <div><span className="font-semibold">NPI:</span> <span className="font-mono">{selectedPatientDetails.physician_npi || "N/A"}</span></div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-semibold">NPI:</span> 
+                            <PhysicianBadge 
+                              npi={selectedPatientDetails.physician_npi} 
+                              name={selectedPatientDetails.physician_name} 
+                            />
+                          </div>
                         </CardContent>
                       </Card>
                     </div>
