@@ -322,8 +322,8 @@ Complete (Green):
 | address_latitude | | ✓ | * |
 | address_longitude | | ✓ | * |
 | timezone | | ✓ | * |
-| prior_auth_number | ✓ | ✓ | * |
 | icd10_code | ✓ | ✓ | * |
+| prior_auth_number | ✓ | | (service-specific) |
 | physician_name | ✓ | | |
 | physician_npi | ✓ | | |
 | **EMPLOYEE** |
