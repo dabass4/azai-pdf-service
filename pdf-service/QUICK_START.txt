@@ -19,7 +19,7 @@ STEP 1: PUSH TO GITHUB (3 min)
    git branch -M main
    git push -u origin main
 
-   Replace dabass4 with your GitHub username!
+   
 
 STEP 2: DEPLOY TO RAILWAY (5 min)
 ----------------------------------
