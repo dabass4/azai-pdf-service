@@ -758,7 +758,7 @@ const Patients = () => {
             </div>
           )}
           
-          {/* Info Note */}
+          {/* Info Note - Also commented out for test
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-start gap-2">
               <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
@@ -769,6 +769,7 @@ const Patients = () => {
               </p>
             </div>
           </div>
+          */}
         </div>
       )
     }
