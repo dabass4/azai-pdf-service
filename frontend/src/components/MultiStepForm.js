@@ -33,8 +33,15 @@ const MultiStepForm = ({
     }
   }, [formData, currentStep, storageKey]);
 
-  // Restore from localStorage on mount
+  // Restore from localStorage ONLY on initial mount
+  // Using useRef to track if we've already restored
+  const hasRestoredRef = React.useRef(false);
+  
   useEffect(() => {
+    // Only restore once on mount, not on subsequent renders
+    if (hasRestoredRef.current) return;
+    hasRestoredRef.current = true;
+    
     if (storageKey) {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
@@ -53,7 +60,7 @@ const MultiStepForm = ({
         }
       }
     }
-  }, [storageKey, steps.length]);
+  }, []);
 
   // Clear localStorage when form is submitted or cancelled
   const clearStorage = () => {
