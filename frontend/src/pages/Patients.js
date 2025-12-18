@@ -606,7 +606,10 @@ const Patients = () => {
                         <div>
                           <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Medical Info</h4>
                           <div className="space-y-1 text-sm text-gray-700">
-                            <p><span className="font-semibold">ICD-10:</span> {patient.icd10_code}</p>
+                            <p className="flex items-center gap-1">
+                              <span className="font-semibold">ICD-10:</span> 
+                              <ICD10Badge code={patient.icd10_code} description={patient.icd10_description} />
+                            </p>
                             {patient.icd10_description && <p className="text-gray-600 text-xs italic">{patient.icd10_description}</p>}
                             <p className="pt-2"><span className="font-semibold">Physician:</span> {patient.physician_name}</p>
                             <p><span className="font-semibold">NPI:</span> <span className="font-mono">{patient.physician_npi}</span></p>
