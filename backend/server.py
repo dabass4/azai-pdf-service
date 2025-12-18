@@ -657,6 +657,12 @@ class PatientProfileUpdate(BaseModel):
     # Responsible Party
     responsible_party: Optional[PatientResponsibleParty] = None
     sequence_id: Optional[str] = None
+    
+    # Other Insurance (TPL)
+    has_other_insurance: Optional[bool] = None
+    other_insurance: Optional[OtherInsurance] = None
+    has_second_other_insurance: Optional[bool] = None
+    second_other_insurance: Optional[OtherInsurance] = None
 
 
 class BillableService(BaseModel):
