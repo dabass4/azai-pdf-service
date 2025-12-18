@@ -262,11 +262,7 @@ const ManualClockIn = () => {
                       <MapPin className="w-3 h-3" />
                       {patient.address_street}, {patient.address_city}
                     </p>
-                    {(!patient.address_latitude || !patient.address_longitude) && (
-                      <p className="text-xs text-red-600 mt-1">
-                        ⚠️ Missing GPS coordinates
-                      </p>
-                    )}
+                    {/* GPS coordinates check disabled - geofencing temporarily disabled */}
                   </button>
                 ))}
               </div>
