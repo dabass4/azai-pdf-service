@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 # Install poppler-utils (CRITICAL for PDF processing)
 RUN apt-get update && \
-    apt-get install -y poppler-utils && \
+    apt-get install -y poppler-utils curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -17,10 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY main.py .
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
 
 # Expose port (Railway uses PORT env variable)
 EXPOSE 8000
