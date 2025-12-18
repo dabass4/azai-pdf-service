@@ -503,9 +503,9 @@ const Patients = () => {
             {formData.has_other_insurance && (
               <div className="space-y-4 pl-6 border-l-2 border-blue-200">
                 <div>
-                  <Label htmlFor="insurance_name">Insurance Name</Label>
+                  <Label htmlFor="primary_insurance_name">Insurance Name</Label>
                   <Input
-                    id="insurance_name"
+                    id="primary_insurance_name"
                     value={formData.other_insurance?.insurance_name || ""}
                     onChange={(e) => onFormDataChange(prev => ({
                       ...prev, 
@@ -521,7 +521,7 @@ const Patients = () => {
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
-                        name="subscriber_type"
+                        name="primary_subscriber_type"
                         value="Person"
                         checked={(formData.other_insurance?.subscriber_type || "Person") === "Person"}
                         onChange={(e) => onFormDataChange(prev => ({
@@ -535,7 +535,7 @@ const Patients = () => {
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
-                        name="subscriber_type"
+                        name="primary_subscriber_type"
                         value="Non-Person Entity"
                         checked={formData.other_insurance?.subscriber_type === "Non-Person Entity"}
                         onChange={(e) => onFormDataChange(prev => ({
@@ -550,7 +550,7 @@ const Patients = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="relationship_to_patient">Relationship to Patient</Label>
+                  <Label htmlFor="primary_relationship">Relationship to Patient</Label>
                   <Select
                     value={formData.other_insurance?.relationship_to_patient || ""}
                     onValueChange={(value) => onFormDataChange(prev => ({
