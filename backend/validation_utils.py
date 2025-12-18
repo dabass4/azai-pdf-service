@@ -83,11 +83,6 @@ def validate_patient_required_fields(patient: dict) -> Tuple[bool, List[str]]:
     if not timezone or timezone == '':
         errors.append("Timezone * is required (EVV)")
     
-    # Prior Authorization Number (*) - Required by both
-    prior_auth = patient.get('prior_auth_number', '').strip()
-    if not prior_auth:
-        errors.append("Prior Authorization Number * is required (ODM & EVV)")
-    
     # ICD-10 Code (*) - Required by both
     icd10 = patient.get('icd10_code', '').strip()
     if not icd10:
