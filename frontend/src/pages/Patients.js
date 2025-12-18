@@ -429,8 +429,8 @@ const Patients = () => {
           <PhysicianLookup
             npiValue={formData.physician_npi || ""}
             nameValue={formData.physician_name || ""}
-            onNpiChange={(npi) => onFormDataChange({...formData, physician_npi: npi})}
-            onNameChange={(name) => onFormDataChange({...formData, physician_name: name})}
+            onNpiChange={(npi) => onFormDataChange(prev => ({...prev, physician_npi: npi}))}
+            onNameChange={(name) => onFormDataChange(prev => ({...prev, physician_name: name}))}
             npiError={errors.physician_npi}
             nameError={errors.physician_name}
           />
