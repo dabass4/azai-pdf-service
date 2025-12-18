@@ -212,8 +212,8 @@ Patient:
   ✗ Missing any (*) marked field
   ✗ is_complete = False
   ✗ Invalid medicaid_number
-  ✗ Missing prior_auth_number
   ✗ Invalid address
+  ⚠ Prior auth may be required for specific services (check per service type)
 
 Employee:
   ✗ Missing any (*) marked field
