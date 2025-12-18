@@ -245,6 +245,7 @@ metadata:
 
 test_plan:
   current_focus: 
+    - "ICD-10 Code Lookup Feature"
     - "Application Loading & Navigation"
     - "Authentication Flow"
     - "Core Pages Rendering"
