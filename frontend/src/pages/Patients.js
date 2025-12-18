@@ -12,6 +12,7 @@ import SearchFilter from "@/components/SearchFilter";
 import BulkActionToolbar from "@/components/BulkActionToolbar";
 import MultiStepForm from "@/components/MultiStepForm";
 import ICD10Lookup from "@/components/ICD10Lookup";
+import ICD10Badge from "@/components/ICD10Badge";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
