@@ -78,10 +78,14 @@ const MultiStepForm = ({
   };
 
   const handleNext = () => {
+    console.log(`[MultiStepForm] handleNext called - currentStep: ${currentStep}, steps.length: ${steps.length}`);
     if (validateStep()) {
       if (currentStep < steps.length - 1) {
+        console.log(`[MultiStepForm] Moving to step ${currentStep + 1}`);
         setCurrentStep(prev => prev + 1);
         setErrors({});
+      } else {
+        console.log(`[MultiStepForm] Already at last step, not moving`);
       }
     }
   };
