@@ -259,6 +259,7 @@ const PhysicianLookup = ({
               <PECOSBadge 
                 isEnrolled={lookupResult?.is_pecos_certified} 
                 status={lookupResult?.pecos_status}
+                isLoading={isLoading}
               />
             </div>
           </div>
