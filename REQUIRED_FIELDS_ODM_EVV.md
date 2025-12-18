@@ -111,7 +111,9 @@ These fields are marked with asterisk (*) and are MANDATORY before saving.
    - For home health: Must be 18+ years (unless newborn services)
 
 3. **Medicaid Number:**
-   - Format: 12 digits (Ohio)
+   - Format: Exactly 12 digits (Ohio)
+   - Digits only (0-9)
+   - No letters, spaces, or special characters
    - Leading zeros required
    - Example: 000123456789
 
