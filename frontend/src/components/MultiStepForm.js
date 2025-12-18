@@ -42,14 +42,18 @@ const MultiStepForm = ({
           const { formData: savedData, currentStep: savedStep } = JSON.parse(saved);
           if (savedData && Object.keys(savedData).length > 0) {
             onFormDataChange(savedData);
-            setCurrentStep(savedStep || 0);
+            // Validate that saved step is within bounds of current steps array
+            const validStep = Math.min(savedStep || 0, steps.length - 1);
+            setCurrentStep(validStep >= 0 ? validStep : 0);
           }
         } catch (e) {
           console.error("Failed to restore form data:", e);
+          // Clear corrupted storage
+          localStorage.removeItem(storageKey);
         }
       }
     }
-  }, []);
+  }, [storageKey, steps.length]);
 
   // Clear localStorage when form is submitted or cancelled
   const clearStorage = () => {
