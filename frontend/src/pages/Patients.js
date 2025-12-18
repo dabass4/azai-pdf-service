@@ -290,7 +290,7 @@ const Patients = () => {
     });
   };
 
-  // Multi-step form configuration
+  // Multi-step form configuration - MUST have 4 steps
   const formSteps = [
     {
       title: "Step 1: Basic Information",
