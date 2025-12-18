@@ -167,7 +167,19 @@ const Patients = () => {
       await fetchPatients();
     } catch (e) {
       console.error("Error saving patient:", e);
-      toast.error(e.response?.data?.detail || "Failed to save patient");
+      const errorDetail = e.response?.data?.detail;
+      if (typeof errorDetail === 'object' && errorDetail !== null) {
+        // Handle structured error response
+        const message = errorDetail.message || "Validation failed";
+        const missingFields = errorDetail.missing_fields;
+        if (missingFields && Array.isArray(missingFields)) {
+          toast.error(`${message}: ${missingFields.join(', ')}`);
+        } else {
+          toast.error(message);
+        }
+      } else {
+        toast.error(errorDetail || "Failed to save patient");
+      }
     }
   };
 
