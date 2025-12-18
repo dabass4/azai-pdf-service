@@ -4700,6 +4700,10 @@ set_notifications_ext_db(db)  # Inject database
 from routes_icd10 import router as icd10_router
 api_router.include_router(icd10_router)
 
+# Import and include NPI lookup router
+from routes_npi import router as npi_router
+api_router.include_router(npi_router)
+
 # Include the router in the main app
 app.include_router(api_router)
 
