@@ -26,14 +26,17 @@ const ICD10Lookup = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
 
-  // Debounce search
-  const debounce = (func, wait) => {
-    let timeout;
-    return (...args) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
+  // Debounce timer ref
+  const searchTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
     };
-  };
+  }, []);
 
   // Look up a specific ICD-10 code
   const lookupCode = async (code) => {
