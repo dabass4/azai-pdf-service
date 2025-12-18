@@ -61,62 +61,68 @@ def parse_billability(html_content: str, target_code: str) -> tuple[bool, str]:
     """
     Parse the billability status from the HTML content for a specific code.
     Returns (is_billable, billable_text)
+    
+    The icd10data.com search page format shows each code like:
+    "ICD-10-CM Diagnosis Code F32.8 ... 20162017...Non-Billable/Non-Specific Code"
+    or
+    "ICD-10-CM Diagnosis Code F32.9 ... 20162017...Billable/Specific Code"
     """
-    soup = BeautifulSoup(html_content, 'html.parser')
+    import re
     target_code_upper = target_code.upper()
+    text_content = html_content
     
-    # Strategy 1: Look for the specific code's section
-    # Find all text blocks that contain the target code followed by billability info
-    text_content = soup.get_text()
+    # Strategy 1: Look for the exact pattern where code is followed by billability
+    # Pattern: "ICD-10-CM Diagnosis Code {CODE}\n{description}\n{years}Billable" or "Non-Billable"
+    # We need to find the CODE then look for the NEXT billability marker before another code appears
     
-    # Split by code mentions and look for the exact code's billability
-    # Format in search results: "ICD-10-CM Diagnosis Code F32.9\n...\nBillable/Specific Code"
-    lines = text_content.split('\n')
+    # Find all occurrences of our code (case insensitive)
+    code_pattern = rf'ICD-10-CM Diagnosis Code {re.escape(target_code)}\b'
+    code_matches = list(re.finditer(code_pattern, text_content, re.IGNORECASE))
     
-    found_target = False
-    for i, line in enumerate(lines):
-        line_stripped = line.strip()
-        
-        # Check if this line contains our target code
-        if target_code_upper in line_stripped.upper():
-            found_target = True
+    if code_matches:
+        for match in code_matches:
+            # Get text after this code until the next ICD-10-CM Diagnosis Code or end
+            start_pos = match.end()
             
-        # If we found the target, look for billability in the next few lines
-        if found_target:
-            if "Non-Billable" in line_stripped or "Non-Specific Code" in line_stripped:
-                # But make sure this isn't for a different code
-                # Check if there's a different code pattern before this billability marker
+            # Find next code marker
+            next_code_match = re.search(r'ICD-10-CM Diagnosis Code [A-Z]\d{2}', text_content[start_pos:], re.IGNORECASE)
+            if next_code_match:
+                section_text = text_content[start_pos:start_pos + next_code_match.start()]
+            else:
+                section_text = text_content[start_pos:start_pos + 2000]  # Take next 2000 chars
+            
+            # Look for billability in this section
+            if "Non-Billable" in section_text:
                 return False, "Non-Billable/Non-Specific Code"
-            elif "Billable/Specific Code" in line_stripped:
+            elif "Billable/Specific Code" in section_text or "Billable" in section_text:
                 return True, "Billable/Specific Code"
     
-    # Strategy 2: Look specifically for the pattern around the exact code
-    # The HTML typically has: CodeXXX.XX ... Billable/Specific Code
-    import re
-    pattern = rf'{re.escape(target_code)}.*?(Billable/Specific Code|Non-Billable)'
-    match = re.search(pattern, text_content, re.IGNORECASE | re.DOTALL)
+    # Strategy 2: Look in the full text for pattern with exact code boundaries
+    # Pattern like "F32.820162017...Non-Billable" (years concatenated)
+    pattern = rf'{re.escape(target_code)}(?:\s|[0-9])*?(Non-Billable|Billable/Specific Code)'
+    match = re.search(pattern, text_content, re.IGNORECASE)
     if match:
-        if "Non-Billable" in match.group(0):
+        if "Non-Billable" in match.group(1):
             return False, "Non-Billable/Non-Specific Code"
         return True, "Billable/Specific Code"
     
-    # Strategy 3: Count occurrences - if there's exactly one code result, use the first billability found
-    code_mentions = text_content.upper().count(target_code_upper)
-    if code_mentions >= 1:
-        # Get the first billability indicator after the code mention
-        code_pos = text_content.upper().find(target_code_upper)
-        remaining_text = text_content[code_pos:]
-        
-        billable_pos = remaining_text.find("Billable/Specific Code")
-        non_billable_pos = remaining_text.find("Non-Billable")
-        
-        # Return whichever comes first
-        if non_billable_pos != -1 and (billable_pos == -1 or non_billable_pos < billable_pos):
-            return False, "Non-Billable/Non-Specific Code"
-        elif billable_pos != -1:
-            return True, "Billable/Specific Code"
+    # Strategy 3: Parse HTML more carefully to find the code's entry
+    soup = BeautifulSoup(html_content, 'html.parser')
     
-    # Default to unknown
+    # Find all bold or strong tags that might contain our code
+    for bold_tag in soup.find_all(['strong', 'b', 'a']):
+        tag_text = bold_tag.get_text()
+        if target_code_upper in tag_text.upper():
+            # Look at siblings and parents for billability info
+            parent = bold_tag.find_parent(['div', 'li', 'p', 'td'])
+            if parent:
+                parent_text = parent.get_text()
+                if "Non-Billable" in parent_text:
+                    return False, "Non-Billable/Non-Specific Code"
+                elif "Billable/Specific Code" in parent_text or "Billable" in parent_text:
+                    return True, "Billable/Specific Code"
+    
+    # Default - if we can't determine, return unknown
     return True, "Unknown"
 
 
