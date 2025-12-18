@@ -174,26 +174,19 @@ def parse_search_results(html_content: str) -> list[ICD10SearchResult]:
     """
     Parse search results from icd10data.com search page.
     
-    The page structure shows code entries like:
-    <a href="/ICD10CM/Codes/.../F32.8">ICD-10-CM Diagnosis Code F32.8</a>
-    Followed by description text and then billability indicators.
+    The page structure shows code entries with links like:
+    <a href="ICD10CM/Codes/.../F32.8">ICD-10-CM Diagnosis Code F32.8</a>
+    Followed by badges showing billability: label-danger for Non-Billable, label-info for Billable
     """
     soup = BeautifulSoup(html_content, 'html.parser')
     results = []
     seen_codes = set()
     
-    # Find all bold links that contain "ICD-10-CM Diagnosis Code"
-    # These are the main code entries (not nested list items)
-    for strong_link in soup.find_all('strong'):
-        link = strong_link.find('a')
-        if not link:
-            continue
-            
+    # Find all links that point to ICD codes
+    for link in soup.find_all('a', href=re.compile(r'ICD10CM/Codes/.*?/[A-Z]\d{2}')):
         href = link.get('href', '')
-        if '/ICD10CM/Codes/' not in href:
-            continue
         
-        # Extract code from URL
+        # Extract code from URL (at the end after last /)
         code_match = re.search(r'/([A-Z][0-9]{2}(?:\.[A-Z0-9]{1,4})?)$', href)
         if not code_match:
             continue
@@ -203,51 +196,51 @@ def parse_search_results(html_content: str) -> list[ICD10SearchResult]:
             continue
         seen_codes.add(code)
         
-        # Get description - look for the h2 heading that follows
+        # Get description - look for nearby div with description text
         description = "No description"
-        parent_container = strong_link.parent
-        
-        # Try to find h2 nearby (sibling or child)
-        if parent_container:
-            h2 = parent_container.find_next('h2')
-            if h2:
-                desc_text = h2.get_text(strip=True)
+        parent = link.find_parent(['div', 'strong'])
+        if parent:
+            # Look for next sibling div with description
+            next_div = parent.find_next('div', class_='searchPadded')
+            if next_div:
+                desc_text = next_div.get_text(strip=True)
                 if desc_text and len(desc_text) > 3:
                     description = desc_text
         
-        # Determine billability - look for the text between this code and the next code entry
-        # Find the raw text after this code's link until the next ICD-10 code header
+        # Determine billability by looking for badges
+        # label-danger = Non-Billable, label-info = Billable
         is_billable = True  # Default to billable
         
-        # Get the string representation of this element and the following siblings
-        next_sibling_text = ""
-        for sibling in strong_link.next_siblings:
-            if hasattr(sibling, 'get_text'):
-                sibling_text = sibling.get_text()
-            else:
-                sibling_text = str(sibling)
+        # Search for billability badge in the HTML after this code
+        # Use regex on the raw HTML to find billability after this code entry
+        code_pos = html_content.find(href)
+        if code_pos != -1:
+            # Get next 1500 chars and look for billability
+            snippet = html_content[code_pos:code_pos + 1500]
             
-            # Stop if we hit another strong (next code entry)
-            if hasattr(sibling, 'name') and sibling.name == 'strong':
-                break
-                
-            next_sibling_text += sibling_text
+            # Check if this code's section has Non-Billable before the next code
+            next_code_match = re.search(r'ICD10CM/Codes/.*?/[A-Z]\d{2}(?:\.[A-Z0-9]{1,4})?', snippet[len(href):])
+            if next_code_match:
+                snippet = snippet[:len(href) + next_code_match.start()]
             
-            # Only check first 500 chars to avoid confusion with other codes
-            if len(next_sibling_text) > 500:
-                break
+            # Check for billability badges or text
+            if 'label-danger' in snippet and 'Non-Billable' in snippet:
+                is_billable = False
+            elif 'label-info' in snippet or 'Billable' in snippet:
+                is_billable = True
+            
+            # Also check raw text
+            if 'Non-Billable' in snippet:
+                is_billable = False
         
-        # Check billability in the text following this code
-        if "Non-Billable" in next_sibling_text:
-            is_billable = False
-        elif "Billable/Specific Code" in next_sibling_text or "Billable" in next_sibling_text:
-            is_billable = True
+        # Build full URL
+        full_url = f"https://www.icd10data.com/{href}" if not href.startswith('http') else href
         
         results.append(ICD10SearchResult(
             code=code,
             description=description,
             is_billable=is_billable,
-            url=f"https://www.icd10data.com{href}"
+            url=full_url
         ))
     
     return results
