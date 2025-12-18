@@ -72,16 +72,8 @@ def validate_patient_required_fields(patient: dict) -> Tuple[bool, List[str]]:
     elif not re.match(r'^\d{5}(-\d{4})?$', zip_code):
         errors.append("ZIP Code must be 5 digits or 9 digits (XXXXX or XXXXX-XXXX)")
     
-    # Latitude/Longitude (*) - Required by EVV
-    lat = patient.get('address_latitude')
-    lon = patient.get('address_longitude')
-    if lat is None or lon is None:
-        errors.append("Address Latitude/Longitude * is required (EVV geofencing)")
-    else:
-        if not (-90 <= lat <= 90):
-            errors.append("Latitude must be between -90 and 90")
-        if not (-180 <= lon <= 180):
-            errors.append("Longitude must be between -180 and 180")
+    # Latitude/Longitude - Only required for Sandata EVV submission, not profile completion
+    # Validation moved to evv_submission.py
     
     # Timezone (*) - Required by EVV
     timezone = patient.get('timezone', '')
