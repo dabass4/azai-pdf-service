@@ -350,11 +350,7 @@ const ManualClockIn = () => {
               )}
             </button>
             
-            {validation && !validation.valid && (
-              <p className="text-sm text-yellow-700 text-center mt-2">
-                Your location is outside the geofence. A supervisor will need to review this.
-              </p>
-            )}
+            {/* Geofence warning disabled */}
           </div>
         )}
 
