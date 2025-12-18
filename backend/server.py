@@ -2547,6 +2547,18 @@ async def update_patient(patient_id: str, patient_update: PatientProfileUpdate, 
     
     return PatientProfile(**updated_patient)
 
+@api_router.get("/patients/{patient_id}/completion-status")
+async def get_patient_completion_status(patient_id: str, organization_id: str = Depends(get_organization_id)):
+    """Get profile completion status for patient"""
+    from validation_utils import get_profile_completion_status
+    
+    patient = await db.patients.find_one({"id": patient_id, "organization_id": organization_id}, {"_id": 0})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    status = get_profile_completion_status('patient', patient)
+    return status
+
 @api_router.delete("/patients/{patient_id}")
 async def delete_patient(patient_id: str, organization_id: str = Depends(get_organization_id)):
     """Delete a patient profile"""
