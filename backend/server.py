@@ -2774,6 +2774,18 @@ async def update_employee(employee_id: str, employee_update: EmployeeProfileUpda
     
     return EmployeeProfile(**updated_employee)
 
+@api_router.get("/employees/{employee_id}/completion-status")
+async def get_employee_completion_status(employee_id: str, organization_id: str = Depends(get_organization_id)):
+    """Get profile completion status for employee"""
+    from validation_utils import get_profile_completion_status
+    
+    employee = await db.employees.find_one({"id": employee_id, "organization_id": organization_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    status = get_profile_completion_status('employee', employee)
+    return status
+
 @api_router.delete("/employees/{employee_id}")
 async def delete_employee(employee_id: str, organization_id: str = Depends(get_organization_id)):
     """Delete an employee profile"""
