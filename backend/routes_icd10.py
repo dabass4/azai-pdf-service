@@ -240,7 +240,7 @@ async def lookup_icd10_code(code: str):
         html_content = await fetch_icd10_page(search_url)
         
         # Parse billability and description
-        is_billable, billable_text = parse_billability(html_content)
+        is_billable, billable_text = parse_billability(html_content, code)
         description = parse_code_description(html_content, code)
         
         # If description not found well, try to extract from search results
