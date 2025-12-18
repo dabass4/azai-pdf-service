@@ -83,16 +83,21 @@ const ICD10Lookup = ({
     }
   };
 
-  // Debounced search
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedSearch = useCallback(debounce(searchCodes, 300), []);
-
-  // Handle input change
+  // Handle input change with debounced search
   const handleInputChange = (e) => {
     const newValue = e.target.value.toUpperCase();
     onChange(newValue);
     setLookupResult(null);
-    debouncedSearch(newValue);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Set new debounced search
+    searchTimeoutRef.current = setTimeout(() => {
+      searchCodes(newValue);
+    }, 300);
   };
 
   // Handle code selection from dropdown
