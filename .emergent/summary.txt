@@ -1,212 +1,258 @@
 <analysis>**original_problem_statement:**
-The user wants to integrate their healthcare timesheet application, AZAI, with the Ohio Department of Medicaid (ODM) for claims processing via SOAP and SFTP, and with the Availity clearinghouse. A dedicated Admin Panel is required for the software provider's staff to manage client accounts.
+The user's primary goal is to build a healthcare timesheet application, AZAI, that integrates with the Ohio Department of Medicaid (ODM) and Availity for claims processing. The application also requires an Admin Panel for administrative staff.
 
-The project was phased, but the immediate goals shifted to:
-1.  Fixing a critical, recurring bug with the PDF timesheet scanner ().
-2.  Building a complete mock ODM system for demonstration and testing, as real credentials are not yet available.
-3.  Beginning the implementation of X12 EDI generation.
-
-In the current session, the user has requested and the agent has built several new features:
-- A dependency management and security auditing system.
-- Geofencing for manual employee clock-ins.
-- A system to manage authorizations linking patients, employees, and service codes.
-- A comprehensive notification system (email and in-app pop-ups).
+The project's focus has shifted several times due to recurring bugs and new user requests. In the last session, the agent has:
+- Fixed a critical serialization bug in the timesheet API.
+- Fixed data loading issues in the Admin Panel.
+- Repeatedly addressed a persistent issue where the  dependency (required for PDF scanning) disappears after environment restarts.
+- Fixed a  in the timesheet processing logic.
+- Based on user feedback about performance, architected and created the files for a separate, external PDF/OCR processing microservice to be deployed on Railway.
+- Assisted the user with documentation for Ohio Medicaid connectivity forms.
+- Implemented strict backend validation to enforce required data fields for patient and employee profiles, as specified by the user for ODM/EVV compliance.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack solution (React/FastAPI/MongoDB) named AZAI. The critical recurring issue with the  dependency has been resolved by adding it to , ensuring it persists across restarts. The core PDF scanning feature is now stable.
+The application is a full-stack solution using React, FastAPI, and MongoDB. Key functionalities include PDF timesheet scanning, user/organization management, and an Admin Panel.
 
-The agent has significantly expanded the application's feature set in this session by building several new, self-contained modules:
--   **Dependency Management:** A suite of scripts in  to audit for security vulnerabilities and check for outdated packages.
--   **Geofencing for Manual Clock-in:** A complete geofencing system was implemented. This includes backend logic () to validate clock-in locations, new API endpoints, and a new frontend page () that captures the user's location. This is triggered for manual entries, while scanned timesheets are explicitly ignored.
--   **Patient-Employee-Service Authorization:** A new data model and API endpoints () were created to establish and manage explicit links between patients, the employees authorized to serve them, and the specific service codes for that care.
--   **Notification System:** A full-featured notification system has been built. It can send emails and displays in-app pop-up notifications to users upon login, with a notification center to view history.
+Recent significant changes include:
+- **Serialization Fix**:  objects are now correctly converted to ISO strings before being saved to MongoDB, and the  endpoint has the proper  for validation.
+- **Admin Panel Fix**: The frontend pages for managing organizations and credentials now correctly parse the API response, resolving a crash.
+- **PDF/OCR External Service**: A complete standalone FastAPI service has been created in the  directory, ready to be deployed to Railway. This includes a , , and  to aid deployment.
+- **Required Fields Validation**: A new  module and updated API endpoints enforce data completeness for patient and employee profiles, including a rule that the Medicaid number must be exactly 12 digits.
+- **Poppler Persistence Attempt**: A startup script (🔧 Checking system dependencies...
+📦 Installing poppler-utils...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  liblcms2-2 libopenjp2-7 libpoppler126 poppler-data
+Suggested packages:
+  liblcms2-utils ghostscript fonts-japanese-mincho | fonts-ipafont-mincho
+  fonts-arphic-ukai fonts-arphic-uming fonts-nanum
+The following NEW packages will be installed:
+  liblcms2-2 libopenjp2-7 libpoppler126 poppler-data poppler-utils
+0 upgraded, 5 newly installed, 0 to remove and 2 not upgraded.
+Need to get 3850 kB of archives.
+After this operation, 20.1 MB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian bookworm/main arm64 poppler-data all 0.4.12-1 [1601 kB]
+Get:2 http://deb.debian.org/debian bookworm/main arm64 liblcms2-2 arm64 2.14-2 [143 kB]
+Get:3 http://deb.debian.org/debian bookworm/main arm64 libopenjp2-7 arm64 2.5.0-2+deb12u2 [176 kB]
+Get:4 http://deb.debian.org/debian bookworm/main arm64 libpoppler126 arm64 22.12.0-2+deb12u1 [1753 kB]
+Get:5 http://deb.debian.org/debian bookworm/main arm64 poppler-utils arm64 22.12.0-2+deb12u1 [177 kB]
+Fetched 3850 kB in 0s (21.7 MB/s)
+Selecting previously unselected package poppler-data.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 38368 files and directories currently installed.)
+Preparing to unpack .../poppler-data_0.4.12-1_all.deb ...
+Unpacking poppler-data (0.4.12-1) ...
+Selecting previously unselected package liblcms2-2:arm64.
+Preparing to unpack .../liblcms2-2_2.14-2_arm64.deb ...
+Unpacking liblcms2-2:arm64 (2.14-2) ...
+Selecting previously unselected package libopenjp2-7:arm64.
+Preparing to unpack .../libopenjp2-7_2.5.0-2+deb12u2_arm64.deb ...
+Unpacking libopenjp2-7:arm64 (2.5.0-2+deb12u2) ...
+Selecting previously unselected package libpoppler126:arm64.
+Preparing to unpack .../libpoppler126_22.12.0-2+deb12u1_arm64.deb ...
+Unpacking libpoppler126:arm64 (22.12.0-2+deb12u1) ...
+Selecting previously unselected package poppler-utils.
+Preparing to unpack .../poppler-utils_22.12.0-2+deb12u1_arm64.deb ...
+Unpacking poppler-utils (22.12.0-2+deb12u1) ...
+Setting up liblcms2-2:arm64 (2.14-2) ...
+Setting up poppler-data (0.4.12-1) ...
+Setting up libopenjp2-7:arm64 (2.5.0-2+deb12u2) ...
+Setting up libpoppler126:arm64 (22.12.0-2+deb12u1) ...
+Setting up poppler-utils (22.12.0-2+deb12u1) ...
+Processing triggers for libc-bin (2.36-9+deb12u13) ...
+Processing triggers for fontconfig (2.14.1-4) ...
+✅ poppler-utils installed successfully
+✅ System dependencies check passed) has been created to automatically install  on container start, attempting to permanently resolve a critical recurring bug.
 
 **Last working item**:
-    - Last item agent was working: Finalizing the implementation of the in-app notification pop-up system. The agent created the necessary frontend components (, ), integrated them using a React Context () into , and updated the backend service to ensure emails are sent for every notification.
+    - Last item agent was working: The agent updated the backend validation logic to enforce that the patient's Medicaid number must be exactly 12 digits and contain only numbers, as requested by the user. This change was applied to  and the corresponding documentation was updated.
     - Status: USER VERIFICATION PENDING
     - Agent Testing Done: N
-    - Which testing method agent to use? frontend testing agent
+    - Which testing method agent to use? backend testing agent. The agent should write a test to attempt creating/updating a patient with invalid Medicaid numbers (e.g., <12 digits, >12 digits, with letters) to ensure it fails, and with a valid 12-digit number to ensure it succeeds.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Test the newly implemented Notification System (P0)
-  - Issue 2: Resolve backend technical debt (P0)
-  - Issue 3: Verify Admin Panel end-to-end functionality (P1)
+  - Issue 1: Critical  dependency instability (P0)
+  - Issue 2: Test the newly implemented data validation rules for profiles (P1)
+  - Issue 3: Test the Notification System (P2)
   
   **Issues Detail:**
   - **Issue 1:** 
-     - **Description**: The recently completed notification system, including login pop-ups and the notification center, has not been tested.
-     - **Next debug checklist**: 
-       1. Use the frontend testing agent to simulate a user login.
-       2. Verify that the notification pop-up appears if there are unread notifications.
-       3. Test creating a new notification via the API and confirm it triggers both an email (by checking logs, as we can't see the inbox) and the in-app bell/pop-up on the next login.
-       4. Navigate to the  page and ensure it displays the history correctly.
-     - **Why fix this issue and what will be achieved with the fix?**: To confirm that a major new user-facing feature is working as expected before moving on.
-     - **Status**: TESTING PENDING
-     - **Is recurring issue?**: N
-     - **Should Test frontend/backend/both after fix?**: frontend
-     - **Blocked on other issue**: None
-
-  - **Issue 2:** 
-     - **Description**: A workaround was implemented in a previous session to bypass a Pydantic serialization error on the  endpoint. The endpoint's  was changed to  to avoid validation on potentially corrupt  in the database. This technical debt masks the root cause of the data corruption.
-     - **Attempted fixes**: None in this session. This issue was carried over.
+     - **Description**: The  package, which is critical for PDF timesheet scanning, repeatedly becomes uninstalled or unavailable in the environment's PATH, causing the PDF conversion failed error. This is a highly disruptive, recurring issue.
+     - **Attempted fixes**: The agent has tried Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 2 not upgraded. multiple times. The latest attempt was creating a startup script (🔧 Checking system dependencies...
+✅ poppler-utils already installed
+pdftoppm version 22.12.0
+✅ System dependencies check passed) to automate the installation. It is unknown if this script is effective.
      - **Next debug checklist**:
-       1. Investigate the  endpoint in .
-       2. Analyze how the  object is constructed and saved to MongoDB.
-       3. Identify and fix the logic that causes the stored data to sometimes mismatch the  Pydantic model.
-       4. Once fixed, revert the  of the  endpoint back to  and test.
-     - **Why fix this issue and what will be achieved with the fix?**: This will ensure data integrity, prevent future data-related bugs, and improve API robustness by restoring proper data validation.
-     - **Status**: NOT STARTED
+       1. First, check if  is currently installed by running /usr/bin/pdftoppm.
+       2. If not installed, investigate why the  script is not working as expected. Is it being executed? Does it have the correct permissions ()?
+       3. If the script is not a viable solution, the fundamental approach to managing system dependencies in this environment needs to be re-evaluated.
+     - **Why fix this issue and what will be achieved with the fix?**: This is the most critical bug in the application. Fixing it permanently will stabilize the core timesheet upload feature and prevent constant user frustration.
+     - **Status**: IN PROGRESS
      - **Is recurring issue?**: Y
      - **Should Test frontend/backend/both after fix?**: backend
      - **Blocked on other issue**: None
 
-  - **Issue 3:** 
-     - **Description**: The Admin Panel frontend pages were built, but their end-to-end functionality was never fully verified after backend authentication fixes were applied in the previous session.
+  - **Issue 2:** 
+     - **Description**: The agent implemented a series of strict validation rules for patient and employee profiles (e.g., 12-digit Medicaid ID) in  but did not test them.
      - **Next debug checklist**:
-       1. Use the frontend testing agent.
-       2. Log in as the super admin ().
-       3. Navigate to all admin pages (, , etc.).
-       4. Confirm that data is loaded correctly and that admin actions (e.g., updating a setting) can be performed without errors.
-     - **Why fix this issue and what will be achieved with the fix?**: This will validate that a key user-requested feature (Admin Panel) is fully functional.
-     - **Status**: USER VERIFICATION PENDING
+       1. Use the backend testing agent to test the  and  endpoints.
+       2. For the patient profile, test submitting data that violates the rules (e.g., a 10-digit Medicaid number, a missing ) and verify the API returns a 422 Unprocessable Entity error.
+       3. Test submitting a fully compliant patient profile and verify it saves successfully.
+       4. Repeat the process for the employee profile.
+     - **Why fix this issue and what will be achieved with the fix?**: To ensure data integrity and confirm that the user's requirements for ODM/EVV compliance are correctly enforced by the backend.
+     - **Status**: TESTING PENDING
+     - **Is recurring issue?**: N
+     - **Should Test frontend/backend/both after fix?**: backend
+     - **Blocked on other issue**: None
+
+  - **Issue 3:** 
+     - **Description**: The notification system (in-app pop-ups and notification center) was completed in a previous session but was never tested. This was carried over from the last handoff.
+     - **Next debug checklist**: Use the frontend testing agent to log in as a user, verify that the notification pop-up appears, and check the  page for history.
+     - **Why fix this issue and what will be achieved with the fix?**: To verify that a major user-facing feature is working correctly.
+     - **Status**: NOT STARTED
      - **Is recurring issue?**: N
      - **Should Test frontend/backend/both after fix?**: frontend
      - **Blocked on other issue**: None
 
 **In progress Task List**:
-- None. All tasks initiated in this session were completed, pending testing.
+  - Task 1:  Deploy the external PDF processing service to Railway (P1)
+
+  **Task Detail:**
+  - **Task 1:** 
+     - **Where to resume**: The user was experiencing build failures on Railway (Script start.sh not found). The agent has created  and  in the  directory to explicitly tell Railway how to build and run the service. The next step is for the user to push these changes to their GitHub repository and trigger a new deployment on Railway.
+     - **What will be achieved with this?**: This will offload heavy PDF processing to a scalable, separate microservice, improving the main application's performance and stability, and permanently solving the  dependency issue.
+     - **Status**: BLOCKED (Waiting on user to push code to GitHub and try deploying again).
+     - **Should Test frontend/backend/both after fix?**: backend (The new service endpoint needs to be tested, then the main app's integration with it).
+     - **Blocked on something**: User action is required to deploy.
 
 **Upcoming and Future Tasks**
 
 **Upcoming Tasks:**
-- **Build Mock ODM Integration (P0):** Create mock endpoints (, ) to simulate the ODM claims processing workflow for development and demonstration, as requested by the user in the previous session.
-- **Implement X12 EDI Generation Logic (P1):** Begin implementing the logic in  to create 837P claim files from timesheet data.
+- **Integrate External PDF Service (P1):** Once the  is deployed, update the main application's timesheet upload logic to call the new external service instead of processing in-process. The agent has already created helper files (, ) for this.
+- **Build Mock ODM Integration (P2):** Create mock endpoints (, ) to simulate the ODM claims processing workflow.
+- **Implement X12 EDI Generation Logic (P3):** Begin implementing the logic in  to create 837P claim files from timesheet data.
 
 **Future Tasks:**
-- **Implement Real Backend Claims Logic (P2):** Replace mock logic with authenticated calls to ODM and Availity once credentials are provided.
-- **Implement 835 Remittance Parsing (P3):** Develop logic to parse 835 response files from ODM to update claim statuses.
-- **Automated SFTP Polling (P4):** Create a background job to check the ODM SFTP server for new response files.
-- **Dependency Updates (P2):** Act on the findings of the new dependency audit scripts to update vulnerable and outdated packages.
+- Implement Real Backend Claims Logic for ODM/Availity.
+- Implement 835 Remittance Parsing.
+- Create an automated SFTP polling job for 835 files.
+- Perform dependency updates based on security audits.
 
 **Completed work in this session**
-- **Resolved Critical  Bug:** The timesheet scanner is now stable and persists across restarts.
-- **Dependency Management System:** Implemented a full suite of scripts for security and version auditing of Python and Node.js packages.
-- **Sandata Testing Requirements:** Investigated and documented the data requirements for Sandata EVV testing.
-- **Geofencing for Manual Clock-in:** Created and integrated a geofencing feature that validates employee location for manual clock-ins/outs, while ignoring scanned timesheets.
-- **Patient-Employee-Service Connection:** Built a new authorization system with APIs to link patients, employees, and the services they are authorized for.
-- **Researched Medicaid Billing Codes:** Used web search to find and document relevant HCPCS codes for home health services.
-- **Comprehensive Notification System:** Implemented a system to send both email and in-app pop-up notifications to users upon login.
+- **Fixed  Serialization Error:** Resolved a Pydantic serialization error by ensuring  objects are stored as ISO strings.
+- **Fixed Admin Panel Crash:** Corrected the frontend code on admin pages to handle the actual API response structure.
+- **Addressed  Dependency Issue:** Investigated the recurring PDF conversion failed error and created a startup script (🔧 Checking system dependencies...
+✅ poppler-utils already installed
+pdftoppm version 22.12.0
+✅ System dependencies check passed) as a persistence solution.
+- **Fixed  KeyError:** Corrected an edge case in a utility function that failed to return the  key.
+- **Architected External PDF Service:** Designed and created all necessary files for a standalone PDF processing service () for deployment on Railway, including Docker and Railway-specific configuration.
+- **Provided Medicaid Enrollment Documentation:** Generated several markdown files explaining the Ohio Medicaid connectivity form requirements.
+- **Implemented Strict Profile Validation:** Added and refined backend validation to enforce mandatory fields for patient/employee profiles, including a strict 12-digit rule for the Medicaid number.
 
 **Earlier issues found/mentioned but not fixed**
    - **Issue 1:**
-     - **Description**: The  endpoint uses  as a workaround for a serialization error caused by corrupted  in the database.
-     - **Debug checklist**: Review the timesheet upload logic in  to fix the root cause of data corruption, then revert the response model to .
-     - **Why to solve this issue and what will be achieved with this?**: To ensure data integrity and enable proper API response validation.
-     - **Should Test frontend/backend/both after fix?**: backend
-     - **Is recurring issue?**: Y
+     - **Description**: The handoff mentioned fully testing the Admin Panel's end-to-end functionality. The agent only fixed a specific data-loading crash but did not perform a comprehensive test of all admin actions (e.g., creating/updating/deleting).
+     - **Debug checklist**: Use the frontend testing agent to log in as an admin and test all CRUD operations on the  and  pages.
+     - **Why to solve this issue and what will be achieved with this?**: To fully validate that a key user-requested feature is functional.
+     - **Should Test frontend/backend/both after fix?**: frontend
+     - **Is recurring issue?**: N
 
 **Known issue recurrence from previous fork**
-  - **Issue recurrence in previous fork**: The  dependency instability was the major recurring issue.
-  - **Recurrence count**: 3+ times in the previous session.
-  - **Status**: RESOLVED. The dependency is now listed in , which the platform uses for persistent installation.
+  - **Issue recurrence in previous fork**: The  dependency becoming uninstalled or unavailable in the PATH.
+  - **Recurrence count**: 4+ times in this session.
+  - **Status**: IN PROGRESS. The latest attempt to fix this is a startup script, which is untested.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frameworks**: FastAPI, React.
-- **Database**: MongoDB.
-- **System Dependencies**: Resolved persistence issue with  via .
-- **Geofencing**: Implemented location capture using browser Geolocation API and backend validation using Haversine formula.
-- **Dependency Auditing**: Used Name            Version ID             Fix Versions
---------------- ------- -------------- ------------
-ecdsa           0.19.1  CVE-2024-23342
-pymongo         4.5.0   CVE-2024-5629  4.6.3
-python-socketio 5.11.0  CVE-2025-61765 5.14.0
-starlette       0.37.2  CVE-2024-47874 0.40.0
-starlette       0.37.2  CVE-2025-54121 0.47.2
-urllib3         2.5.0   CVE-2025-66418 2.6.0
-urllib3         2.5.0   CVE-2025-66471 2.6.0
-Name                 Skip Reason
--------------------- -----------------------------------------------------------------------------------
-emergentintegrations Dependency not found on PyPI and could not be audited: emergentintegrations (0.1.0) for backend security scanning.
-- **Frontend State Management**: Used React Context API for the new notification system.
+- **External Service Architecture**: Decoupling resource-intensive PDF processing into a separate, independently deployable microservice.
+- **Cloud Deployment (Railway)**: Using Docker, Nixpacks, and Procfiles to configure and troubleshoot application builds on a modern cloud platform.
+- **Backend Data Validation**: Implementing strict, business-rule-based validation in FastAPI using Pydantic and custom validator functions to ensure data integrity.
+- **System Dependency Management**: Struggling with and attempting to solve the persistence of system-level packages () in a containerized environment.
 
 **key DB schema**
-  - **timesheets**: Added  (e.g., scanned, manual).
-  - **time_entries**: Added location fields (, , etc.).
-  - **authorizations**: New collection to store  documents, linking , , and .
+  - No new database collections were created. The focus was on enforcing stricter validation on the existing  and  collections.
 
 **changes in tech stack**
-  - **pip-audit**: Installed for backend dependency security scanning.
+  - A new, separate FastAPI service was created in .
+  - Build configuration files  and  were introduced for Railway deployment.
 
 **All files of reference**
-- **New Feature Files**:
-  - , : Core logic for the geofencing feature.
-  - , : Core logic for the new authorization system.
-  - , : Core files for the notification feature.
-- **Heavily Modified Files**:
-  - : Integrated all new routers and updated Pydantic models.
-  - : Integrated all new pages and the notification context provider.
+- : Contains the core API logic, including the newly added validation.
+- : Defines the specific validation rules for patient/employee profiles.
+- 🔧 Checking system dependencies...
+✅ poppler-utils already installed
+pdftoppm version 22.12.0
+✅ System dependencies check passed: The latest attempt to fix the recurring  issue.
+-  (whole directory): Contains the code and configuration for the external microservice.
+- : Contains the most recent troubleshooting guide for the user's deployment issue.
 
 **Areas that need refactoring**:
-- The  endpoint in  still uses  as a workaround. This should be fixed by addressing the root cause of data corruption during PDF upload and then reverting the response model to .
+- The main application's timesheet upload endpoint in  needs to be refactored to use the new external PDF service once it is successfully deployed. The boilerplate for this is in .
 
 **key api endpoints**
-- : (NEW) Endpoints for manual clock-in/out with geofencing validation.
-- : (NEW) Full CRUD endpoints for managing patient-employee-service authorizations.
-- : (NEW) Endpoints for creating and retrieving notifications.
-- : (NEW) Endpoint to get unread notifications for the pop-up.
+- **Modified**:
+  - : Now includes strict validation.
+  - : Now includes strict validation.
+- **New**:
+  - : Checks if patient/employee profiles are complete.
+- **New (External Service)**:
+  - : Endpoint in the  to handle PDF processing.
 
 **Critical Info for New Agent**
-- The application's stability is much improved now that the  bug is fixed.
-- Your first task should be to test the newly implemented notification system to ensure it's fully functional, as it was the last thing the user requested.
-- After testing, prioritize tackling the technical debt related to the  endpoint. Fixing the data corruption at its source is crucial for long-term stability.
-- Once testing and tech debt are handled, circle back to the user's previously stated priority: building the Mock ODM integration.
+- **The  issue is paramount.** If the user reports PDF conversion failed, your first step must be to check if  is installed (/usr/bin/pdftoppm). The startup script (🔧 Checking system dependencies...
+✅ poppler-utils already installed
+pdftoppm version 22.12.0
+✅ System dependencies check passed) is the latest attempt at a fix and its effectiveness is unknown.
+- The user is actively trying to deploy the  to Railway but is facing build issues. Your guidance will be needed to get this deployment working. The most recent agent fixes (, ) should solve the Script start.sh not found error.
+- The newly implemented validation rules for patient/employee profiles have not been tested. This is a high-priority verification task.
 
 **documents created in this job**
-- /app/scripts/dependency_management/README.md
-- /app/DEPENDENCY_MANAGEMENT_ACTION_PLAN.md
-- /app/scripts/dependency_management/SECURITY_VULNERABILITIES_DETAIL.md
-- /app/scripts/dependency_management/QUICK_REFERENCE.md
-- /app/SANDATA_TESTING_REQUIREMENTS.md
-- /app/GEOFENCING_IMPLEMENTATION_GUIDE.md
-- /app/GEOFENCING_INTEGRATION_COMPLETE.md
-- /app/PATIENT_EMPLOYEE_SERVICE_CONNECTIONS.md
-- /app/MEDICAID_BILLING_CODES_HOME_HEALTH.md
-- /app/NOTIFICATION_SYSTEM_GUIDE.md
-- /app/NOTIFICATION_POPUP_SYSTEM.md
+  - /app/EXTERNAL_PDF_OCR_SERVICE_ARCHITECTURE.md
+  - /app/pdf-service/RAILWAY_BUILD_ERROR_FIX.md
+  - /app/REQUIRED_FIELDS_ODM_EVV.md
+  - /app/MEDICAID_NUMBER_VALIDATION.md
+  - /app/OHIO_MEDICAID_CONNECTIVITY_REQUIREMENTS.md
+  - /app/ODM_CONNECTIVITY_FORM_FIELDS.md
+  - /app/pdf-service/RAILWAY_NO_LOGS_FIX.md
 
 **Last 10 User Messages and any pending user messages**
-1.  **what items are needed to complete the Sandata testing?**: User asked for Sandata requirements. (Completed)
-2.  **how do we add the geofencing for sandata...**: User requested geofencing feature. (Completed)
-3.  **integrate geofencing...**: User specified integration details for geofencing. (Completed)
-4.  **do we have the connection between client, employee and code**: User asked about data relationships. (Completed - agent built the feature)
-5.  **can you scan the web for Medicaid billing codes...**: User requested research. (Completed)
-6.  **We need to create a notification system...**: User requested a notification feature. (Completed)
-7.  **Make all notifications pop up when users login...**: User refined the notification feature request. (Completed)
-8.  **check if the permanent fix for poppler utils works**: User started the session by asking to verify the critical bug fix. (Completed)
-9.  **all of the above**: User confirmed they wanted all parts of the dependency management plan. (Completed)
-10. **how can we make sure all the libraries are always updated...**: User asked a general question about dependency maintenance, which led to a new feature. (Completed)
+1.  **User**: We will take a proactive approach... put an asterisk next to the information required by both ODM and EVV... Make those compulsory. (Status: Completed)
+2.  **User**: The prior authorization number is not a required field. (Status: Completed - agent corrected the validation)
+3.  **User**: The Medicaid number must be 12 digits only. No numerals, letters or special characters. (Status: Completed - agent updated validation)
+4.  **User**: I am unable to get this done. How do you recommend I host this... (Status: Completed - agent provided Railway architecture)
+5.  **User**: Call Deployer Agent and Run Health Check... (Status: Completed - agent ran check and fixed hardcoded URLs)
+6.  **User**: app will not deploy to railway. (Status: In Progress - agent is troubleshooting with user)
+7.  **User**: Build failed? (Status: In Progress - agent provided fixes)
+8.  **User**: can't find dabass4/pdf-service. (Status: Completed - agent explained the repo needs to be created on GitHub first)
+9.  **User**: There was an error deploying from source / nothing shows in the logs. (Status: In Progress - agent provided fixes)
+10. **User**: ⚠ Script start.sh not found. (Status: In Progress - agent provided  and  to fix this exact error)
 
 **Project Health Check:**
-- **Broken**: None. The critical scanner instability is resolved.
-- **Mocked**: Sandata, ODM, and Availity integrations are still placeholders or use mock credentials.
+- **Broken**: The core PDF scanning feature is fundamentally unstable due to the recurring  dependency issue.
+- **Mocked**: ODM and Availity integrations are still placeholders. The entire PDF processing logic is slated to be moved to an external service which is not yet deployed.
 
 **3rd Party Integrations**
-- **Ohio Department of Medicaid (ODM)**: Planned (SOAP/SFTP). **BLOCKED** on credentials. Mock implementation is an upcoming task.
-- **Availity**: Planned. **BLOCKED** on credentials.
+- **Ohio Department of Medicaid (ODM)**: Planned (SOAP/SFTP). Mock implementation is an upcoming task.
+- **Availity**: Planned.
 - **Stripe**: Existing integration.
 - **Sandata**: Existing integration (using mock credentials).
+- **Railway**: New platform for deploying the external PDF service. The deployment is currently in progress and facing issues.
 
 **Testing status**
-  - Testing agent used after significant changes: NO
+  - Testing agent used after significant changes: YES (for Admin Panel and initial poppler fix)
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None.
-  - Known regressions: The  regression from the previous session has been resolved.
+  - Test files created: None
+  - Known regressions: The  dependency has regressed multiple times during the session, breaking PDF functionality.
 
 **Credentials to test flow:**
 - **Role**: Super Admin
@@ -215,6 +261,5 @@ emergentintegrations Dependency not found on PyPI and could not be audited: emer
 - **Password**: 
 
 **What agent forgot to execute**
-- The agent did not address the two pending issues carried over from the previous handoff:
-  1.  Fixing the root cause of the  serialization error (the  workaround).
-  2.  Re-testing the Admin Panel frontend pages to confirm end-to-end functionality after earlier auth fixes.</analysis>
+- **Test Notification System**: This was a pending item from the previous handoff and was overlooked in this session.
+- **Full Admin Panel E2E Test**: While a specific crash was fixed, a comprehensive end-to-end test of all admin functionality was not performed as requested in the previous handoff.</analysis>

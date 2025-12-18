@@ -18,7 +18,7 @@ app = FastAPI(
 # CORS middleware - configure with your actual domain in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to your domain: ["https://timesheet-claims.preview.emergentagent.com"]
+    allow_origins=["*"],  # Change to your domain: ["https://azai-healthcare.preview.emergentagent.com"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
