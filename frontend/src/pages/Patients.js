@@ -455,6 +455,290 @@ const Patients = () => {
           />
         </div>
       )
+    },
+    {
+      title: "Step 4: Other Insurance (TPL)",
+      description: "Third Party Liability information for Medicaid audits",
+      requiredFields: [],
+      render: ({ formData, onFormDataChange }) => (
+        <div className="space-y-6">
+          {/* Primary Other Insurance */}
+          <div className="p-4 border rounded-lg bg-gray-50">
+            <div className="flex items-center gap-3 mb-4">
+              <Checkbox
+                id="has_other_insurance"
+                checked={formData.has_other_insurance || false}
+                onCheckedChange={(checked) => onFormDataChange(prev => ({...prev, has_other_insurance: checked}))}
+              />
+              <Label htmlFor="has_other_insurance" className="font-medium cursor-pointer">
+                Is there other insurance covering this patient (besides the plan being billed)?
+              </Label>
+            </div>
+            
+            {formData.has_other_insurance && (
+              <div className="space-y-4 pl-6 border-l-2 border-blue-200">
+                <div>
+                  <Label htmlFor="insurance_name">Insurance Name</Label>
+                  <Input
+                    id="insurance_name"
+                    value={formData.other_insurance?.insurance_name || ""}
+                    onChange={(e) => onFormDataChange(prev => ({
+                      ...prev, 
+                      other_insurance: {...(prev.other_insurance || {}), insurance_name: e.target.value}
+                    }))}
+                    placeholder="e.g., Blue Cross Blue Shield"
+                  />
+                </div>
+                
+                <div>
+                  <Label className="mb-2 block">Subscriber Type</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="subscriber_type"
+                        value="Person"
+                        checked={(formData.other_insurance?.subscriber_type || "Person") === "Person"}
+                        onChange={(e) => onFormDataChange(prev => ({
+                          ...prev,
+                          other_insurance: {...(prev.other_insurance || {}), subscriber_type: e.target.value}
+                        }))}
+                        className="w-4 h-4"
+                      />
+                      Person
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="subscriber_type"
+                        value="Non-Person Entity"
+                        checked={formData.other_insurance?.subscriber_type === "Non-Person Entity"}
+                        onChange={(e) => onFormDataChange(prev => ({
+                          ...prev,
+                          other_insurance: {...(prev.other_insurance || {}), subscriber_type: e.target.value}
+                        }))}
+                        className="w-4 h-4"
+                      />
+                      Non-Person Entity
+                    </label>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="relationship_to_patient">Relationship to Patient</Label>
+                  <Select
+                    value={formData.other_insurance?.relationship_to_patient || ""}
+                    onValueChange={(value) => onFormDataChange(prev => ({
+                      ...prev,
+                      other_insurance: {...(prev.other_insurance || {}), relationship_to_patient: value}
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select relationship" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Self">Self</SelectItem>
+                      <SelectItem value="Spouse">Spouse</SelectItem>
+                      <SelectItem value="Child">Child</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="group_number">Group Number</Label>
+                    <Input
+                      id="group_number"
+                      value={formData.other_insurance?.group_number || ""}
+                      onChange={(e) => onFormDataChange(prev => ({
+                        ...prev,
+                        other_insurance: {...(prev.other_insurance || {}), group_number: e.target.value}
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="policy_number">Policy Number</Label>
+                    <Input
+                      id="policy_number"
+                      value={formData.other_insurance?.policy_number || ""}
+                      onChange={(e) => onFormDataChange(prev => ({
+                        ...prev,
+                        other_insurance: {...(prev.other_insurance || {}), policy_number: e.target.value}
+                      }))}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="policy_type">Policy Type</Label>
+                  <Select
+                    value={formData.other_insurance?.policy_type || ""}
+                    onValueChange={(value) => onFormDataChange(prev => ({
+                      ...prev,
+                      other_insurance: {...(prev.other_insurance || {}), policy_type: value}
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select policy type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Primary">Primary</SelectItem>
+                      <SelectItem value="Secondary">Secondary</SelectItem>
+                      <SelectItem value="Tertiary">Tertiary</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Second Other Insurance */}
+          {formData.has_other_insurance && (
+            <div className="p-4 border rounded-lg bg-gray-50">
+              <div className="flex items-center gap-3 mb-4">
+                <Checkbox
+                  id="has_second_other_insurance"
+                  checked={formData.has_second_other_insurance || false}
+                  onCheckedChange={(checked) => onFormDataChange(prev => ({...prev, has_second_other_insurance: checked}))}
+                />
+                <Label htmlFor="has_second_other_insurance" className="font-medium cursor-pointer">
+                  Is there a second other insurance policy?
+                </Label>
+              </div>
+              
+              {formData.has_second_other_insurance && (
+                <div className="space-y-4 pl-6 border-l-2 border-blue-200">
+                  <div>
+                    <Label htmlFor="second_insurance_name">Insurance Name</Label>
+                    <Input
+                      id="second_insurance_name"
+                      value={formData.second_other_insurance?.insurance_name || ""}
+                      onChange={(e) => onFormDataChange(prev => ({
+                        ...prev,
+                        second_other_insurance: {...(prev.second_other_insurance || {}), insurance_name: e.target.value}
+                      }))}
+                      placeholder="e.g., Aetna"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label className="mb-2 block">Subscriber Type</Label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="second_subscriber_type"
+                          value="Person"
+                          checked={(formData.second_other_insurance?.subscriber_type || "Person") === "Person"}
+                          onChange={(e) => onFormDataChange(prev => ({
+                            ...prev,
+                            second_other_insurance: {...(prev.second_other_insurance || {}), subscriber_type: e.target.value}
+                          }))}
+                          className="w-4 h-4"
+                        />
+                        Person
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="second_subscriber_type"
+                          value="Non-Person Entity"
+                          checked={formData.second_other_insurance?.subscriber_type === "Non-Person Entity"}
+                          onChange={(e) => onFormDataChange(prev => ({
+                            ...prev,
+                            second_other_insurance: {...(prev.second_other_insurance || {}), subscriber_type: e.target.value}
+                          }))}
+                          className="w-4 h-4"
+                        />
+                        Non-Person Entity
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="second_relationship">Relationship to Patient</Label>
+                    <Select
+                      value={formData.second_other_insurance?.relationship_to_patient || ""}
+                      onValueChange={(value) => onFormDataChange(prev => ({
+                        ...prev,
+                        second_other_insurance: {...(prev.second_other_insurance || {}), relationship_to_patient: value}
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select relationship" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Self">Self</SelectItem>
+                        <SelectItem value="Spouse">Spouse</SelectItem>
+                        <SelectItem value="Child">Child</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="second_group_number">Group Number</Label>
+                      <Input
+                        id="second_group_number"
+                        value={formData.second_other_insurance?.group_number || ""}
+                        onChange={(e) => onFormDataChange(prev => ({
+                          ...prev,
+                          second_other_insurance: {...(prev.second_other_insurance || {}), group_number: e.target.value}
+                        }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="second_policy_number">Policy Number</Label>
+                      <Input
+                        id="second_policy_number"
+                        value={formData.second_other_insurance?.policy_number || ""}
+                        onChange={(e) => onFormDataChange(prev => ({
+                          ...prev,
+                          second_other_insurance: {...(prev.second_other_insurance || {}), policy_number: e.target.value}
+                        }))}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="second_policy_type">Policy Type</Label>
+                    <Select
+                      value={formData.second_other_insurance?.policy_type || ""}
+                      onValueChange={(value) => onFormDataChange(prev => ({
+                        ...prev,
+                        second_other_insurance: {...(prev.second_other_insurance || {}), policy_type: value}
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select policy type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Primary">Primary</SelectItem>
+                        <SelectItem value="Secondary">Secondary</SelectItem>
+                        <SelectItem value="Tertiary">Tertiary</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Info Note */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Other insurance information is required for Medicaid audit documentation. 
+                If the patient has coverage through another insurance plan (e.g., employer-sponsored, Medicare), 
+                please provide the details above.
+              </p>
+            </div>
+          </div>
+        </div>
+      )
     }
   ];
 
