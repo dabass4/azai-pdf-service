@@ -323,7 +323,6 @@ const ManualClockIn = () => {
                 showValidation={true}
                 allowedRadiusFeet={500}
               />
-            )}
           </div>
         )}
 
