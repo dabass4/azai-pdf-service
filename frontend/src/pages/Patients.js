@@ -761,6 +761,11 @@ const Patients = () => {
     }
   ];
 
+  // Debug: Verify 4 steps are defined
+  if (formSteps.length !== 4) {
+    console.error(`[Patients] ERROR: formSteps has ${formSteps.length} steps, expected 4!`);
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
