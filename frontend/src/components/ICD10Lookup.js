@@ -81,6 +81,7 @@ const ICD10Lookup = ({
   };
 
   // Debounced search
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSearch = useCallback(debounce(searchCodes, 300), []);
 
   // Handle input change
@@ -214,7 +215,7 @@ const ICD10Lookup = ({
                 <p className="text-sm mt-1">{lookupResult.description}</p>
                 {!lookupResult.is_billable && (
                   <p className="text-xs text-red-700 mt-2 font-medium">
-                    ⚠️ This code is not billable per ICD10data.com's recommendation. 
+                    ⚠️ This code is not billable per ICD10data.com&apos;s recommendation. 
                     Consider using a more specific billable code.
                   </p>
                 )}
