@@ -26,41 +26,16 @@ const MultiStepForm = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState({});
 
-  // Auto-save to localStorage
-  useEffect(() => {
-    if (storageKey && formData && Object.keys(formData).length > 0) {
-      localStorage.setItem(storageKey, JSON.stringify({ formData, currentStep }));
-    }
-  }, [formData, currentStep, storageKey]);
+  // DISABLED: Auto-save to localStorage - was causing Step 4 flash issue
+  // useEffect(() => {
+  //   if (storageKey && formData && Object.keys(formData).length > 0) {
+  //     localStorage.setItem(storageKey, JSON.stringify({ formData, currentStep }));
+  //   }
+  // }, [formData, currentStep, storageKey]);
 
-  // Restore from localStorage ONLY on initial mount
-  // Using useRef to track if we've already restored
-  const hasRestoredRef = useRef(false);
-  
-  useEffect(() => {
-    // Only restore once on mount, not on subsequent renders
-    if (hasRestoredRef.current) return;
-    hasRestoredRef.current = true;
-    
-    if (storageKey) {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          const { formData: savedData, currentStep: savedStep } = JSON.parse(saved);
-          if (savedData && Object.keys(savedData).length > 0) {
-            onFormDataChange(savedData);
-            // Validate that saved step is within bounds of current steps array
-            const validStep = Math.min(savedStep || 0, steps.length - 1);
-            setCurrentStep(validStep >= 0 ? validStep : 0);
-          }
-        } catch (e) {
-          console.error("Failed to restore form data:", e);
-          // Clear corrupted storage
-          localStorage.removeItem(storageKey);
-        }
-      }
-    }
-  }, []);
+  // DISABLED: Restore from localStorage - was causing Step 4 flash issue
+  // const hasRestoredRef = useRef(false);
+  // useEffect(() => { ... }, []);
 
   // Clear localStorage when form is submitted or cancelled
   const clearStorage = () => {
