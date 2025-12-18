@@ -312,7 +312,7 @@ const Patients = () => {
     {
       title: "Step 2: Address & Medical Information",
       description: "Enter patient's address and medical details",
-      requiredFields: ["address_street", "address_city", "address_state", "address_zip", "prior_auth_number", "icd10_code"],
+      requiredFields: ["address_street", "address_city", "address_state", "address_zip", "icd10_code"],
       render: ({ formData, onFormDataChange, errors }) => (
         <div className="space-y-6">
           <div>
@@ -375,14 +375,13 @@ const Patients = () => {
             <h3 className="text-lg font-semibold mb-4 text-gray-800">Medical Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="prior_auth_number">Prior Authorization Number *</Label>
+                <Label htmlFor="prior_auth_number">Prior Authorization Number (Optional)</Label>
                 <Input
                   id="prior_auth_number"
                   value={formData.prior_auth_number || ""}
                   onChange={(e) => onFormDataChange({...formData, prior_auth_number: e.target.value})}
-                  className={errors.prior_auth_number ? "border-red-500" : ""}
+                  placeholder="Optional"
                 />
-                {errors.prior_auth_number && <p className="text-xs text-red-500 mt-1">{errors.prior_auth_number}</p>}
               </div>
               <div className="md:col-span-2">
                 <ICD10Lookup
