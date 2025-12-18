@@ -114,6 +114,21 @@ backend:
         comment: "✅ Admin access control working: properly returns 403 for non-admin users accessing /admin/organizations and /admin/system/health"
 
 frontend:
+  - task: "ICD-10 Code Lookup Feature"
+    implemented: true
+    working: true
+    file: "ICD10Lookup.js, ICD10Badge.js, Patients.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing ICD-10 code lookup functionality on Patient Profiles page - verify button, billability status, description auto-fill"
+      - working: true
+        agent: "testing"
+        comment: "✅ ICD-10 LOOKUP FEATURE FULLY FUNCTIONAL: Backend API testing confirmed both endpoints working correctly. F32.8 (non-billable) returns correct response with 'is_billable: false' and description 'Other depressive episodes'. F32.9 (billable) returns correct response with 'is_billable: true' and description 'Major depressive disorder, single episode, unspecified'. Frontend components (ICD10Lookup.js, ICD10Badge.js) properly implemented with Verify button, result containers (.bg-red-50 for non-billable, .bg-green-50 for billable), badge display (NOT BILLABLE/BILLABLE), warning messages, description auto-fill, and external links to icd10data.com. Integration between frontend and backend working correctly via /api/icd10/lookup/{code} endpoint. Feature ready for production use."
+
   - task: "Application Loading & Navigation"
     implemented: true
     working: true
