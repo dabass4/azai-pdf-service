@@ -315,21 +315,8 @@ const ManualClockIn = () => {
               Capture Your Location
             </h2>
             
-            {!patientLocation.latitude || !patientLocation.longitude ? (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-red-900">Missing GPS Coordinates</p>
-                    <p className="text-sm text-red-700">
-                      The selected patient's address doesn't have GPS coordinates.
-                      Please update the patient profile with latitude and longitude.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <LocationCapture
+            {/* Geofencing temporarily disabled - GPS coordinates not required */}
+            <LocationCapture
                 patientLocation={patientLocation}
                 onLocationCaptured={handleLocationCaptured}
                 onValidationComplete={handleValidationComplete}
