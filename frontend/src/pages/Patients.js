@@ -479,15 +479,22 @@ const Patients = () => {
       title: "Step 4: Other Insurance (TPL)",
       description: "Third Party Liability information for Medicaid audits",
       requiredFields: [],
-      render: ({ formData, onFormDataChange }) => (
+      render: () => (
         <div className="space-y-6">
-          {/* Header Banner */}
+          {/* SIMPLIFIED TEST - No form fields */}
           <div className="bg-purple-600 text-white p-4 rounded-lg text-center">
             <h3 className="text-xl font-bold">OTHER INSURANCE INFORMATION</h3>
             <p className="text-sm">Ohio patients may change insurance monthly - please keep this updated</p>
           </div>
           
-          {/* Primary Other Insurance */}
+          <div className="bg-yellow-100 border border-yellow-400 p-4 rounded-lg">
+            <p className="text-lg font-bold">TEST: This is Step 4</p>
+            <p>If you can see this, Step 4 is rendering correctly.</p>
+            <p>The form fields have been temporarily removed for testing.</p>
+          </div>
+          
+          {/* TEMPORARILY COMMENTED OUT - Original form fields */}
+          {/*
           <div className="p-4 border rounded-lg bg-gray-50">
             <div className="flex items-center gap-3 mb-4">
               <Checkbox
