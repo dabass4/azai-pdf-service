@@ -604,6 +604,12 @@ class PatientProfile(BaseModel):
     # Responsible Party (EVV: Required if patient is minor or has guardian)
     responsible_party: Optional[PatientResponsibleParty] = None
     
+    # Other Insurance (TPL - Third Party Liability for Medicaid audits)
+    has_other_insurance: bool = False
+    other_insurance: Optional[OtherInsurance] = None
+    has_second_other_insurance: bool = False
+    second_other_insurance: Optional[OtherInsurance] = None
+    
     # Sequence Management (EVV)
     sequence_id: Optional[str] = None
     
