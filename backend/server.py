@@ -2474,6 +2474,8 @@ async def get_patient(patient_id: str, organization_id: str = Depends(get_organi
 @api_router.put("/patients/{patient_id}", response_model=PatientProfile)
 async def update_patient(patient_id: str, patient_update: PatientProfileUpdate, organization_id: str = Depends(get_organization_id)):
     """Update patient profile and auto-sync with all related timesheets"""
+    from validation_utils import validate_patient_required_fields
+    
     # Get existing patient
     existing = await db.patients.find_one({"id": patient_id, "organization_id": organization_id}, {"_id": 0})
     if not existing:
@@ -2483,6 +2485,23 @@ async def update_patient(patient_id: str, patient_update: PatientProfileUpdate, 
     update_data = patient_update.model_dump(exclude_unset=True)
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
+    # Merge with existing data for validation
+    merged_data = {**existing, **update_data}
+    
+    # Validate if is_complete is being set to True
+    if update_data.get('is_complete') == True:
+        is_valid, errors = validate_patient_required_fields(merged_data)
+        if not is_valid:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "Cannot mark profile complete. Required fields marked with (*) are missing.",
+                    "missing_fields": errors,
+                    "required_by": "Ohio Medicaid (ODM) and Electronic Visit Verification (EVV)"
+                }
+            )
+    
+    # Update in database
     result = await db.patients.update_one(
         {"id": patient_id, "organization_id": organization_id},
         {"$set": update_data}
