@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Users, Plus, Edit, Trash2, X, CheckCircle, FileText, Calendar, User } from "lucide-react";
+import { Users, Plus, Edit, Trash2, X, CheckCircle, FileText, Calendar, User, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import SearchFilter from "@/components/SearchFilter";
 import BulkActionToolbar from "@/components/BulkActionToolbar";
 import MultiStepForm from "@/components/MultiStepForm";
+import ICD10Lookup from "@/components/ICD10Lookup";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
