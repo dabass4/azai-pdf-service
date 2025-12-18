@@ -47,12 +47,12 @@ def validate_patient_required_fields(patient: dict) -> Tuple[bool, List[str]]:
     if sex == 'Unknown' or not sex:
         errors.append("Sex * is required (ODM & EVV)")
     
-    # Medicaid Number (*) - 12 digits for Ohio
+    # Medicaid Number (*) - Exactly 12 digits for Ohio
     medicaid = patient.get('medicaid_number', '').strip()
     if not medicaid or medicaid == '':
         errors.append("Medicaid Number * is required (ODM & EVV)")
-    elif len(medicaid) > 12:
-        errors.append("Medicaid Number must be 12 characters or less")
+    elif not re.match(r'^\d{12}$', medicaid):
+        errors.append("Medicaid Number must be exactly 12 digits (no letters or special characters)")
     
     # Address (*) - Required by both
     if not patient.get('address_street') or patient.get('address_street', '').strip() == '':
