@@ -572,9 +572,9 @@ const Patients = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="group_number">Group Number</Label>
+                    <Label htmlFor="primary_group_number">Group Number</Label>
                     <Input
-                      id="group_number"
+                      id="primary_group_number"
                       value={formData.other_insurance?.group_number || ""}
                       onChange={(e) => onFormDataChange(prev => ({
                         ...prev,
@@ -583,9 +583,9 @@ const Patients = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="policy_number">Policy Number</Label>
+                    <Label htmlFor="primary_policy_number">Policy Number</Label>
                     <Input
-                      id="policy_number"
+                      id="primary_policy_number"
                       value={formData.other_insurance?.policy_number || ""}
                       onChange={(e) => onFormDataChange(prev => ({
                         ...prev,
@@ -596,7 +596,7 @@ const Patients = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="policy_type">Policy Type</Label>
+                  <Label htmlFor="primary_policy_type">Policy Type</Label>
                   <Select
                     value={formData.other_insurance?.policy_type || ""}
                     onValueChange={(value) => onFormDataChange(prev => ({
