@@ -702,7 +702,13 @@ const Patients = () => {
                           <CardTitle className="text-sm font-semibold text-gray-500 uppercase">Medical Information</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2 text-sm">
-                          <div><span className="font-semibold">ICD-10:</span> {selectedPatientDetails.icd10_code || "N/A"}</div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-semibold">ICD-10:</span> 
+                            <ICD10Badge 
+                              code={selectedPatientDetails.icd10_code} 
+                              description={selectedPatientDetails.icd10_description} 
+                            />
+                          </div>
                           {selectedPatientDetails.icd10_description && (
                             <div className="text-gray-600 text-xs italic">{selectedPatientDetails.icd10_description}</div>
                           )}
