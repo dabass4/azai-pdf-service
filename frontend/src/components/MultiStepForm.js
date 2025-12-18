@@ -35,7 +35,7 @@ const MultiStepForm = ({
 
   // Restore from localStorage ONLY on initial mount
   // Using useRef to track if we've already restored
-  const hasRestoredRef = React.useRef(false);
+  const hasRestoredRef = useRef(false);
   
   useEffect(() => {
     // Only restore once on mount, not on subsequent renders
