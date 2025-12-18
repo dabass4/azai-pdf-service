@@ -30,9 +30,8 @@ These fields are marked with asterisk (*) and are MANDATORY before saving.
 * timezone               - Required for EVV timestamp accuracy
 ```
 
-#### Medical/Authorization:
+#### Medical:
 ```
-* prior_auth_number      - Required for claims authorization & EVV service validation
 * icd10_code             - Required for claims diagnosis & EVV service justification
 ```
 
@@ -40,6 +39,7 @@ These fields are marked with asterisk (*) and are MANDATORY before saving.
 ```
 - physician_name         - Rendering provider
 - physician_npi          - Provider identification (10 digits)
+- prior_auth_number      - Service authorization (if applicable to service type)
 ```
 
 ### Required by EVV ONLY:
