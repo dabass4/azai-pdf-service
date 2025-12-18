@@ -409,36 +409,18 @@ const Patients = () => {
     },
     {
       title: "Step 3: Physician Information",
-      description: "Enter the attending physician's details",
+      description: "Search by name or enter NPI number directly",
       requiredFields: ["physician_name", "physician_npi"],
       render: ({ formData, onFormDataChange, errors }) => (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="physician_name">Physician Name *</Label>
-            <Input
-              id="physician_name"
-              value={formData.physician_name || ""}
-              onChange={(e) => onFormDataChange({...formData, physician_name: e.target.value})}
-              className={errors.physician_name ? "border-red-500" : ""}
-            />
-            {errors.physician_name && <p className="text-xs text-red-500 mt-1">{errors.physician_name}</p>}
-          </div>
-          <div>
-            <Label htmlFor="physician_npi">NPI Number (10 digits) *</Label>
-            <Input
-              id="physician_npi"
-              value={formData.physician_npi || ""}
-              onChange={(e) => onFormDataChange({...formData, physician_npi: e.target.value})}
-              maxLength="10"
-              pattern="\d{10}"
-              placeholder="1234567890"
-              className={`font-mono ${errors.physician_npi ? "border-red-500" : ""}`}
-            />
-            <a href="https://npiregistry.cms.hhs.gov" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline mt-1 block">
-              Verify NPI via NPPES →
-            </a>
-            {errors.physician_npi && <p className="text-xs text-red-500 mt-1">{errors.physician_npi}</p>}
-          </div>
+        <div className="max-w-md">
+          <PhysicianLookup
+            npiValue={formData.physician_npi || ""}
+            nameValue={formData.physician_name || ""}
+            onNpiChange={(npi) => onFormDataChange({...formData, physician_npi: npi})}
+            onNameChange={(name) => onFormDataChange({...formData, physician_name: name})}
+            npiError={errors.physician_npi}
+            nameError={errors.physician_name}
+          />
         </div>
       )
     }
