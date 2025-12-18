@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { Search, CheckCircle, AlertCircle, ExternalLink, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
