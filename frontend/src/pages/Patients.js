@@ -218,7 +218,26 @@ const Patients = () => {
       icd10_description: patient.icd10_description || "",
       physician_name: patient.physician_name || "",
       physician_npi: patient.physician_npi || "",
-      medicaid_number: patient.medicaid_number || ""
+      medicaid_number: patient.medicaid_number || "",
+      // Other Insurance
+      has_other_insurance: patient.has_other_insurance || false,
+      other_insurance: patient.other_insurance || {
+        insurance_name: "",
+        subscriber_type: "Person",
+        relationship_to_patient: "",
+        group_number: "",
+        policy_number: "",
+        policy_type: ""
+      },
+      has_second_other_insurance: patient.has_second_other_insurance || false,
+      second_other_insurance: patient.second_other_insurance || {
+        insurance_name: "",
+        subscriber_type: "Person",
+        relationship_to_patient: "",
+        group_number: "",
+        policy_number: "",
+        policy_type: ""
+      }
     });
     setShowForm(true);
   };
