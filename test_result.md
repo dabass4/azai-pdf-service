@@ -114,6 +114,21 @@ backend:
         comment: "✅ Admin access control working: properly returns 403 for non-admin users accessing /admin/organizations and /admin/system/health"
 
 frontend:
+  - task: "Other Insurance (TPL) Section in Patient Form"
+    implemented: true
+    working: true
+    file: "Patients.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing Other Insurance (TPL) section in Patient form - verify 4-step form, Step 4 TPL functionality, insurance fields, and second insurance checkbox"
+      - working: true
+        agent: "testing"
+        comment: "✅ OTHER INSURANCE (TPL) SECTION FULLY FUNCTIONAL: Comprehensive testing completed with admin credentials (admin@medicaidservices.com). RESULTS: ✅ 4-Step Form: Patient form correctly displays 'Step 1 of 4' with proper step indicators (1, 2, 3, 4). ✅ Step Navigation: Successfully completed Steps 1-3 with all required fields (Basic Information, Address & Medical Info, Physician Information). ✅ Step 4 TPL Section: Step 4 correctly titled 'Step 4: Other Insurance (TPL)' with proper description 'Third Party Liability information for Medicaid audits'. ✅ Primary Insurance Checkbox: Main checkbox 'Is there other insurance covering this patient?' is visible and functional. ✅ Insurance Fields: All required fields appear when checkbox is clicked - Insurance Name, Subscriber Type (Person/Non-Person Entity radio buttons), Relationship to Patient dropdown, Group Number, Policy Number, Policy Type dropdown. ✅ Second Insurance: Second insurance checkbox 'Is there a second other insurance policy?' appears and functions correctly after enabling first insurance. ✅ Field Functionality: Successfully tested filling insurance fields with realistic data (Blue Cross Blue Shield, Person type, group/policy numbers). ✅ UI Implementation: Proper styling with gray backgrounds, blue borders, informational note about Medicaid audit requirements. All TPL form elements from the design specification are present and working correctly."
+
   - task: "ICD-10 Code Lookup Feature"
     implemented: true
     working: true
