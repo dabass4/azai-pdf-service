@@ -12,6 +12,11 @@ def validate_patient_required_fields(patient: dict) -> Tuple[bool, List[str]]:
     """
     Validate that all required fields for ODM Claims and EVV are present and valid.
     
+    Required fields: 12 total
+    - Basic info: first_name, last_name, dob, sex, medicaid_number
+    - Address: street, city, state, zip, latitude, longitude, timezone
+    - Medical: icd10_code
+    
     Returns:
         (is_valid, list_of_errors)
     """
