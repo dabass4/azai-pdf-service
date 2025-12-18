@@ -17,14 +17,12 @@ GitHub will show you commands. Copy and run these in your terminal:
 cd /app/pdf-service
 
 # Add your GitHub repository as remote
-git remote add origin https://github.com/YOUR_USERNAME/pdf-service.git
+git remote add origin https://github.com/dabass4/pdf-service.git
 
 # Push to GitHub
 git branch -M main
 git push -u origin main
 ```
-
-**Replace `YOUR_USERNAME` with your GitHub username!**
 
 ## ✅ Step 3: Deploy to Railway (5 minutes)
 
