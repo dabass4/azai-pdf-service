@@ -103,33 +103,19 @@ const LocationCapture = ({
   };
 
   const validateLocation = async (employeeLocation) => {
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/api/geofence/validate?` +
-        `employee_lat=${employeeLocation.latitude}&` +
-        `employee_lon=${employeeLocation.longitude}&` +
-        `patient_lat=${patientLocation.latitude}&` +
-        `patient_lon=${patientLocation.longitude}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // Add auth token if required
-            // 'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      if (response.ok) {
-        const validationResult = await response.json();
-        setValidation(validationResult);
-        
-        if (onValidationComplete) {
-          onValidationComplete(validationResult);
-        }
-      }
-    } catch (err) {
-      console.error('Location validation error:', err);
+    // GEOFENCING DISABLED - Always return valid
+    // TODO: Re-enable geofencing when ready
+    const validationResult = {
+      valid: true,
+      distance_feet: 0,
+      allowed_radius_feet: allowedRadiusFeet,
+      message: "Location captured (geofencing disabled)"
+    };
+    
+    setValidation(validationResult);
+    
+    if (onValidationComplete) {
+      onValidationComplete(validationResult);
     }
   };
 
