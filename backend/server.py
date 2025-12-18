@@ -4696,6 +4696,10 @@ from routes_notifications_extended import router as notifications_ext_router, se
 api_router.include_router(notifications_ext_router)
 set_notifications_ext_db(db)  # Inject database
 
+# Import and include ICD-10 lookup router
+from routes_icd10 import router as icd10_router
+api_router.include_router(icd10_router)
+
 # Include the router in the main app
 app.include_router(api_router)
 
