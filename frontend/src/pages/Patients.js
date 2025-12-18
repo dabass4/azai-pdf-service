@@ -481,6 +481,12 @@ const Patients = () => {
       requiredFields: [],
       render: ({ formData, onFormDataChange }) => (
         <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="bg-purple-600 text-white p-4 rounded-lg text-center">
+            <h3 className="text-xl font-bold">OTHER INSURANCE INFORMATION</h3>
+            <p className="text-sm">Ohio patients may change insurance monthly - please keep this updated</p>
+          </div>
+          
           {/* Primary Other Insurance */}
           <div className="p-4 border rounded-lg bg-gray-50">
             <div className="flex items-center gap-3 mb-4">
