@@ -78,8 +78,8 @@ const PhysicianLookup = ({
       const response = await axios.get(`${API}/npi/lookup/${npi}`);
       setLookupResult(response.data);
       
-      // Auto-fill name if empty
-      if (onNameChange && !nameValue && response.data.name) {
+      // Auto-fill name from NPI lookup
+      if (onNameChange && response.data.name) {
         onNameChange(response.data.name);
       }
       
