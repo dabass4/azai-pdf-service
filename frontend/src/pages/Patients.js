@@ -383,27 +383,22 @@ const Patients = () => {
                 />
                 {errors.prior_auth_number && <p className="text-xs text-red-500 mt-1">{errors.prior_auth_number}</p>}
               </div>
-              <div>
-                <Label htmlFor="icd10_code">ICD-10 Code *</Label>
-                <Input
-                  id="icd10_code"
+              <div className="md:col-span-2">
+                <ICD10Lookup
                   value={formData.icd10_code || ""}
-                  onChange={(e) => onFormDataChange({...formData, icd10_code: e.target.value})}
-                  placeholder="e.g., Z99.89"
-                  className={errors.icd10_code ? "border-red-500" : ""}
+                  onChange={(code) => onFormDataChange({...formData, icd10_code: code})}
+                  onDescriptionChange={(desc) => onFormDataChange({...formData, icd10_description: desc})}
+                  description={formData.icd10_description || ""}
+                  error={errors.icd10_code}
                 />
-                <a href="https://www.icd10data.com" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline mt-1 block">
-                  Search ICD-10 codes →
-                </a>
-                {errors.icd10_code && <p className="text-xs text-red-500 mt-1">{errors.icd10_code}</p>}
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="icd10_description">ICD-10 Description (Optional)</Label>
+                <Label htmlFor="icd10_description">ICD-10 Description (Auto-filled or Manual)</Label>
                 <Input
                   id="icd10_description"
                   value={formData.icd10_description || ""}
                   onChange={(e) => onFormDataChange({...formData, icd10_description: e.target.value})}
-                  placeholder="Optional description"
+                  placeholder="Description auto-fills from lookup"
                 />
               </div>
             </div>
