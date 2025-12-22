@@ -873,6 +873,7 @@ function App() {
                   <Route path="/notifications" element={<NotificationCenter />} />
                   <Route path="/notification-preferences" element={<NotificationPreferences />} />
                   <Route path="/patients" element={<Patients />} />
+                  <Route path="/test-form" element={<TestForm />} />
                   <Route path="/employees" element={<Employees />} />
                   <Route path="/payers" element={<Payers />} />
                   <Route path="/claims" element={<Claims />} />
