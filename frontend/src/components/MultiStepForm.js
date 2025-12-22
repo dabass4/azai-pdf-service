@@ -31,6 +31,9 @@ const MultiStepForm = ({
   // Safely get total steps - defensive coding
   const totalSteps = Array.isArray(steps) ? steps.length : 0;
   
+  // Debug logging
+  console.log('[MultiStepForm] Render - currentStep:', currentStep, 'totalSteps:', totalSteps, 'steps array length:', steps?.length);
+  
   // Get current step config safely
   const getCurrentStepConfig = useCallback(() => {
     if (!Array.isArray(steps) || steps.length === 0) return null;
