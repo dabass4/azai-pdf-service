@@ -211,24 +211,22 @@ const MultiStepForm = ({
                 </Button>
               )}
               
-              {!isLastStep ? (
-                <Button 
-                  type="button" 
-                  onClick={goToNextStep}
-                  className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
-                >
-                  Next
-                  <ChevronRight size={18} />
-                </Button>
-              ) : (
-                <Button 
-                  type="submit"
-                  className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
-                >
-                  <Check size={18} />
-                  {submitLabel}
-                </Button>
-              )}
+              {/* Always render both buttons, hide with CSS - prevents event propagation issues */}
+              <Button 
+                type="button" 
+                onClick={goToNextStep}
+                className={`bg-blue-600 hover:bg-blue-700 flex items-center gap-2 ${isLastStep ? 'hidden' : ''}`}
+              >
+                Next
+                <ChevronRight size={18} />
+              </Button>
+              <Button 
+                type="submit"
+                className={`bg-green-600 hover:bg-green-700 flex items-center gap-2 ${!isLastStep ? 'hidden' : ''}`}
+              >
+                <Check size={18} />
+                {submitLabel}
+              </Button>
             </div>
           </div>
         </form>
