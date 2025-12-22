@@ -87,17 +87,12 @@ const MultiStepForm = ({
   // Submit handler
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    console.log('[MultiStepForm] handleSubmit called! currentStep:', currentStep, 'isLastStep:', currentStep === totalSteps - 1);
-    if (!validateCurrentStep()) {
-      console.log('[MultiStepForm] Submit validation failed');
-      return;
-    }
+    if (!validateCurrentStep()) return;
     
-    console.log('[MultiStepForm] Calling onSubmit with formData');
     if (typeof onSubmit === 'function') {
       onSubmit(formData);
     }
-  }, [validateCurrentStep, onSubmit, formData, currentStep, totalSteps]);
+  }, [validateCurrentStep, onSubmit, formData]);
 
   // Cancel handler
   const handleCancel = useCallback(() => {
