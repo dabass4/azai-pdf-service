@@ -91,9 +91,6 @@ const MultiStepForm = ({
   const currentStepConfig = steps[currentStep];
   const isLastStep = currentStep === steps.length - 1;
   const isFirstStep = currentStep === 0;
-  
-  // DEBUG: Log every render
-  console.log('[MultiStepForm] RENDER - currentStep:', currentStep, 'steps.length:', steps.length, 'isLastStep:', isLastStep);
 
   return (
     <Card className="border-2 border-blue-200 shadow-lg">
