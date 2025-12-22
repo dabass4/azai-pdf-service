@@ -60,29 +60,19 @@ const MultiStepForm = ({
 
   // Navigation handlers - using functional updates to avoid stale state
   const goToNextStep = useCallback(() => {
-    console.log('[MultiStepForm] goToNextStep called, currentStep:', currentStep, 'totalSteps:', totalSteps);
-    if (!validateCurrentStep()) {
-      console.log('[MultiStepForm] Validation failed');
-      return;
-    }
+    if (!validateCurrentStep()) return;
     
     // Use setTimeout to ensure the click event completes before state change
     // This prevents the click from propagating to the newly rendered submit button
     setTimeout(() => {
       setCurrentStep(prevStep => {
         const nextStep = prevStep + 1;
-        console.log('[MultiStepForm] Transitioning from step', prevStep, 'to', nextStep);
-        // Ensure we don't go beyond the last step
-        if (nextStep >= totalSteps) {
-          console.log('[MultiStepForm] Already at last step, staying at', prevStep);
-          return prevStep;
-        }
-        console.log('[MultiStepForm] Moving to step', nextStep);
+        if (nextStep >= totalSteps) return prevStep;
         return nextStep;
       });
       setErrors({});
     }, 0);
-  }, [validateCurrentStep, totalSteps, currentStep]);
+  }, [validateCurrentStep, totalSteps]);
 
   const goToPreviousStep = useCallback(() => {
     setCurrentStep(prevStep => {
