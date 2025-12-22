@@ -16,6 +16,7 @@ import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import LandingPage from "@/pages/LandingPage";
 import Patients from "@/pages/Patients";
+import TestForm from "@/pages/TestForm";
 import Employees from "@/pages/Employees";
 import TimesheetEditor from "@/pages/TimesheetEditor";
 import ManualClockIn from "@/pages/ManualClockIn";
