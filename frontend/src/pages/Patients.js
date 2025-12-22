@@ -291,13 +291,8 @@ const Patients = () => {
     });
   };
 
-  // Use form steps from separate component for cleaner code
-  const formSteps = getPatientFormSteps();
-
-  // Debug: Verify 4 steps are defined
-  if (formSteps.length !== 4) {
-    console.error(`[Patients] ERROR: formSteps has ${formSteps.length} steps, expected 4!`);
-  }
+  // Use memoized form steps to prevent recreation on every render
+  const formSteps = useMemo(() => getPatientFormSteps(), []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
