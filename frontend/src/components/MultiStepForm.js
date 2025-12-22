@@ -1,134 +1,145 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
- * Reusable Multi-Step Form Component
+ * MultiStepForm - A simple, robust multi-step form component
  * 
- * @param {Array} steps - Array of step objects with { title, description, fields, render }
- * @param {Object} formData - Current form data
+ * COMPLETELY REWRITTEN to fix the "Step 4 flash and disappear" bug.
+ * Uses a straightforward approach with minimal state.
+ * 
+ * @param {Array} steps - Array of step objects with { title, description, requiredFields, render }
+ * @param {Object} formData - Current form data (controlled externally)
  * @param {Function} onFormDataChange - Callback when form data changes
  * @param {Function} onSubmit - Callback when form is submitted
  * @param {Function} onCancel - Callback when form is cancelled
  * @param {string} submitLabel - Label for submit button (default: "Submit")
- * @param {string} storageKey - LocalStorage key for auto-save (optional)
  */
 const MultiStepForm = ({ 
-  steps, 
-  formData, 
+  steps = [], 
+  formData = {}, 
   onFormDataChange, 
   onSubmit, 
   onCancel,
-  submitLabel = "Submit",
-  storageKey = null
+  submitLabel = "Submit"
 }) => {
+  // Single source of truth for current step
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState({});
 
-  // DISABLED: Auto-save to localStorage - was causing Step 4 flash issue
-  // useEffect(() => {
-  //   if (storageKey && formData && Object.keys(formData).length > 0) {
-  //     localStorage.setItem(storageKey, JSON.stringify({ formData, currentStep }));
-  //   }
-  // }, [formData, currentStep, storageKey]);
+  // Safely get total steps - defensive coding
+  const totalSteps = Array.isArray(steps) ? steps.length : 0;
+  
+  // Get current step config safely
+  const getCurrentStepConfig = useCallback(() => {
+    if (!Array.isArray(steps) || steps.length === 0) return null;
+    if (currentStep < 0 || currentStep >= steps.length) return null;
+    return steps[currentStep];
+  }, [steps, currentStep]);
 
-  // DISABLED: Restore from localStorage - was causing Step 4 flash issue
-  // const hasRestoredRef = useRef(false);
-  // useEffect(() => { ... }, []);
+  const stepConfig = getCurrentStepConfig();
 
-  // Clear localStorage when form is submitted or cancelled
-  const clearStorage = () => {
-    if (storageKey) {
-      localStorage.removeItem(storageKey);
-    }
-  };
-
-  const validateStep = () => {
-    const currentStepConfig = steps[currentStep];
-    const requiredFields = currentStepConfig.requiredFields || [];
+  // Validation function
+  const validateCurrentStep = useCallback(() => {
+    if (!stepConfig) return true;
+    
+    const requiredFields = stepConfig.requiredFields || [];
     const newErrors = {};
 
     requiredFields.forEach(field => {
-      if (!formData[field] || formData[field].toString().trim() === "") {
+      const value = formData[field];
+      if (value === undefined || value === null || value.toString().trim() === "") {
         newErrors[field] = "This field is required";
       }
     });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [stepConfig, formData]);
 
-  const handleNext = () => {
-    if (validateStep()) {
-      if (currentStep < steps.length - 1) {
-        setCurrentStep(prev => prev + 1);
-        setErrors({});
-      }
-    }
-  };
+  // Navigation handlers - using functional updates to avoid stale state
+  const goToNextStep = useCallback(() => {
+    if (!validateCurrentStep()) return;
+    
+    setCurrentStep(prevStep => {
+      const nextStep = prevStep + 1;
+      // Ensure we don't go beyond the last step
+      if (nextStep >= totalSteps) return prevStep;
+      return nextStep;
+    });
+    setErrors({});
+  }, [validateCurrentStep, totalSteps]);
 
-  const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
-      setErrors({});
-    }
-  };
+  const goToPreviousStep = useCallback(() => {
+    setCurrentStep(prevStep => {
+      const nextStep = prevStep - 1;
+      // Ensure we don't go below 0
+      if (nextStep < 0) return prevStep;
+      return nextStep;
+    });
+    setErrors({});
+  }, []);
 
-  const handleSubmit = (e) => {
+  // Submit handler
+  const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    if (validateStep()) {
-      clearStorage();
+    if (!validateCurrentStep()) return;
+    
+    if (typeof onSubmit === 'function') {
       onSubmit(formData);
     }
-  };
+  }, [validateCurrentStep, onSubmit, formData]);
 
-  const handleCancel = () => {
-    clearStorage();
-    onCancel();
-  };
+  // Cancel handler
+  const handleCancel = useCallback(() => {
+    if (typeof onCancel === 'function') {
+      onCancel();
+    }
+  }, [onCancel]);
 
-  const currentStepConfig = steps[currentStep];
-  const isLastStep = currentStep === steps.length - 1;
-  const isFirstStep = currentStep === 0;
-
-  // Safety check - if currentStepConfig is undefined, something is wrong
-  if (!currentStepConfig) {
-    console.error('MultiStepForm: currentStepConfig is undefined!', {
-      currentStep,
-      stepsLength: steps.length,
-      steps: steps.map(s => s.title)
-    });
-    return <div>Error: Invalid step configuration</div>;
+  // Error state - no valid steps
+  if (totalSteps === 0 || !stepConfig) {
+    return (
+      <Card className="border-2 border-red-200">
+        <CardContent className="p-6">
+          <p className="text-red-600">Error: No form steps configured</p>
+        </CardContent>
+      </Card>
+    );
   }
+
+  const isFirstStep = currentStep === 0;
+  const isLastStep = currentStep === totalSteps - 1;
+  const progressPercent = Math.round(((currentStep + 1) / totalSteps) * 100);
 
   return (
     <Card className="border-2 border-blue-200 shadow-lg">
       <CardHeader className="bg-blue-50">
-        <CardTitle>{currentStepConfig.title}</CardTitle>
-        <CardDescription>{currentStepConfig.description}</CardDescription>
+        <CardTitle>{stepConfig.title}</CardTitle>
+        <CardDescription>{stepConfig.description}</CardDescription>
         
-        {/* Progress Indicator */}
+        {/* Progress Bar */}
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">
-              Step {currentStep + 1} of {steps.length}
+              Step {currentStep + 1} of {totalSteps}
             </span>
             <span className="text-sm text-gray-500">
-              {Math.round(((currentStep + 1) / steps.length) * 100)}% Complete
+              {progressPercent}% Complete
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+              style={{ width: `${progressPercent}%` }}
             />
           </div>
           
           {/* Step Indicators */}
           <div className="flex justify-between mt-3">
             {steps.map((step, index) => (
-              <div key={index} className="flex items-center">
+              <div key={`step-indicator-${index}`} className="flex items-center">
                 <div className={`
                   flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold
                   ${index < currentStep ? 'bg-green-500 text-white' : 
@@ -137,7 +148,7 @@ const MultiStepForm = ({
                 `}>
                   {index < currentStep ? <Check size={16} /> : index + 1}
                 </div>
-                {index < steps.length - 1 && (
+                {index < totalSteps - 1 && (
                   <div className={`h-0.5 w-8 mx-1 ${index < currentStep ? 'bg-green-500' : 'bg-gray-300'}`} />
                 )}
               </div>
@@ -148,9 +159,12 @@ const MultiStepForm = ({
       
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit}>
-          {/* Render current step */}
-          <div className="space-y-6">
-            {currentStepConfig.render({ formData, onFormDataChange, errors })}
+          {/* Render current step content */}
+          <div className="space-y-6 min-h-[200px]">
+            {stepConfig.render && typeof stepConfig.render === 'function' 
+              ? stepConfig.render({ formData, onFormDataChange, errors })
+              : <p className="text-gray-500">No content for this step</p>
+            }
           </div>
 
           {/* Navigation Buttons */}
@@ -168,7 +182,7 @@ const MultiStepForm = ({
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={handlePrevious}
+                  onClick={goToPreviousStep}
                   className="flex items-center gap-2"
                 >
                   <ChevronLeft size={18} />
@@ -179,7 +193,7 @@ const MultiStepForm = ({
               {!isLastStep ? (
                 <Button 
                   type="button" 
-                  onClick={handleNext}
+                  onClick={goToNextStep}
                   className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
                 >
                   Next
