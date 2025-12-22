@@ -244,22 +244,22 @@ echo "Testing AZAI after security updates..."
 echo "[1/8] Testing backend startup..."
 sudo supervisorctl restart backend
 sleep 5
-curl -s https://azai-healthcare.preview.emergentagent.com/api/health || echo "FAIL: Backend not responding"
+curl -s https://medicaid-claims.preview.emergentagent.com/api/health || echo "FAIL: Backend not responding"
 
 # 2. Test Database Connection
 echo "[2/8] Testing database connection..."
 # Should return list of timesheets
-curl -s https://azai-healthcare.preview.emergentagent.com/api/timesheets | grep -q "id" && echo "PASS" || echo "FAIL"
+curl -s https://medicaid-claims.preview.emergentagent.com/api/timesheets | grep -q "id" && echo "PASS" || echo "FAIL"
 
 # 3. Test Authentication
 echo "[3/8] Testing authentication..."
-curl -s -X POST https://azai-healthcare.preview.emergentagent.com/api/auth/login \
+curl -s -X POST https://medicaid-claims.preview.emergentagent.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@medicaidservices.com","password":"Admin2024!"}' | grep -q "token" && echo "PASS" || echo "FAIL"
 
 # 4. Test PDF Upload (CRITICAL)
 echo "[4/8] Testing PDF timesheet upload..."
-curl -s -X POST https://azai-healthcare.preview.emergentagent.com/api/timesheets/upload \
+curl -s -X POST https://medicaid-claims.preview.emergentagent.com/api/timesheets/upload \
   -F "file=@/tmp/test_timesheet.pdf" \
   -F "organization_id=test-org" | grep -q "extracted_data" && echo "PASS" || echo "FAIL"
 
@@ -269,7 +269,7 @@ tail -n 50 /var/log/supervisor/backend.err.log | grep -i "error" && echo "WARN: 
 
 # 6. Test Frontend
 echo "[6/8] Testing frontend..."
-curl -s https://azai-healthcare.preview.emergentagent.com/ | grep -q "AZAI" && echo "PASS" || echo "FAIL"
+curl -s https://medicaid-claims.preview.emergentagent.com/ | grep -q "AZAI" && echo "PASS" || echo "FAIL"
 
 # 7. Memory Check
 echo "[7/8] Checking memory usage..."
