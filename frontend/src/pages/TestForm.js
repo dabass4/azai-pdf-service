@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import MultiStepForm from "@/components/MultiStepForm";
+import SimpleMultiStepForm from "@/components/SimpleMultiStepForm";
 
 const TestForm = () => {
   const [formData, setFormData] = useState({
