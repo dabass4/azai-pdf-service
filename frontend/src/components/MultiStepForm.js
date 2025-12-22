@@ -25,13 +25,6 @@ const MultiStepForm = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState({});
-  
-  // Ensure currentStep stays within bounds if steps array changes
-  useEffect(() => {
-    if (currentStep >= steps.length) {
-      setCurrentStep(steps.length - 1);
-    }
-  }, [steps.length, currentStep]);
 
   // DISABLED: Auto-save to localStorage - was causing Step 4 flash issue
   // useEffect(() => {
