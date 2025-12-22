@@ -92,6 +92,16 @@ const MultiStepForm = ({
   const isLastStep = currentStep === steps.length - 1;
   const isFirstStep = currentStep === 0;
 
+  // Safety check - if currentStepConfig is undefined, something is wrong
+  if (!currentStepConfig) {
+    console.error('MultiStepForm: currentStepConfig is undefined!', {
+      currentStep,
+      stepsLength: steps.length,
+      steps: steps.map(s => s.title)
+    });
+    return <div>Error: Invalid step configuration</div>;
+  }
+
   return (
     <Card className="border-2 border-blue-200 shadow-lg">
       <CardHeader className="bg-blue-50">
