@@ -135,11 +135,7 @@ const Employees = () => {
         formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3, 5)}-${cleaned.slice(5, 9)}`;
       }
       setFormData(prev => ({ ...prev, [name]: formatted }));
-    } else if (name === "staff_pin") {
-      // Staff PIN - digits only, max 9
-      const cleaned = value.replace(/\D/g, "").slice(0, 9);
-      setFormData(prev => ({ ...prev, [name]: cleaned }));
-    } else if (name === "phone" || name === "emergency_contact_phone") {
+    } else if (name === "phone") {
       // Format phone with dashes
       const cleaned = value.replace(/\D/g, "");
       let formatted = cleaned;
