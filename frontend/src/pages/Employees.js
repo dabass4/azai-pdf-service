@@ -180,6 +180,12 @@ const Employees = () => {
       return;
     }
 
+    // Validate at least one category is selected
+    if (!formData.categories || formData.categories.length === 0) {
+      toast.error("Please select at least one employee category (RN, LPN, HHA, or DSP)");
+      return;
+    }
+
     try {
       // Mark as complete when manually saving
       const submitData = {
