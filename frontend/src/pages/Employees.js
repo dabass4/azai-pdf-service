@@ -785,15 +785,6 @@ const Employees = () => {
                             )}
                           </div>
                         </div>
-                        
-                        <div>
-                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Emergency Contact</h4>
-                          <div className="space-y-1 text-sm text-gray-700">
-                            <p className="font-semibold">{employee.emergency_contact_name}</p>
-                            <p className="font-mono text-xs">{employee.emergency_contact_phone}</p>
-                            <p className="text-gray-600 text-xs italic">{employee.emergency_contact_relation}</p>
-                          </div>
-                        </div>
 
                         <div>
                           <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Certifications</h4>
