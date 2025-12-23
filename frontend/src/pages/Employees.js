@@ -283,9 +283,6 @@ const Employees = () => {
       hourly_rate: "",
       employment_status: "",
       staff_pin: "",
-      emergency_contact_name: "",
-      emergency_contact_phone: "",
-      emergency_contact_relation: "",
       certifications: "",
       license_number: "",
       license_expiration: ""
