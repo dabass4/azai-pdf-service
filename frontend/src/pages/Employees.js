@@ -217,6 +217,22 @@ const Employees = () => {
     }
   };
 
+  const handleCategoryChange = (categoryCode, checked) => {
+    setFormData(prev => {
+      const currentCategories = prev.categories || [];
+      if (checked) {
+        // Add category if not already present
+        if (!currentCategories.includes(categoryCode)) {
+          return { ...prev, categories: [...currentCategories, categoryCode] };
+        }
+      } else {
+        // Remove category
+        return { ...prev, categories: currentCategories.filter(c => c !== categoryCode) };
+      }
+      return prev;
+    });
+  };
+
   const handleEdit = (employee) => {
     setEditingEmployee(employee);
     setFormData({
