@@ -574,21 +574,6 @@ const Employees = () => {
                         data-testid="hourly-rate-input"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="staff_pin">Staff PIN (9 digits) *</Label>
-                      <Input
-                        id="staff_pin"
-                        name="staff_pin"
-                        value={formData.staff_pin}
-                        onChange={handleInputChange}
-                        placeholder="123456789"
-                        maxLength="9"
-                        required
-                        data-testid="staff-pin-input"
-                        className="font-mono"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Required for Sandata EVV telephony</p>
-                    </div>
                   </div>
                 </div>
 
