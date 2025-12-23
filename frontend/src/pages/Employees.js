@@ -47,6 +47,7 @@ const Employees = () => {
     department: "",
     hourly_rate: "",
     employment_status: "",
+    staff_pin: "",  // EVV/Sandata required - 9 digits
     emergency_contact_name: "",
     emergency_contact_phone: "",
     emergency_contact_relation: "",
