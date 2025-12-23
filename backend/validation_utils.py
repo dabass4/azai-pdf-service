@@ -6,6 +6,18 @@ Enforces required fields marked with asterisk (*)
 from datetime import datetime
 from typing import Dict, List, Tuple
 import re
+import random
+
+
+def generate_staff_pin() -> str:
+    """
+    Generate a 9-digit Staff PIN for Sandata EVV transmission.
+    This PIN is auto-generated when transmitting to Sandata.
+    
+    Returns:
+        str: 9-digit PIN string
+    """
+    return ''.join([str(random.randint(0, 9)) for _ in range(9)])
 
 
 def validate_patient_required_fields(patient: dict) -> Tuple[bool, List[str]]:
