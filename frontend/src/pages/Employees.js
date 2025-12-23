@@ -278,6 +278,7 @@ const Employees = () => {
       department: "",
       hourly_rate: "",
       employment_status: "",
+      categories: [],
       certifications: "",
       license_number: "",
       license_expiration: ""
