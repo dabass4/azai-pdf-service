@@ -539,31 +539,36 @@ const Employees = () => {
                       Employee Categories * <span className="text-xs font-normal text-gray-500">(Select all that apply)</span>
                     </Label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {EMPLOYEE_CATEGORIES.map((category) => (
-                        <div 
-                          key={category.code}
-                          className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-all ${
-                            formData.categories?.includes(category.code) 
-                              ? 'border-blue-500 bg-blue-50' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => handleCategoryChange(category.code, !formData.categories?.includes(category.code))}
-                        >
-                          <Checkbox 
-                            id={`category-${category.code}`}
-                            checked={formData.categories?.includes(category.code)}
-                            onCheckedChange={(checked) => handleCategoryChange(category.code, checked)}
-                          />
-                          <div className="flex flex-col">
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${category.color}`}>
-                              {category.code}
-                            </span>
-                            <span className="text-xs text-gray-600 mt-1">{category.label}</span>
-                          </div>
-                        </div>
-                      ))}
+                      {EMPLOYEE_CATEGORIES.map((category) => {
+                        const isSelected = formData.categories?.includes(category.code) || false;
+                        return (
+                          <label 
+                            key={category.code}
+                            htmlFor={`category-${category.code}`}
+                            className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                              isSelected 
+                                ? 'border-blue-500 bg-blue-50' 
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              id={`category-${category.code}`}
+                              checked={isSelected}
+                              onChange={(e) => handleCategoryChange(category.code, e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div className="flex flex-col">
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded ${category.color}`}>
+                                {category.code}
+                              </span>
+                              <span className="text-xs text-gray-600 mt-1">{category.label}</span>
+                            </div>
+                          </label>
+                        );
+                      })}
                     </div>
-                    {formData.categories?.length === 0 && (
+                    {(!formData.categories || formData.categories.length === 0) && (
                       <p className="text-xs text-amber-600 mt-2">⚠️ Please select at least one category</p>
                     )}
                   </div>
