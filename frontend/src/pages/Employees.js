@@ -240,6 +240,7 @@ const Employees = () => {
       department: employee.department || "",
       hourly_rate: employee.hourly_rate || "",
       employment_status: employee.employment_status || "Full-time",
+      staff_pin: employee.staff_pin || "",
       emergency_contact_name: employee.emergency_contact_name || "",
       emergency_contact_phone: employee.emergency_contact_phone || "",
       emergency_contact_relation: employee.emergency_contact_relation || "",
