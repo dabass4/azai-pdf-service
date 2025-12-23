@@ -168,6 +168,20 @@ const Employees = () => {
       return;
     }
 
+    // Validate Staff PIN (9 digits) - Required for Sandata EVV
+    const staffPinDigits = formData.staff_pin.replace(/\D/g, "");
+    if (staffPinDigits.length !== 9) {
+      toast.error("Staff PIN must be exactly 9 digits (required for Sandata EVV)");
+      return;
+    }
+
+    // Validate Phone (10 digits)
+    const phoneDigits = formData.phone.replace(/\D/g, "");
+    if (phoneDigits.length !== 10) {
+      toast.error("Phone number must be exactly 10 digits");
+      return;
+    }
+
     try {
       // Mark as complete when manually saving
       const submitData = {
@@ -190,7 +204,18 @@ const Employees = () => {
       await fetchEmployees();
     } catch (e) {
       console.error("Error saving employee:", e);
-      toast.error(e.response?.data?.detail || "Failed to save employee");
+      const errorDetail = e.response?.data?.detail;
+      if (typeof errorDetail === 'object' && errorDetail !== null) {
+        const message = errorDetail.message || "Validation failed";
+        const missingFields = errorDetail.missing_fields;
+        if (missingFields && Array.isArray(missingFields)) {
+          toast.error(`${message}: ${missingFields.join(', ')}`);
+        } else {
+          toast.error(message);
+        }
+      } else {
+        toast.error(errorDetail || "Failed to save employee");
+      }
     }
   };
 
