@@ -168,13 +168,6 @@ const Employees = () => {
       return;
     }
 
-    // Validate Staff PIN (9 digits) - Required for Sandata EVV
-    const staffPinDigits = formData.staff_pin.replace(/\D/g, "");
-    if (staffPinDigits.length !== 9) {
-      toast.error("Staff PIN must be exactly 9 digits (required for Sandata EVV)");
-      return;
-    }
-
     // Validate Phone (10 digits)
     const phoneDigits = formData.phone.replace(/\D/g, "");
     if (phoneDigits.length !== 10) {
