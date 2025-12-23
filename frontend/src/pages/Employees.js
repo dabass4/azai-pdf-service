@@ -526,6 +526,42 @@ const Employees = () => {
                 {/* Employment Information */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 text-gray-800">Employment Information</h3>
+                  
+                  {/* Employee Categories - Multi-select */}
+                  <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
+                    <Label className="text-sm font-semibold text-gray-700 mb-3 block">
+                      Employee Categories * <span className="text-xs font-normal text-gray-500">(Select all that apply)</span>
+                    </Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {EMPLOYEE_CATEGORIES.map((category) => (
+                        <div 
+                          key={category.code}
+                          className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                            formData.categories?.includes(category.code) 
+                              ? 'border-blue-500 bg-blue-50' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => handleCategoryChange(category.code, !formData.categories?.includes(category.code))}
+                        >
+                          <Checkbox 
+                            id={`category-${category.code}`}
+                            checked={formData.categories?.includes(category.code)}
+                            onCheckedChange={(checked) => handleCategoryChange(category.code, checked)}
+                          />
+                          <div className="flex flex-col">
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${category.color}`}>
+                              {category.code}
+                            </span>
+                            <span className="text-xs text-gray-600 mt-1">{category.label}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {formData.categories?.length === 0 && (
+                      <p className="text-xs text-amber-600 mt-2">⚠️ Please select at least one category</p>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="employee_id">Employee ID</Label>
