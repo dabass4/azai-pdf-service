@@ -783,7 +783,7 @@ const Employees = () => {
                         <div className="flex-1 flex justify-between items-start">
                           <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                          <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                          <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
                             {employee.first_name} {employee.middle_name} {employee.last_name}
                             {employee.is_complete === false && (
                               <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
@@ -796,6 +796,21 @@ const Employees = () => {
                               </span>
                             )}
                           </h3>
+                          {/* Employee Categories */}
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {employee.categories && employee.categories.length > 0 ? (
+                              employee.categories.map(code => {
+                                const cat = EMPLOYEE_CATEGORIES.find(c => c.code === code);
+                                return cat ? (
+                                  <span key={code} className={`text-xs font-bold px-2 py-0.5 rounded ${cat.color}`}>
+                                    {cat.code}
+                                  </span>
+                                ) : null;
+                              })
+                            ) : (
+                              <span className="text-xs text-amber-600">⚠️ No category</span>
+                            )}
+                          </div>
                           <div className="space-y-1 text-sm">
                             <p className="text-gray-600"><span className="font-semibold">DOB:</span> {employee.date_of_birth}</p>
                             <p className="text-gray-600"><span className="font-semibold">Sex:</span> {employee.sex}</p>
