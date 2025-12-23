@@ -606,50 +606,6 @@ const Employees = () => {
                   </div>
                 </div>
 
-                {/* Emergency Contact */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Emergency Contact</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="emergency_contact_name">Name *</Label>
-                      <Input
-                        id="emergency_contact_name"
-                        name="emergency_contact_name"
-                        value={formData.emergency_contact_name}
-                        onChange={handleInputChange}
-                        required
-                        data-testid="emergency-name-input"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emergency_contact_phone">Phone *</Label>
-                      <Input
-                        id="emergency_contact_phone"
-                        name="emergency_contact_phone"
-                        value={formData.emergency_contact_phone}
-                        onChange={handleInputChange}
-                        placeholder="XXX-XXX-XXXX"
-                        maxLength="12"
-                        required
-                        data-testid="emergency-phone-input"
-                        className="font-mono"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emergency_contact_relation">Relationship *</Label>
-                      <Input
-                        id="emergency_contact_relation"
-                        name="emergency_contact_relation"
-                        value={formData.emergency_contact_relation}
-                        onChange={handleInputChange}
-                        placeholder="e.g., Spouse, Parent"
-                        required
-                        data-testid="emergency-relation-input"
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Certifications & Licenses */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 text-gray-800">Certifications & Licenses</h3>
