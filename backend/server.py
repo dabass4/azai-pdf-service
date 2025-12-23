@@ -461,15 +461,20 @@ class EmployeeProfile(BaseModel):
     hourly_rate: Optional[float] = None
     employment_status: str = "Active"  # Full-time, Part-time, Contract, Active
     
+    # Employee Categories - Healthcare worker types
+    # RN = Registered Nurse, LPN = Licensed Practical Nurse
+    # HHA = Home Health Aide, DSP = Direct Support Professional
+    categories: List[str] = []  # Array of category codes: ["RN", "LPN", "HHA", "DSP"]
+    
     # EVV DCW Fields
-    staff_pin: Optional[str] = None  # EVV: Staff PIN for telephony (9 digits)
+    staff_pin: Optional[str] = None  # EVV: Staff PIN for telephony (9 digits) - Auto-generated for Sandata
     staff_other_id: Optional[str] = None  # EVV: External system ID
     staff_position: Optional[str] = None  # EVV: Position code (3 characters)
     
-    # Emergency Contact
-    emergency_contact_name: str = ""
-    emergency_contact_phone: str = ""
-    emergency_contact_relation: str = ""
+    # Emergency Contact (optional)
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
     
     # Certifications & Licenses
     certifications: Optional[str] = None  # Comma-separated or free text
