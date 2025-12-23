@@ -348,6 +348,19 @@ const Employees = () => {
               <CardDescription>All employee data is securely stored and encrypted</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
+              {/* Sandata Compliance Banner */}
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Shield className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">Sandata EVV Compliance</p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      Fields marked with * are required for Sandata EVV submission. SSN is stored securely and only the last 4 digits are displayed.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Personal Information */}
                 <div>
