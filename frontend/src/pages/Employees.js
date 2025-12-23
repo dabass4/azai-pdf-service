@@ -238,6 +238,7 @@ const Employees = () => {
       department: employee.department || "",
       hourly_rate: employee.hourly_rate || "",
       employment_status: employee.employment_status || "Full-time",
+      categories: employee.categories || [],
       certifications: employee.certifications || "",
       license_number: employee.license_number || "",
       license_expiration: employee.license_expiration || ""
