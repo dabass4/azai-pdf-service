@@ -181,12 +181,8 @@ def validate_employee_required_fields(employee: dict) -> Tuple[bool, List[str]]:
     elif status != 'Active':
         errors.append("Employment Status must be 'Active' to submit claims/EVV")
     
-    # Staff PIN (*) - Required by EVV (9 digits)
-    staff_pin = employee.get('staff_pin', '').strip()
-    if not staff_pin:
-        errors.append("Staff PIN * is required (EVV telephony)")
-    elif not re.match(r'^\d{9}$', staff_pin):
-        errors.append("Staff PIN must be exactly 9 digits")
+    # Staff PIN - Auto-generated when transmitting to Sandata, not required from user
+    # (Removed from validation - will be auto-generated at transmission time)
     
     return (len(errors) == 0, errors)
 
