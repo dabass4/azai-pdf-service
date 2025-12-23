@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { UserCheck, Plus, Edit, Trash2, X, Shield, CheckCircle } from "lucide-react";
+import { UserCheck, Plus, Edit, Trash2, X, Shield, CheckCircle, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,14 @@ const US_STATES = [
   "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
   "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
   "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+];
+
+// Employee categories for healthcare workers
+const EMPLOYEE_CATEGORIES = [
+  { code: "RN", label: "Registered Nurse", color: "bg-blue-100 text-blue-800" },
+  { code: "LPN", label: "Licensed Practical Nurse", color: "bg-green-100 text-green-800" },
+  { code: "HHA", label: "Home Health Aide", color: "bg-purple-100 text-purple-800" },
+  { code: "DSP", label: "Direct Support Professional", color: "bg-orange-100 text-orange-800" }
 ];
 
 const Employees = () => {
@@ -47,6 +55,7 @@ const Employees = () => {
     department: "",
     hourly_rate: "",
     employment_status: "",
+    categories: [],  // Array of category codes: RN, LPN, HHA, DSP
     certifications: "",
     license_number: "",
     license_expiration: ""
