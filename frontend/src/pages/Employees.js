@@ -745,15 +745,6 @@ const Employees = () => {
                             <p><span className="font-semibold">Status:</span> {employee.employment_status}</p>
                             <p><span className="font-semibold">Hired:</span> {employee.hire_date}</p>
                             {employee.hourly_rate && <p><span className="font-semibold">Rate:</span> ${employee.hourly_rate}/hr</p>}
-                            {employee.staff_pin ? (
-                              <p className="flex items-center gap-1">
-                                <span className="font-semibold">Staff PIN:</span> 
-                                <span className="font-mono">{employee.staff_pin}</span>
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                              </p>
-                            ) : (
-                              <p className="text-amber-600 text-xs font-semibold">⚠️ Staff PIN Missing</p>
-                            )}
                           </div>
                         </div>
 
