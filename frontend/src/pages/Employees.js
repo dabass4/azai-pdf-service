@@ -698,17 +698,12 @@ const Employees = () => {
                           </div>
                         </div>
                         
-                        <div>
-                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Employment</h4>
-                          <div className="space-y-1 text-sm text-gray-700">
-                            {employee.employee_id && <p><span className="font-semibold">ID:</span> {employee.employee_id}</p>}
-                            <p><span className="font-semibold">Title:</span> {employee.job_title}</p>
-                            {employee.department && <p><span className="font-semibold">Dept:</span> {employee.department}</p>}
-                            <p><span className="font-semibold">Status:</span> {employee.employment_status}</p>
-                            <p><span className="font-semibold">Hired:</span> {employee.hire_date}</p>
-                            {employee.hourly_rate && <p><span className="font-semibold">Rate:</span> ${employee.hourly_rate}/hr</p>}
+                        {employee.employee_id && (
+                          <div>
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Employee ID</h4>
+                            <p className="text-sm text-gray-700 font-mono">{employee.employee_id}</p>
                           </div>
-                        </div>
+                        )}
                           </div>
                           
                           <div className="flex gap-2 ml-4">
