@@ -786,22 +786,7 @@ const Employees = () => {
                             <p><span className="font-semibold">Hired:</span> {employee.hire_date}</p>
                             {employee.hourly_rate && <p><span className="font-semibold">Rate:</span> ${employee.hourly_rate}/hr</p>}
                           </div>
-                        </div>
-
-                        <div>
-                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Certifications</h4>
-                          <div className="space-y-1 text-sm text-gray-700">
-                            {employee.certifications && <p className="text-xs">{employee.certifications}</p>}
-                            {employee.license_number && (
-                              <>
-                                <p className="text-xs"><span className="font-semibold">License:</span> {employee.license_number}</p>
-                                {employee.license_expiration && <p className="text-xs"><span className="font-semibold">Expires:</span> {employee.license_expiration}</p>}
-                              </>
-                            )}
-                            {!employee.certifications && !employee.license_number && <p className="text-gray-400 text-xs italic">None listed</p>}
-                          </div>
-                        </div>
-                          </div>
+803|                          </div>
                           
                           <div className="flex gap-2 ml-4">
                             <Button variant="ghost" size="icon" onClick={() => handleEdit(employee)} data-testid={`edit-employee-${employee.id}`}>
