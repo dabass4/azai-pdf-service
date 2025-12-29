@@ -55,10 +55,7 @@ const Employees = () => {
     department: "",
     hourly_rate: "",
     employment_status: "",
-    categories: [],  // Array of category codes: RN, LPN, HHA, DSP
-    certifications: "",
-    license_number: "",
-    license_expiration: ""
+    categories: []  // Array of category codes: RN, LPN, HHA, DSP
   });
 
   useEffect(() => {
@@ -260,10 +257,7 @@ const Employees = () => {
       department: employee.department || "",
       hourly_rate: employee.hourly_rate || "",
       employment_status: employee.employment_status || "Full-time",
-      categories: employee.categories || [],
-      certifications: employee.certifications || "",
-      license_number: employee.license_number || "",
-      license_expiration: employee.license_expiration || ""
+      categories: employee.categories || []
     });
     setShowForm(true);
   };
@@ -301,10 +295,7 @@ const Employees = () => {
       department: "",
       hourly_rate: "",
       employment_status: "",
-      categories: [],
-      certifications: "",
-      license_number: "",
-      license_expiration: ""
+      categories: []
     });
   };
 
