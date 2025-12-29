@@ -31,11 +31,11 @@ backend:
 
   - task: "Employee Management"
     implemented: true
-    working: true
+    working: false
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "testing"
@@ -43,6 +43,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ Employee CRUD operations working: create and list employee endpoints functional"
+      - working: false
+        agent: "main"
+        comment: "Employee update returning 422 error. Fixed: Removed certifications/license fields, added categories to EmployeeProfileUpdate model. Needs re-testing."
 
   - task: "Timesheet Management"
     implemented: true
