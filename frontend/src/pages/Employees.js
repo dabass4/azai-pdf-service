@@ -280,11 +280,6 @@ const Employees = () => {
       address_state: "",
       address_zip: "",
       employee_id: "",
-      hire_date: "",
-      job_title: "",
-      department: "",
-      hourly_rate: "",
-      employment_status: "",
       categories: []
     });
   };
