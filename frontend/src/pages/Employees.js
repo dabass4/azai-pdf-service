@@ -509,10 +509,10 @@ const Employees = () => {
                 <div>
                   <h3 className="text-lg font-semibold mb-4 text-gray-800">Employment Information</h3>
                   
-                  {/* Employee Categories - Multi-select */}
+                  {/* Employee Categories - Multi-select (REQUIRED) */}
                   <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
                     <Label className="text-sm font-semibold text-gray-700 mb-3 block">
-                      Employee Categories * <span className="text-xs font-normal text-gray-500">(Select all that apply)</span>
+                      Employee Categories * <span className="text-xs font-normal text-gray-500">(Required - Select all that apply)</span>
                     </Label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {EMPLOYEE_CATEGORIES.map((category) => {
@@ -545,7 +545,7 @@ const Employees = () => {
                       })}
                     </div>
                     {(!formData.categories || formData.categories.length === 0) && (
-                      <p className="text-xs text-amber-600 mt-2">⚠️ Please select at least one category</p>
+                      <p className="text-xs text-red-600 mt-2 font-medium">⚠️ Required: Please select at least one category</p>
                     )}
                   </div>
 
@@ -559,69 +559,6 @@ const Employees = () => {
                         onChange={handleInputChange}
                         placeholder="Auto-generated if left blank"
                         data-testid="employee-id-input"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="hire_date">Hire Date *</Label>
-                      <Input
-                        id="hire_date"
-                        name="hire_date"
-                        type="date"
-                        value={formData.hire_date}
-                        onChange={handleInputChange}
-                        required
-                        data-testid="hire-date-input"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="job_title">Job Title *</Label>
-                      <Input
-                        id="job_title"
-                        name="job_title"
-                        value={formData.job_title}
-                        onChange={handleInputChange}
-                        required
-                        placeholder="e.g., Home Health Aide"
-                        data-testid="job-title-input"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="department">Department</Label>
-                      <Input
-                        id="department"
-                        name="department"
-                        value={formData.department}
-                        onChange={handleInputChange}
-                        placeholder="e.g., Home Care"
-                        data-testid="department-input"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="employment_status">Employment Status *</Label>
-                      <Select value={formData.employment_status} onValueChange={(value) => handleSelectChange("employment_status", value)} required>
-                        <SelectTrigger data-testid="employment-status-select">
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Full-time">Full-time</SelectItem>
-                          <SelectItem value="Part-time">Part-time</SelectItem>
-                          <SelectItem value="Contract">Contract</SelectItem>
-                          <SelectItem value="Temporary">Temporary</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
-                      <Input
-                        id="hourly_rate"
-                        name="hourly_rate"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.hourly_rate}
-                        onChange={handleInputChange}
-                        placeholder="0.00"
-                        data-testid="hourly-rate-input"
                       />
                     </div>
                   </div>
