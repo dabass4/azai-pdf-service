@@ -170,28 +170,15 @@ def validate_employee_required_fields(employee: dict) -> Tuple[bool, List[str]]:
     elif len(phone) < 10:
         errors.append("Phone Number must be at least 10 digits")
     
-    # Hire Date (*) - Required by both
-    hire_date = employee.get('hire_date', '1900-01-01')
-    if hire_date == '1900-01-01' or not hire_date:
-        errors.append("Hire Date * is required (ODM & EVV)")
+    # Employee Categories (*) - Required - must have at least one category
+    categories = employee.get('categories', [])
+    if not categories or len(categories) == 0:
+        errors.append("Employee Category * is required - select at least one (RN, LPN, HHA, or DSP)")
     else:
-        try:
-            hire = datetime.strptime(hire_date, '%Y-%m-%d')
-            if hire > datetime.now():
-                errors.append("Hire Date cannot be in the future")
-        except ValueError:
-            errors.append("Hire Date must be in YYYY-MM-DD format")
-    
-    # Job Title (*) - Required by both
-    if not employee.get('job_title') or employee.get('job_title', '').strip() == '':
-        errors.append("Job Title * is required (ODM & EVV)")
-    
-    # Employment Status (*) - Must be Active
-    status = employee.get('employment_status', 'Active')
-    if not status or status == '':
-        errors.append("Employment Status * is required (ODM & EVV)")
-    elif status != 'Active':
-        errors.append("Employment Status must be 'Active' to submit claims/EVV")
+        valid_categories = ['RN', 'LPN', 'HHA', 'DSP']
+        invalid_cats = [c for c in categories if c not in valid_categories]
+        if invalid_cats:
+            errors.append(f"Invalid categories: {invalid_cats}. Must be one of: RN, LPN, HHA, DSP")
     
     # Staff PIN - Auto-generated when transmitting to Sandata, not required from user
     # (Removed from validation - will be auto-generated at transmission time)
