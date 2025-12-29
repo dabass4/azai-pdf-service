@@ -50,12 +50,7 @@ const Employees = () => {
     address_state: "",
     address_zip: "",
     employee_id: "",
-    hire_date: "",
-    job_title: "",
-    department: "",
-    hourly_rate: "",
-    employment_status: "",
-    categories: []  // Array of category codes: RN, LPN, HHA, DSP
+    categories: []  // Array of category codes: RN, LPN, HHA, DSP (REQUIRED)
   });
 
   useEffect(() => {
