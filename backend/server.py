@@ -471,16 +471,6 @@ class EmployeeProfile(BaseModel):
     staff_other_id: Optional[str] = None  # EVV: External system ID
     staff_position: Optional[str] = None  # EVV: Position code (3 characters)
     
-    # Emergency Contact (optional)
-    emergency_contact_name: Optional[str] = None
-    emergency_contact_phone: Optional[str] = None
-    emergency_contact_relation: Optional[str] = None
-    
-    # Certifications & Licenses
-    certifications: Optional[str] = None  # Comma-separated or free text
-    license_number: Optional[str] = None
-    license_expiration: Optional[str] = None
-    
     # Sequence Management (EVV)
     sequence_id: Optional[str] = None
     
@@ -524,15 +514,9 @@ class EmployeeProfileUpdate(BaseModel):
     staff_other_id: Optional[str] = None
     staff_position: Optional[str] = None
     
-    # Emergency Contact
-    emergency_contact_name: Optional[str] = None
-    emergency_contact_phone: Optional[str] = None
-    emergency_contact_relation: Optional[str] = None
+    # Employee Categories
+    categories: Optional[List[str]] = None  # Array of category codes: ["RN", "LPN", "HHA", "DSP"]
     
-    # Certifications & Licenses
-    certifications: Optional[str] = None
-    license_number: Optional[str] = None
-    license_expiration: Optional[str] = None
     sequence_id: Optional[str] = None
 
 
