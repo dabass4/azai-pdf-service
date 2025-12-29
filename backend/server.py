@@ -455,13 +455,8 @@ class EmployeeProfile(BaseModel):
     
     # Employment Information
     employee_id: Optional[str] = None  # Internal employee ID
-    hire_date: str = "1900-01-01"  # YYYY-MM-DD format, default for incomplete
-    job_title: str = "Direct Care Worker"  # Default title
-    department: Optional[str] = None
-    hourly_rate: Optional[float] = None
-    employment_status: str = "Active"  # Full-time, Part-time, Contract, Active
     
-    # Employee Categories - Healthcare worker types
+    # Employee Categories - Healthcare worker types (REQUIRED)
     # RN = Registered Nurse, LPN = Licensed Practical Nurse
     # HHA = Home Health Aide, DSP = Direct Support Professional
     categories: List[str] = []  # Array of category codes: ["RN", "LPN", "HHA", "DSP"]
@@ -503,18 +498,8 @@ class EmployeeProfileUpdate(BaseModel):
     
     # Employment Information
     employee_id: Optional[str] = None
-    hire_date: Optional[str] = None
-    job_title: Optional[str] = None
-    department: Optional[str] = None
-    hourly_rate: Optional[float] = None
-    employment_status: Optional[str] = None
     
-    # EVV DCW Fields
-    staff_pin: Optional[str] = None
-    staff_other_id: Optional[str] = None
-    staff_position: Optional[str] = None
-    
-    # Employee Categories
+    # Employee Categories (REQUIRED for validation)
     categories: Optional[List[str]] = None  # Array of category codes: ["RN", "LPN", "HHA", "DSP"]
     
     sequence_id: Optional[str] = None
