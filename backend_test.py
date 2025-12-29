@@ -1381,14 +1381,14 @@ Signature: [Signed]"""
         try:
             headers = self.get_auth_headers()
             
-            # Use query parameters as specified in the review request
-            params = {
+            # Send data in request body as JSON
+            data = {
                 "keep_id": keep_id,
                 "delete_ids": delete_ids
             }
             
             response = requests.post(f"{self.api_url}/employees/duplicates/resolve", 
-                                   params=params, headers=headers, timeout=10)
+                                   json=data, headers=headers, timeout=10)
             
             success = response.status_code == 200
             
@@ -1429,14 +1429,14 @@ Signature: [Signed]"""
         try:
             headers = self.get_auth_headers()
             
-            # Use non-existent IDs
-            params = {
+            # Send data in request body as JSON
+            data = {
                 "keep_id": "nonexistent-keep-id",
                 "delete_ids": ["nonexistent-delete-id"]
             }
             
             response = requests.post(f"{self.api_url}/employees/duplicates/resolve", 
-                                   params=params, headers=headers, timeout=10)
+                                   json=data, headers=headers, timeout=10)
             
             # Should return 404 for non-existent employee
             success = response.status_code == 404
