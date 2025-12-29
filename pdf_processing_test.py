@@ -16,7 +16,7 @@ from reportlab.lib.pagesizes import letter
 import uuid
 
 class PDFProcessingTester:
-    def __init__(self, base_url="https://medicaid-claims.preview.emergentagent.com"):
+    def __init__(self, base_url="https://claim-tracker-21.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
