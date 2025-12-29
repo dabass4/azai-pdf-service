@@ -737,7 +737,7 @@ const Employees = () => {
                         </div>
                         
                         <div className="flex-1 flex justify-between items-start">
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                           <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
                             {employee.first_name} {employee.middle_name} {employee.last_name}
