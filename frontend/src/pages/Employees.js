@@ -300,6 +300,56 @@ const Employees = () => {
     return ssn;
   };
 
+  // Duplicate Management Functions
+  const findDuplicates = async () => {
+    setLoadingDuplicates(true);
+    try {
+      const response = await axios.get(`${API}/employees/duplicates/find`);
+      setDuplicateData(response.data);
+      setShowDuplicates(true);
+      if (response.data.total_duplicate_groups === 0) {
+        toast.success("No duplicate employees found!");
+      } else {
+        toast.info(`Found ${response.data.total_duplicate_groups} group(s) of potential duplicates`);
+      }
+    } catch (e) {
+      console.error("Error finding duplicates:", e);
+      toast.error("Failed to find duplicates");
+    } finally {
+      setLoadingDuplicates(false);
+    }
+  };
+
+  const resolveDuplicate = async (keepId, deleteIds, groupName) => {
+    setResolvingDuplicate(keepId);
+    try {
+      const response = await axios.post(`${API}/employees/duplicates/resolve`, null, {
+        params: { keep_id: keepId, delete_ids: deleteIds }
+      });
+      toast.success(response.data.message);
+      
+      // Refresh duplicates list
+      await findDuplicates();
+      // Refresh employees list
+      await fetchEmployees();
+    } catch (e) {
+      console.error("Error resolving duplicate:", e);
+      toast.error("Failed to resolve duplicate");
+    } finally {
+      setResolvingDuplicate(null);
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "N/A";
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
