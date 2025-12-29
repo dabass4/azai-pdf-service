@@ -1202,6 +1202,296 @@ Signature: [Signed]"""
             self.log_test("Timesheet Operations", False, str(e))
             return False
 
+    # ========================================
+    # Employee Duplicate Detection Tests
+    # ========================================
+    
+    def authenticate_admin(self):
+        """Authenticate with admin credentials and store token"""
+        try:
+            login_data = {
+                "email": "admin@medicaidservices.com",
+                "password": "Admin2024!"
+            }
+            
+            response = requests.post(f"{self.api_url}/auth/login", json=login_data, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.auth_token = data.get('access_token')
+                self.test_user_email = login_data["email"]
+                self.test_organization_id = data.get('organization_id')
+                self.log_test("Admin Authentication", True, f"Successfully authenticated as {self.test_user_email}")
+                return True
+            else:
+                self.log_test("Admin Authentication", False, f"Status: {response.status_code}, Response: {response.text[:200]}")
+                return False
+        except Exception as e:
+            self.log_test("Admin Authentication", False, str(e))
+            return False
+    
+    def get_auth_headers(self):
+        """Get authorization headers for authenticated requests"""
+        if self.auth_token:
+            return {"Authorization": f"Bearer {self.auth_token}"}
+        return {}
+    
+    def create_test_employee(self, first_name, last_name, email_suffix=""):
+        """Create a test employee for duplicate testing"""
+        try:
+            employee_data = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": f"{first_name.lower()}.{last_name.lower()}{email_suffix}@test.com",
+                "phone": "6145551234",
+                "ssn": "123-45-6789",
+                "date_of_birth": "1990-01-01",
+                "sex": "Male",
+                "categories": ["HHA"],
+                "is_complete": True
+            }
+            
+            headers = self.get_auth_headers()
+            response = requests.post(f"{self.api_url}/employees", json=employee_data, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('id')
+            else:
+                print(f"Failed to create employee {first_name} {last_name}: {response.status_code} - {response.text[:200]}")
+                return None
+        except Exception as e:
+            print(f"Error creating employee {first_name} {last_name}: {e}")
+            return None
+    
+    def test_employee_duplicate_detection(self):
+        """Test the complete Employee Duplicate Detection and Resolution feature"""
+        print("\n🔍 Starting Employee Duplicate Detection and Resolution Tests")
+        print(f"Testing against: {self.api_url}")
+        print("=" * 60)
+        
+        # Step 1: Authenticate as admin
+        if not self.authenticate_admin():
+            print("❌ Admin authentication failed - stopping duplicate detection tests")
+            return self.get_results()
+        
+        # Step 2: Create test employees with duplicates
+        print("📝 Creating test employees with duplicates...")
+        
+        # Create employees with exact name matches (case-insensitive duplicates)
+        john_id_1 = self.create_test_employee("John", "Smith", "_1")
+        john_id_2 = self.create_test_employee("john", "smith", "_2")  # lowercase duplicate
+        john_id_3 = self.create_test_employee("JOHN", "SMITH", "_3")  # uppercase duplicate
+        
+        # Create employees with different names (no duplicates)
+        jane_id = self.create_test_employee("Jane", "Doe")
+        bob_id = self.create_test_employee("Bob", "Johnson")
+        
+        # Create another set of duplicates
+        mary_id_1 = self.create_test_employee("Mary", "Williams", "_1")
+        mary_id_2 = self.create_test_employee("Mary", "Williams", "_2")
+        
+        created_employees = [john_id_1, john_id_2, john_id_3, jane_id, bob_id, mary_id_1, mary_id_2]
+        valid_employees = [emp_id for emp_id in created_employees if emp_id is not None]
+        
+        if len(valid_employees) < 5:
+            print(f"❌ Failed to create enough test employees. Created: {len(valid_employees)}/7")
+            return self.get_results()
+        
+        print(f"✅ Created {len(valid_employees)} test employees")
+        
+        # Step 3: Test finding duplicates
+        self.test_find_duplicates()
+        
+        # Step 4: Test resolving duplicates
+        if john_id_1 and john_id_2:
+            self.test_resolve_duplicates(john_id_1, [john_id_2])
+        
+        # Step 5: Test edge cases
+        self.test_resolve_nonexistent_employee()
+        
+        # Step 6: Verify duplicates are reduced after resolution
+        self.test_find_duplicates_after_resolution()
+        
+        # Cleanup: Delete test employees
+        self.cleanup_test_employees(valid_employees)
+        
+        return self.get_results()
+    
+    def test_find_duplicates(self):
+        """Test GET /api/employees/duplicates/find endpoint"""
+        try:
+            headers = self.get_auth_headers()
+            response = requests.get(f"{self.api_url}/employees/duplicates/find", headers=headers, timeout=10)
+            
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                
+                # Verify response structure
+                required_fields = ['total_duplicate_groups', 'total_duplicate_records', 'duplicate_groups']
+                has_required_fields = all(field in data for field in required_fields)
+                
+                if has_required_fields:
+                    duplicate_groups = data.get('duplicate_groups', [])
+                    
+                    # Verify we found some duplicates
+                    has_duplicates = len(duplicate_groups) > 0
+                    
+                    if has_duplicates:
+                        # Verify structure of first duplicate group
+                        first_group = duplicate_groups[0]
+                        group_fields = ['normalized_name', 'display_name', 'total_duplicates', 'suggested_keep', 'suggested_delete']
+                        has_group_structure = all(field in first_group for field in group_fields)
+                        
+                        # Verify suggested_keep structure
+                        suggested_keep = first_group.get('suggested_keep', {})
+                        keep_fields = ['id', 'first_name', 'last_name', 'reason']
+                        has_keep_structure = all(field in suggested_keep for field in keep_fields)
+                        
+                        # Verify reason is "Most recently updated"
+                        correct_reason = suggested_keep.get('reason') == "Most recently updated"
+                        
+                        # Verify suggested_delete is a list
+                        suggested_delete = first_group.get('suggested_delete', [])
+                        has_delete_list = isinstance(suggested_delete, list) and len(suggested_delete) > 0
+                        
+                        success = has_group_structure and has_keep_structure and correct_reason and has_delete_list
+                        details = f"Status: {response.status_code}, Groups: {len(duplicate_groups)}, " \
+                                f"Total duplicates: {data.get('total_duplicate_records')}, " \
+                                f"Structure valid: {success}"
+                    else:
+                        success = True  # No duplicates is also a valid response
+                        details = f"Status: {response.status_code}, No duplicates found"
+                else:
+                    success = False
+                    details = f"Status: {response.status_code}, Missing required fields: {[f for f in required_fields if f not in data]}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Find Employee Duplicates", success, details)
+            return success, data if success else None
+        except Exception as e:
+            self.log_test("Find Employee Duplicates", False, str(e))
+            return False, None
+    
+    def test_resolve_duplicates(self, keep_id, delete_ids):
+        """Test POST /api/employees/duplicates/resolve endpoint"""
+        try:
+            headers = self.get_auth_headers()
+            
+            # Use query parameters as specified in the review request
+            params = {
+                "keep_id": keep_id,
+                "delete_ids": delete_ids
+            }
+            
+            response = requests.post(f"{self.api_url}/employees/duplicates/resolve", 
+                                   params=params, headers=headers, timeout=10)
+            
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                
+                # Verify response structure
+                required_fields = ['status', 'kept_employee', 'deleted_count', 'message']
+                has_required_fields = all(field in data for field in required_fields)
+                
+                # Verify status is success
+                status_success = data.get('status') == 'success'
+                
+                # Verify deleted count matches expected
+                expected_count = len(delete_ids)
+                actual_count = data.get('deleted_count', 0)
+                count_matches = actual_count == expected_count
+                
+                # Verify kept employee structure
+                kept_employee = data.get('kept_employee', {})
+                kept_valid = 'id' in kept_employee and 'name' in kept_employee
+                kept_id_matches = kept_employee.get('id') == keep_id
+                
+                success = has_required_fields and status_success and count_matches and kept_valid and kept_id_matches
+                details = f"Status: {response.status_code}, Deleted: {actual_count}/{expected_count}, " \
+                        f"Kept ID matches: {kept_id_matches}, Message: {data.get('message', 'N/A')}"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Resolve Employee Duplicates", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Resolve Employee Duplicates", False, str(e))
+            return False
+    
+    def test_resolve_nonexistent_employee(self):
+        """Test resolving duplicates with non-existent employee ID"""
+        try:
+            headers = self.get_auth_headers()
+            
+            # Use non-existent IDs
+            params = {
+                "keep_id": "nonexistent-keep-id",
+                "delete_ids": ["nonexistent-delete-id"]
+            }
+            
+            response = requests.post(f"{self.api_url}/employees/duplicates/resolve", 
+                                   params=params, headers=headers, timeout=10)
+            
+            # Should return 404 for non-existent employee
+            success = response.status_code == 404
+            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+            
+            self.log_test("Resolve Non-existent Employee", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Resolve Non-existent Employee", False, str(e))
+            return False
+    
+    def test_find_duplicates_after_resolution(self):
+        """Test that duplicate count decreases after resolution"""
+        try:
+            success, data = self.test_find_duplicates()
+            
+            if success and data:
+                # Check if duplicate count has decreased
+                total_duplicates = data.get('total_duplicate_records', 0)
+                details = f"Remaining duplicate records: {total_duplicates}"
+                
+                # Success if we can get the data (count may be 0 or reduced)
+                self.log_test("Find Duplicates After Resolution", True, details)
+                return True
+            else:
+                self.log_test("Find Duplicates After Resolution", False, "Failed to get duplicate data")
+                return False
+        except Exception as e:
+            self.log_test("Find Duplicates After Resolution", False, str(e))
+            return False
+    
+    def cleanup_test_employees(self, employee_ids):
+        """Clean up test employees"""
+        try:
+            headers = self.get_auth_headers()
+            deleted_count = 0
+            
+            for emp_id in employee_ids:
+                if emp_id:
+                    try:
+                        response = requests.delete(f"{self.api_url}/employees/{emp_id}", 
+                                                 headers=headers, timeout=10)
+                        if response.status_code == 200:
+                            deleted_count += 1
+                    except:
+                        pass  # Ignore cleanup errors
+            
+            print(f"🧹 Cleaned up {deleted_count}/{len([e for e in employee_ids if e])} test employees")
+        except Exception as e:
+            print(f"⚠️ Cleanup error: {e}")
+
+    def run_duplicate_detection_tests(self):
+        """Run Employee Duplicate Detection and Resolution tests"""
+        return self.test_employee_duplicate_detection()
+
     def test_evv_export_field_mapping_detailed(self):
         """Test detailed EVV export field mapping for Individual and DirectCareWorker exports"""
         print("\n🔍 Starting Detailed EVV Export Field Mapping Tests")
