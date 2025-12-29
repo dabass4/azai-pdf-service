@@ -2681,6 +2681,142 @@ async def get_employees(
     
     return employees
 
+
+@api_router.get("/employees/duplicates/find")
+async def find_duplicate_employees(organization_id: str = Depends(get_organization_id)):
+    """
+    Find employees with similar/duplicate names.
+    Returns groups of potential duplicates with suggestions on which to keep.
+    Suggests keeping the most recently updated record.
+    """
+    # Get all employees for this organization
+    employees = await db.employees.find(
+        {"organization_id": organization_id}, 
+        {"_id": 0}
+    ).to_list(10000)
+    
+    # Normalize name for comparison (lowercase, strip whitespace)
+    def normalize_name(first_name, last_name):
+        first = (first_name or "").strip().lower()
+        last = (last_name or "").strip().lower()
+        return f"{first} {last}"
+    
+    # Group employees by normalized name
+    name_groups = {}
+    for emp in employees:
+        normalized = normalize_name(emp.get('first_name'), emp.get('last_name'))
+        if normalized not in name_groups:
+            name_groups[normalized] = []
+        name_groups[normalized].append(emp)
+    
+    # Find groups with duplicates (more than one employee with same name)
+    duplicate_groups = []
+    for normalized_name, group in name_groups.items():
+        if len(group) > 1:
+            # Sort by updated_at descending (most recent first)
+            sorted_group = sorted(
+                group, 
+                key=lambda x: x.get('updated_at', '1900-01-01') if isinstance(x.get('updated_at'), str) else x.get('updated_at', datetime.min).isoformat(),
+                reverse=True
+            )
+            
+            # The first one (most recently updated) is suggested to keep
+            suggested_keep = sorted_group[0]
+            suggested_delete = sorted_group[1:]
+            
+            duplicate_groups.append({
+                "normalized_name": normalized_name,
+                "display_name": f"{sorted_group[0].get('first_name', '')} {sorted_group[0].get('last_name', '')}",
+                "total_duplicates": len(group),
+                "suggested_keep": {
+                    "id": suggested_keep.get('id'),
+                    "first_name": suggested_keep.get('first_name'),
+                    "last_name": suggested_keep.get('last_name'),
+                    "email": suggested_keep.get('email'),
+                    "phone": suggested_keep.get('phone'),
+                    "categories": suggested_keep.get('categories', []),
+                    "is_complete": suggested_keep.get('is_complete', False),
+                    "updated_at": suggested_keep.get('updated_at'),
+                    "reason": "Most recently updated"
+                },
+                "suggested_delete": [
+                    {
+                        "id": emp.get('id'),
+                        "first_name": emp.get('first_name'),
+                        "last_name": emp.get('last_name'),
+                        "email": emp.get('email'),
+                        "phone": emp.get('phone'),
+                        "categories": emp.get('categories', []),
+                        "is_complete": emp.get('is_complete', False),
+                        "updated_at": emp.get('updated_at'),
+                        "reason": "Older record"
+                    }
+                    for emp in suggested_delete
+                ]
+            })
+    
+    # Sort by number of duplicates (most duplicates first)
+    duplicate_groups.sort(key=lambda x: x['total_duplicates'], reverse=True)
+    
+    return {
+        "total_duplicate_groups": len(duplicate_groups),
+        "total_duplicate_records": sum(g['total_duplicates'] - 1 for g in duplicate_groups),
+        "duplicate_groups": duplicate_groups
+    }
+
+
+@api_router.post("/employees/duplicates/resolve")
+async def resolve_duplicate_employees(
+    keep_id: str,
+    delete_ids: List[str],
+    organization_id: str = Depends(get_organization_id)
+):
+    """
+    Resolve duplicate employees by keeping one and deleting others.
+    
+    Args:
+        keep_id: ID of the employee to keep
+        delete_ids: List of employee IDs to delete
+    """
+    # Verify the employee to keep exists
+    keep_employee = await db.employees.find_one(
+        {"id": keep_id, "organization_id": organization_id},
+        {"_id": 0}
+    )
+    if not keep_employee:
+        raise HTTPException(status_code=404, detail="Employee to keep not found")
+    
+    # Verify all employees to delete exist and belong to organization
+    deleted_count = 0
+    deleted_names = []
+    
+    for delete_id in delete_ids:
+        employee = await db.employees.find_one(
+            {"id": delete_id, "organization_id": organization_id},
+            {"_id": 0}
+        )
+        if employee:
+            # Delete the duplicate
+            result = await db.employees.delete_one(
+                {"id": delete_id, "organization_id": organization_id}
+            )
+            if result.deleted_count > 0:
+                deleted_count += 1
+                deleted_names.append(f"{employee.get('first_name', '')} {employee.get('last_name', '')}")
+                logger.info(f"Deleted duplicate employee: {delete_id} ({employee.get('first_name')} {employee.get('last_name')})")
+    
+    return {
+        "status": "success",
+        "kept_employee": {
+            "id": keep_employee.get('id'),
+            "name": f"{keep_employee.get('first_name', '')} {keep_employee.get('last_name', '')}"
+        },
+        "deleted_count": deleted_count,
+        "deleted_names": deleted_names,
+        "message": f"Kept 1 employee, deleted {deleted_count} duplicate(s)"
+    }
+
+
 @api_router.get("/employees/{employee_id}", response_model=EmployeeProfile)
 async def get_employee(employee_id: str, organization_id: str = Depends(get_organization_id)):
     """Get specific employee by ID"""
