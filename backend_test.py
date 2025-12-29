@@ -3557,18 +3557,18 @@ def main():
         # Run basic timesheet tests
         return tester.run_all_tests()
     else:
-        # Run detailed EVV export field mapping tests as requested
-        print("🎯 Testing Corrected EVV Export Functionality")
-        print("Verifying Individual and DirectCareWorker export field mappings")
+        # Run Employee Duplicate Detection and Resolution tests as requested
+        print("🔍 Testing Employee Duplicate Detection and Resolution Feature")
+        print("Testing duplicate finding and resolution functionality")
         print("=" * 80)
         
-        # Test the corrected EVV export functionality
-        tester.test_evv_export_field_mapping_detailed()
+        # Test basic connectivity first
+        if not tester.test_root_endpoint():
+            print("❌ Root endpoint failed - stopping tests")
+            return 1
         
-        # Run comprehensive validation tests
-        tester.test_evv_export_comprehensive_validation()
-        
-        return tester.get_results()
+        # Run the duplicate detection tests
+        return tester.run_duplicate_detection_tests()
 
 if __name__ == "__main__":
     sys.exit(main())
