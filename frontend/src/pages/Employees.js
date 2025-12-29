@@ -341,7 +341,7 @@ const Employees = () => {
                   <div>
                     <p className="text-sm font-semibold text-amber-800">Sandata EVV Compliance</p>
                     <p className="text-xs text-amber-700 mt-1">
-                      Fields marked with * are required for Sandata EVV submission. SSN is stored securely and only the last 4 digits are displayed.
+                      Fields marked with * are required for Sandata EVV submission. At least one Employee Category must be selected. SSN is stored securely and only the last 4 digits are displayed.
                     </p>
                   </div>
                 </div>
