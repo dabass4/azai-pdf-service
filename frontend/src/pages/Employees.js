@@ -247,11 +247,6 @@ const Employees = () => {
       address_state: employee.address_state || "OH",
       address_zip: employee.address_zip || "",
       employee_id: employee.employee_id || "",
-      hire_date: employee.hire_date || new Date().toISOString().split('T')[0],
-      job_title: employee.job_title || "Direct Care Worker",
-      department: employee.department || "",
-      hourly_rate: employee.hourly_rate || "",
-      employment_status: employee.employment_status || "Full-time",
       categories: employee.categories || []
     });
     setShowForm(true);
