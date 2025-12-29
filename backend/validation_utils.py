@@ -206,7 +206,7 @@ def get_profile_completion_status(profile_type: str, profile: dict) -> Dict:
         total_required = 12  # Total number of required fields for patient
     elif profile_type == 'employee':
         is_valid, errors = validate_employee_required_fields(profile)
-        total_required = 13  # Total number of required fields for employee
+        total_required = 10  # Total number of required fields for employee (updated: removed job_title, hire_date, employment_status)
     else:
         return {
             'is_complete': False,
