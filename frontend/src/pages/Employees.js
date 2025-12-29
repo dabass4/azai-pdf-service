@@ -642,46 +642,6 @@ const Employees = () => {
                   </div>
                 </div>
 
-                {/* Certifications & Licenses */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Certifications & Licenses</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <Label htmlFor="certifications">Certifications</Label>
-                      <Input
-                        id="certifications"
-                        name="certifications"
-                        value={formData.certifications}
-                        onChange={handleInputChange}
-                        placeholder="e.g., CPR, First Aid, CNA"
-                        data-testid="certifications-input"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="license_number">License Number</Label>
-                      <Input
-                        id="license_number"
-                        name="license_number"
-                        value={formData.license_number}
-                        onChange={handleInputChange}
-                        placeholder="Professional license number"
-                        data-testid="license-number-input"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="license_expiration">License Expiration</Label>
-                      <Input
-                        id="license_expiration"
-                        name="license_expiration"
-                        type="date"
-                        value={formData.license_expiration}
-                        onChange={handleInputChange}
-                        data-testid="license-expiration-input"
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Form Actions */}
                 <div className="flex justify-end gap-3 pt-4 border-t">
                   <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingEmployee(null); }}>
