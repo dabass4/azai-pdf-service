@@ -361,19 +361,140 @@ const Employees = () => {
             </h1>
             <p className="text-gray-600">Manage employee information and records</p>
           </div>
-          <Button
-            onClick={() => {
-              resetForm();
-              setEditingEmployee(null);
-              setShowForm(true);
-            }}
-            className="bg-blue-600 hover:bg-blue-700"
-            data-testid="add-employee-btn"
-          >
-            <Plus className="mr-2" size={18} />
-            Add Employee
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={findDuplicates}
+              variant="outline"
+              disabled={loadingDuplicates}
+              className="border-amber-500 text-amber-700 hover:bg-amber-50"
+              data-testid="find-duplicates-btn"
+            >
+              <Users className="mr-2" size={18} />
+              {loadingDuplicates ? "Searching..." : "Find Duplicates"}
+            </Button>
+            <Button
+              onClick={() => {
+                resetForm();
+                setEditingEmployee(null);
+                setShowForm(true);
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="add-employee-btn"
+            >
+              <Plus className="mr-2" size={18} />
+              Add Employee
+            </Button>
+          </div>
         </div>
+
+        {/* Duplicate Management Panel */}
+        {showDuplicates && duplicateData && (
+          <Card className="mb-8 border-2 border-amber-200 shadow-lg">
+            <CardHeader className="bg-amber-50">
+              <div className="flex justify-between items-center">
+                <CardTitle className="flex items-center gap-2 text-amber-800">
+                  <AlertTriangle className="text-amber-600" size={20} />
+                  Duplicate Employee Detection
+                </CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => setShowDuplicates(false)}>
+                  <X size={20} />
+                </Button>
+              </div>
+              <CardDescription className="text-amber-700">
+                Found {duplicateData.total_duplicate_groups} group(s) with {duplicateData.total_duplicate_records} potential duplicate(s)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {duplicateData.duplicate_groups.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <CheckCircle className="mx-auto mb-4 text-green-500" size={48} />
+                  <p className="text-lg font-medium text-green-700">No duplicates found!</p>
+                  <p className="text-sm">All employee records have unique names.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {duplicateData.duplicate_groups.map((group, idx) => (
+                    <div key={idx} className="border rounded-lg p-4 bg-white">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-lg text-gray-800">
+                          "{group.display_name}" <span className="text-sm font-normal text-gray-500">({group.total_duplicates} records)</span>
+                        </h4>
+                      </div>
+                      
+                      {/* Suggested to KEEP */}
+                      <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Check className="text-green-600" size={16} />
+                          <span className="text-sm font-semibold text-green-800">Suggested to KEEP</span>
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">{group.suggested_keep.reason}</span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                          <div><span className="text-gray-500">Name:</span> {group.suggested_keep.first_name} {group.suggested_keep.last_name}</div>
+                          <div><span className="text-gray-500">Email:</span> {group.suggested_keep.email || "N/A"}</div>
+                          <div><span className="text-gray-500">Phone:</span> {group.suggested_keep.phone || "N/A"}</div>
+                          <div><span className="text-gray-500">Categories:</span> {group.suggested_keep.categories?.join(", ") || "None"}</div>
+                          <div><span className="text-gray-500">Complete:</span> {group.suggested_keep.is_complete ? "Yes" : "No"}</div>
+                          <div className="md:col-span-3"><span className="text-gray-500">Updated:</span> {formatDate(group.suggested_keep.updated_at)}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Suggested to DELETE */}
+                      {group.suggested_delete.map((emp, empIdx) => (
+                        <div key={empIdx} className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Trash2 className="text-red-600" size={16} />
+                              <span className="text-sm font-semibold text-red-800">Suggested to DELETE</span>
+                              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">{emp.reason}</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                            <div><span className="text-gray-500">Name:</span> {emp.first_name} {emp.last_name}</div>
+                            <div><span className="text-gray-500">Email:</span> {emp.email || "N/A"}</div>
+                            <div><span className="text-gray-500">Phone:</span> {emp.phone || "N/A"}</div>
+                            <div><span className="text-gray-500">Categories:</span> {emp.categories?.join(", ") || "None"}</div>
+                            <div><span className="text-gray-500">Complete:</span> {emp.is_complete ? "Yes" : "No"}</div>
+                            <div className="md:col-span-3"><span className="text-gray-500">Updated:</span> {formatDate(emp.updated_at)}</div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 mt-4 pt-3 border-t">
+                        <Button
+                          onClick={() => resolveDuplicate(
+                            group.suggested_keep.id,
+                            group.suggested_delete.map(e => e.id),
+                            group.display_name
+                          )}
+                          disabled={resolvingDuplicate === group.suggested_keep.id}
+                          className="bg-green-600 hover:bg-green-700"
+                          size="sm"
+                        >
+                          <Check className="mr-1" size={14} />
+                          {resolvingDuplicate === group.suggested_keep.id ? "Processing..." : "Accept Suggestion"}
+                        </Button>
+                        <Button
+                          onClick={() => resolveDuplicate(
+                            group.suggested_delete[0].id,
+                            [group.suggested_keep.id],
+                            group.display_name
+                          )}
+                          disabled={resolvingDuplicate !== null}
+                          variant="outline"
+                          className="border-red-300 text-red-700 hover:bg-red-50"
+                          size="sm"
+                        >
+                          Keep Older Instead
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Employee Form Modal */}
         {showForm && (
