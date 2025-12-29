@@ -3540,6 +3540,19 @@ def main():
         tester.run_claims_routing_tests()
         
         return tester.get_results()
+    elif len(sys.argv) > 1 and sys.argv[1] == "duplicates":
+        # Run Employee Duplicate Detection and Resolution tests
+        print("🔍 Testing Employee Duplicate Detection and Resolution Feature")
+        print("Testing duplicate finding and resolution functionality")
+        print("=" * 80)
+        
+        # Test basic connectivity first
+        if not tester.test_root_endpoint():
+            print("❌ Root endpoint failed - stopping tests")
+            return 1
+        
+        # Run the duplicate detection tests
+        return tester.run_duplicate_detection_tests()
     elif len(sys.argv) > 1 and sys.argv[1] == "basic":
         # Run basic timesheet tests
         return tester.run_all_tests()
