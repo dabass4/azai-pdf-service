@@ -36,6 +36,13 @@ const Employees = () => {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [searchFilters, setSearchFilters] = useState({});
+  
+  // Duplicate management state
+  const [showDuplicates, setShowDuplicates] = useState(false);
+  const [duplicateData, setDuplicateData] = useState(null);
+  const [loadingDuplicates, setLoadingDuplicates] = useState(false);
+  const [resolvingDuplicate, setResolvingDuplicate] = useState(null);
+  
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
