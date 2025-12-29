@@ -786,7 +786,8 @@ const Employees = () => {
                             <p><span className="font-semibold">Hired:</span> {employee.hire_date}</p>
                             {employee.hourly_rate && <p><span className="font-semibold">Rate:</span> ${employee.hourly_rate}/hr</p>}
                           </div>
-803|                          </div>
+                        </div>
+                          </div>
                           
                           <div className="flex gap-2 ml-4">
                             <Button variant="ghost" size="icon" onClick={() => handleEdit(employee)} data-testid={`edit-employee-${employee.id}`}>
