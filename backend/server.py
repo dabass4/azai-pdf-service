@@ -8,9 +8,22 @@ from dotenv import load_dotenv
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Import scan configuration - SINGLE SOURCE OF TRUTH
+from scan_config import (
+    OCR_MODEL_SETTINGS,
+    PDF_SETTINGS,
+    TIME_SETTINGS,
+    DATE_SETTINGS,
+    EXTRACTION_SETTINGS,
+    UNIT_SETTINGS,
+    CONFIDENCE_SETTINGS,
+    get_all_settings,
+    get_settings_summary
+)
+
 # Ensure PDF dependencies are installed on startup
 def ensure_pdf_dependencies():
-    """Check and install poppler-utils if not present, then display scan config"""
+    """Check and install poppler-utils if not present, then display scan config from scan_config.py"""
     try:
         result = subprocess.run(['which', 'pdftoppm'], capture_output=True, text=True)
         if result.returncode != 0:
@@ -21,16 +34,16 @@ def ensure_pdf_dependencies():
         else:
             print("✅ poppler-utils ready")
         
-        # Display scan configuration summary
+        # Display scan configuration summary FROM scan_config.py (single source of truth)
         print("\n" + "="*50)
-        print("SCAN CONFIGURATION LOADED")
+        print("SCAN CONFIGURATION LOADED (from scan_config.py)")
         print("="*50)
-        print("🤖 OCR Model: Gemini 2.0 Flash (Fast & Reliable)")
-        print("🕐 Time Format: 12-hour (HH:MM AM/PM)")
-        print("📅 Date Format: MM/DD/YYYY")
-        print("🔧 OCR Fixes: Enabled (decimal→colon, invalid minutes)")
-        print("📄 DPI: 300 | Quality: 98")
-        print("🔢 Unit Calculation: 15 min/unit")
+        print(f"🤖 OCR Model: {OCR_MODEL_SETTINGS['model']} ({OCR_MODEL_SETTINGS['provider']})")
+        print(f"🕐 Time Format: {TIME_SETTINGS['display_format']} ({TIME_SETTINGS.get('display_example', 'N/A')})")
+        print(f"📅 Date Format: {DATE_SETTINGS['output_format']}")
+        print(f"🔧 OCR Fixes: decimal→colon={TIME_SETTINGS['ocr_fixes']['decimal_to_colon']}, invalid_minutes={TIME_SETTINGS['ocr_fixes']['fix_invalid_minutes']}")
+        print(f"📄 DPI: {PDF_SETTINGS['dpi']} | Quality: {PDF_SETTINGS['jpeg_quality']}")
+        print(f"🔢 Unit Calculation: {UNIT_SETTINGS['minutes_per_unit']} min/unit")
         print("="*50 + "\n")
     except Exception as e:
         print(f"⚠️  Could not check/install poppler-utils: {e}")
