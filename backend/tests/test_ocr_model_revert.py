@@ -96,7 +96,14 @@ class OCRModelRevertTester:
                 else:
                     # Verify OCR model is gemini-2.0-flash (NOT gemini-2.5-pro)
                     ocr_model = data.get('ocr_model')
-                    model_correct = ocr_model == 'gemini-2.0-flash'
+                    # Handle both string and object formats
+                    if isinstance(ocr_model, dict):
+                        model_name = ocr_model.get('model', '')
+                        model_correct = model_name == 'gemini-2.0-flash'
+                        ocr_model_display = model_name
+                    else:
+                        model_correct = ocr_model == 'gemini-2.0-flash'
+                        ocr_model_display = ocr_model
                     
                     # Verify poppler_utils.installed is true
                     poppler_info = data.get('poppler_utils', {})
