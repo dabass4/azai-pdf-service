@@ -1361,6 +1361,17 @@ Return ONLY the JSON object, no additional text or explanation."""
             confidence_score, confidence_details = ConfidenceScorer.score_extraction(extracted_json)
             logger.info(f"Extraction confidence score: {confidence_score:.2f} ({confidence_details.get('recommendation')})")
             
+            # Add similar employee suggestions to confidence details
+            confidence_details['similar_employee_suggestions'] = []
+            for emp_entry in employee_entries:
+                if emp_entry.get('employee_name'):
+                    emp_name = emp_entry['employee_name']
+                    # Note: Similar employees will be fetched when timesheet is loaded in editor
+                    confidence_details['similar_employee_suggestions'].append({
+                        'extracted_name': emp_name,
+                        'suggestion': 'Click the 👥 icon next to employee name to find matching employees'
+                    })
+            
             if progress_tracker:
                 await progress_tracker.complete(extracted_json, confidence_score, confidence_details)
             
