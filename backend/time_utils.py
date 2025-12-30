@@ -197,6 +197,7 @@ def normalize_am_pm(time_str: str) -> str:
 def format_time_24h(time_str: str) -> str:
     """
     Convert any time format to 24-hour HH:MM format (00:00)
+    Also fixes common OCR errors like "6.70" -> "06:10"
     
     Examples:
         "9:00 AM" -> "09:00"
@@ -204,6 +205,8 @@ def format_time_24h(time_str: str) -> str:
         "08:30 AM" -> "08:30"
         "1800" -> "18:00"
         "830" -> "08:30"
+        "6.70" -> "06:10" (OCR fix)
+        "5.41 PM" -> "17:41"
     
     Args:
         time_str: Time in any format
@@ -213,6 +216,9 @@ def format_time_24h(time_str: str) -> str:
     """
     if not time_str:
         return time_str
+    
+    # First fix OCR errors
+    time_str = fix_ocr_time_errors(time_str)
     
     # Clean input
     time_str = time_str.strip().replace('O', '0').replace('o', '0')
