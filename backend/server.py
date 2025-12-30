@@ -1122,11 +1122,27 @@ async def extract_timesheet_data(file_path: str, file_type: str, page_number: in
         if progress_tracker:
             await progress_tracker.update(status="processing", progress_percent=10, 
                                          current_step="Initializing AI model")
+        
+        # Using Gemini 2.5 Pro for best OCR accuracy (2024-2025 benchmarks)
+        # Alternatives: "gpt-4o" (OpenAI), "claude-sonnet-4-5-20250929" (Anthropic)
+        # Gemini 2.5 Pro excels at: handwriting, tables, multilingual, layouts
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"timesheet-{uuid.uuid4()}",
-            system_message="You are an expert at extracting structured data from timesheets. Extract all fields accurately and return valid JSON."
-        ).with_model("gemini", "gemini-2.0-flash")
+            system_message="""You are an expert OCR system specialized in extracting structured data from timesheets. 
+You have been trained on millions of timesheet documents and can accurately read:
+- Handwritten text (names, times, dates)
+- Printed text in various fonts
+- Tables and structured layouts
+- Signatures and initials
+- Poor quality or faded scans
+
+Always extract all fields accurately and return valid JSON. Pay special attention to:
+- Time formats (convert all to consistent format)
+- Date formats (extract full dates when possible)
+- Employee names (preserve exact spelling for matching)
+- Service codes and billing information"""
+        ).with_model("gemini", "gemini-2.5-pro")
         
         # Convert PDF to image if needed (Gemini works better with images)
         processing_file_path = file_path
