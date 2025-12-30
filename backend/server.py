@@ -1,11 +1,30 @@
 from pathlib import Path
 import os
 import asyncio
+import subprocess
 from dotenv import load_dotenv
 
 # Load environment variables FIRST before any other imports
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Ensure PDF dependencies are installed on startup
+def ensure_pdf_dependencies():
+    """Check and install poppler-utils if not present"""
+    try:
+        result = subprocess.run(['which', 'pdftoppm'], capture_output=True, text=True)
+        if result.returncode != 0:
+            print("⚠️  poppler-utils not found. Installing...")
+            subprocess.run(['apt-get', 'update', '-qq'], capture_output=True)
+            subprocess.run(['apt-get', 'install', '-y', 'poppler-utils'], capture_output=True)
+            print("✅ poppler-utils installed")
+        else:
+            print("✅ poppler-utils ready")
+    except Exception as e:
+        print(f"⚠️  Could not check/install poppler-utils: {e}")
+
+# Run on module load
+ensure_pdf_dependencies()
 
 from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Header, Depends, Request
 from fastapi.responses import StreamingResponse
