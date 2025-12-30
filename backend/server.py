@@ -26,7 +26,7 @@ def ensure_pdf_dependencies():
         print("SCAN CONFIGURATION LOADED")
         print("="*50)
         print("🤖 OCR Model: Gemini 2.5 Pro (Latest 2025)")
-        print("🕐 Time Format: 24-hour (HH:MM)")
+        print("🕐 Time Format: 12-hour (HH:MM AM/PM)")
         print("📅 Date Format: MM/DD/YYYY")
         print("🔧 OCR Fixes: Enabled (decimal→colon, invalid minutes)")
         print("📄 DPI: 300 | Quality: 98")
