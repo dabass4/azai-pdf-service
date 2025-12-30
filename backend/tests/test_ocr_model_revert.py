@@ -114,12 +114,12 @@ class OCRModelRevertTester:
                     
                     success = model_correct and poppler_installed and status_ready
                     
-                    details = f"OCR Model: {ocr_model} (Expected: gemini-2.0-flash), " \
+                    details = f"OCR Model: {ocr_model_display} (Expected: gemini-2.0-flash), " \
                              f"Poppler Installed: {poppler_installed}, " \
                              f"Status: {data.get('status')}"
                     
                     if not model_correct:
-                        details += f" ❌ CRITICAL: OCR model should be gemini-2.0-flash, not {ocr_model}"
+                        details += f" ❌ CRITICAL: OCR model should be gemini-2.0-flash, not {ocr_model_display}"
             else:
                 details = f"Status: {response.status_code}, Response: {response.text[:200]}"
             
