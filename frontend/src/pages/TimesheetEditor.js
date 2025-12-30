@@ -100,6 +100,35 @@ const TimesheetEditor = () => {
     toast.success(`Applied: ${employee.full_name}`);
   };
 
+  const applyNameCorrectionToAll = async (empIndex, incorrectName, correctName) => {
+    if (!correctName || correctName.trim() === '') {
+      toast.error("Please enter the correct name");
+      return;
+    }
+    
+    setCorrectingName(empIndex);
+    try {
+      const response = await axios.post(`${API}/employees/name-corrections`, null, {
+        params: {
+          incorrect_name: incorrectName,
+          correct_name: correctName.trim(),
+          apply_to_all: true
+        }
+      });
+      
+      // Update the current timesheet's display
+      handleEmployeeFieldChange(empIndex, 'employee_name', correctName.trim());
+      setShowNameCorrection(prev => ({ ...prev, [empIndex]: false }));
+      
+      toast.success(response.data.message);
+    } catch (e) {
+      console.error("Error applying name correction:", e);
+      toast.error("Failed to apply name correction");
+    } finally {
+      setCorrectingName(null);
+    }
+  };
+
   const handleTimeEntryChange = (empIndex, entryIndex, field, value) => {
     setTimesheet(prev => {
       const newEmployees = [...prev.extracted_data.employee_entries];
