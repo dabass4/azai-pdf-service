@@ -870,6 +870,130 @@ async def check_or_create_patient(client_name: str, organization_id: str) -> Dic
         "message": "Auto-created incomplete profile - please update"
     }
 
+async def find_similar_employees(employee_name: str, organization_id: str, threshold: float = 0.6) -> List[Dict[str, Any]]:
+    """
+    Find employees with similar names to the given name.
+    Uses fuzzy matching to find potential matches.
+    
+    Args:
+        employee_name: Name to search for
+        organization_id: Organization ID for filtering
+        threshold: Similarity threshold (0.0 to 1.0)
+    
+    Returns:
+        List of similar employees with similarity scores
+    """
+    if not employee_name or employee_name.strip() == "":
+        return []
+    
+    # Normalize the search name
+    search_name = employee_name.strip().lower()
+    search_parts = search_name.split()
+    
+    # Get all employees for this organization
+    employees = await db.employees.find(
+        {"organization_id": organization_id},
+        {"_id": 0, "id": 1, "first_name": 1, "last_name": 1, "categories": 1, "is_complete": 1}
+    ).to_list(10000)
+    
+    similar_employees = []
+    
+    for emp in employees:
+        emp_first = (emp.get('first_name') or '').lower()
+        emp_last = (emp.get('last_name') or '').lower()
+        emp_full = f"{emp_first} {emp_last}".strip()
+        
+        # Calculate similarity score
+        similarity = calculate_name_similarity(search_name, emp_full)
+        
+        # Also check if first/last names match individually
+        first_match = False
+        last_match = False
+        
+        if len(search_parts) >= 1:
+            # Check first name similarity
+            if search_parts[0] and emp_first:
+                first_sim = calculate_name_similarity(search_parts[0], emp_first)
+                first_match = first_sim >= 0.8
+        
+        if len(search_parts) >= 2:
+            # Check last name similarity
+            search_last = ' '.join(search_parts[1:])
+            if search_last and emp_last:
+                last_sim = calculate_name_similarity(search_last, emp_last)
+                last_match = last_sim >= 0.8
+        
+        # Boost similarity if first or last name matches
+        if first_match and last_match:
+            similarity = max(similarity, 0.95)
+        elif first_match or last_match:
+            similarity = max(similarity, 0.7)
+        
+        if similarity >= threshold:
+            similar_employees.append({
+                "id": emp.get('id'),
+                "first_name": emp.get('first_name'),
+                "last_name": emp.get('last_name'),
+                "full_name": f"{emp.get('first_name', '')} {emp.get('last_name', '')}".strip(),
+                "categories": emp.get('categories', []),
+                "is_complete": emp.get('is_complete', False),
+                "similarity_score": round(similarity, 2),
+                "match_type": "exact" if similarity >= 0.95 else "similar"
+            })
+    
+    # Sort by similarity score (highest first)
+    similar_employees.sort(key=lambda x: x['similarity_score'], reverse=True)
+    
+    return similar_employees[:10]  # Return top 10 matches
+
+
+def calculate_name_similarity(name1: str, name2: str) -> float:
+    """
+    Calculate similarity between two names using Levenshtein distance.
+    Returns a score between 0.0 (completely different) and 1.0 (identical).
+    """
+    if not name1 or not name2:
+        return 0.0
+    
+    name1 = name1.lower().strip()
+    name2 = name2.lower().strip()
+    
+    if name1 == name2:
+        return 1.0
+    
+    # Calculate Levenshtein distance
+    len1, len2 = len(name1), len(name2)
+    
+    if len1 == 0:
+        return 0.0 if len2 > 0 else 1.0
+    if len2 == 0:
+        return 0.0
+    
+    # Create distance matrix
+    distances = [[0] * (len2 + 1) for _ in range(len1 + 1)]
+    
+    for i in range(len1 + 1):
+        distances[i][0] = i
+    for j in range(len2 + 1):
+        distances[0][j] = j
+    
+    for i in range(1, len1 + 1):
+        for j in range(1, len2 + 1):
+            cost = 0 if name1[i-1] == name2[j-1] else 1
+            distances[i][j] = min(
+                distances[i-1][j] + 1,      # deletion
+                distances[i][j-1] + 1,      # insertion
+                distances[i-1][j-1] + cost  # substitution
+            )
+    
+    # Convert distance to similarity score
+    max_len = max(len1, len2)
+    distance = distances[len1][len2]
+    similarity = 1.0 - (distance / max_len)
+    
+    return similarity
+
+
 async def check_or_create_employee(employee_name: str, organization_id: str) -> Dict[str, Any]:
     """
     Check if employee exists by name, create if not found
