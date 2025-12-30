@@ -2,7 +2,33 @@
 Scan Configuration - Centralized settings for timesheet scanning
 All parameters are automatically applied when processing timesheets.
 These settings persist across poppler-utils reinstalls.
+
+OCR MODEL: Gemini 2.5 Pro (Latest as of 2025)
+- Best-in-class accuracy for document OCR
+- Excellent at handwriting, tables, multilingual text
+- Outperforms GPT-4o and Claude in document understanding benchmarks
 """
+
+# =============================================================================
+# AI MODEL SETTINGS (OCR)
+# =============================================================================
+OCR_MODEL_SETTINGS = {
+    "provider": "gemini",
+    "model": "gemini-2.5-pro",         # Latest high-accuracy model
+    "alternatives": [
+        "gpt-4o",                       # OpenAI alternative
+        "claude-sonnet-4-5-20250929",   # Anthropic alternative
+        "gemini-2.5-flash",             # Faster but slightly less accurate
+    ],
+    "capabilities": [
+        "handwriting_recognition",
+        "table_extraction", 
+        "signature_detection",
+        "multilingual_support",
+        "poor_quality_scan_handling"
+    ],
+    "last_updated": "2025-01"
+}
 
 # =============================================================================
 # PDF CONVERSION SETTINGS
