@@ -167,6 +167,24 @@ backend:
         agent: "testing"
         comment: "✅ SIMILAR EMPLOYEE SUGGESTION FEATURE FULLY FUNCTIONAL: Comprehensive testing completed with admin credentials (admin@medicaidservices.com). TESTING RESULTS: ✅ AUTHENTICATION: Successfully authenticated as admin user. ✅ EXACT NAME MATCH (GET /api/employees/similar/{name}): 'Test Employee' search returns 100% similarity score with match_type 'exact' and has_exact_match flag true. Response includes all required fields: search_name, similar_employees array with id, first_name, last_name, full_name, categories, is_complete, similarity_score, match_type. ✅ FUZZY MATCHING: 'Jon Smith' successfully finds 'John Smith' with 85-90% similarity and match_type 'similar'. OCR error handling working correctly. ✅ PARTIAL NAME SEARCH: 'Smith' successfully finds 'Jane Smith' with reasonable similarity score. ✅ TYPO HANDLING: 'Jane Smyth' successfully finds 'Jane Smith' with ~80% similarity, demonstrating robust fuzzy matching. ✅ SIMILARITY RANKING: Results properly sorted by similarity score (highest first), scores in valid 0-1 range, match_type correctly assigned ('exact' for 95%+, 'similar' for lower). ✅ EMPLOYEE LINKING (POST /api/employees/link-to-existing): Successfully links scanned employee to existing employee using query parameters scanned_employee_id and existing_employee_id. Deletes scanned employee, updates timesheet references, returns success status with linked employee details. ✅ ERROR HANDLING: Properly returns 404 for non-existent employee IDs during linking. All 8/8 tests passed successfully. Feature ready for production use in timesheet scanning workflow."
 
+  - task: "OCR Model Revert Fix"
+    implemented: true
+    working: true
+    file: "server.py, scan_config.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Reverting OCR model from gemini-2.5-pro back to gemini-2.0-flash to fix PDF upload timeout issues"
+      - working: true
+        agent: "main"
+        comment: "OCR MODEL REVERT COMPLETED: Updated scan_config.py and server.py to use gemini-2.0-flash consistently. Restarted backend and verified: (1) /api/system/pdf-status shows model=gemini-2.0-flash, (2) Test PDF upload completed in 4 seconds (vs previous timeouts), (3) All scan configuration settings loaded correctly on startup. P0 issue resolved."
+      - working: true
+        agent: "testing"
+        comment: "✅ OCR MODEL REVERT FIX VERIFICATION COMPLETED: Comprehensive testing confirmed the fix is working correctly. PDF Status Endpoint returns gemini-2.0-flash model (not gemini-2.5-pro), poppler_utils installed=true, status=ready. PDF Upload Performance test shows uploads complete in under 30 seconds with proper extracted_data containing client_name and employee_entries. Employee CRUD operations working correctly. Minor: Timesheet retrieval endpoint has unrelated data validation issue (520 error) but core OCR functionality is working. 4/5 tests passed - the OCR model revert fix has successfully resolved the PDF upload timeout issues."
+
 frontend:
   - task: "Other Insurance (TPL) Section in Patient Form"
     implemented: true
