@@ -2248,8 +2248,8 @@ async def get_pdf_status():
         "status": "ready" if poppler_installed else "unavailable",
         "ocr_model": {
             "provider": "Google Gemini",
-            "model": "gemini-2.5-pro",
-            "description": "Latest high-accuracy OCR model (2025)",
+            "model": "gemini-2.0-flash",
+            "description": "Fast and reliable OCR model for production use",
             "capabilities": [
                 "Handwriting recognition",
                 "Table extraction",
