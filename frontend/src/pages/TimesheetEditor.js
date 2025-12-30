@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Save, X, Plus, Trash2, AlertCircle, CheckCircle } from "lucide-react";
+import { Save, X, Plus, Trash2, AlertCircle, CheckCircle, Users, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,11 @@ const TimesheetEditor = () => {
   const [timesheet, setTimesheet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // Similar employee suggestions state
+  const [similarEmployees, setSimilarEmployees] = useState({});
+  const [loadingSimilar, setLoadingSimilar] = useState({});
+  const [showSuggestions, setShowSuggestions] = useState({});
 
   useEffect(() => {
     fetchTimesheet();
