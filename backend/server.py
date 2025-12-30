@@ -1363,8 +1363,9 @@ Return ONLY the JSON object, no additional text or explanation."""
             
             # Add similar employee suggestions to confidence details
             confidence_details['similar_employee_suggestions'] = []
-            for emp_entry in employee_entries:
-                if emp_entry.get('employee_name'):
+            raw_employee_entries = extracted_json.get('employee_entries', [])
+            for emp_entry in raw_employee_entries:
+                if isinstance(emp_entry, dict) and emp_entry.get('employee_name'):
                     emp_name = emp_entry['employee_name']
                     # Note: Similar employees will be fetched when timesheet is loaded in editor
                     confidence_details['similar_employee_suggestions'].append({
