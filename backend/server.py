@@ -1382,9 +1382,10 @@ Return ONLY the JSON object, no additional text or explanation."""
                                     # Calculate units and hours from time difference
                                     units, calculated_hours = calculate_units_from_times(normalized_time_in, normalized_time_out)
                                     
-                                    # Convert to 24-hour format (HH:MM) for display
-                                    formatted_time_in = format_time_24h(time_in) if time_in else ""
-                                    formatted_time_out = format_time_24h(time_out) if time_out else ""
+                                    # Convert to 12-hour format (HH:MM AM/PM) for display
+                                    # This preserves AM/PM information and is more readable
+                                    formatted_time_in = format_time_12h(time_in) if time_in else ""
+                                    formatted_time_out = format_time_12h(time_out) if time_out else ""
                                     
                                     # Use calculated hours if available, otherwise use extracted value
                                     hours_worked_decimal = calculated_hours if calculated_hours is not None else entry.get("hours_worked")
@@ -1397,11 +1398,11 @@ Return ONLY the JSON object, no additional text or explanation."""
                                     if entry_date:
                                         entry_date = format_date_mm_dd_yyyy(entry_date)
                                     
-                                    # Create TimeEntry with 24-hour times, calculated units, and formatted hours
+                                    # Create TimeEntry with 12-hour times (HH:MM AM/PM), calculated units, and formatted hours
                                     time_entry = TimeEntry(
                                         date=entry_date,
-                                        time_in=formatted_time_in,  # Now in HH:MM format (e.g., "09:00", "17:30")
-                                        time_out=formatted_time_out,  # Now in HH:MM format
+                                        time_in=formatted_time_in,  # Now in HH:MM AM/PM format (e.g., "09:00 AM", "05:30 PM")
+                                        time_out=formatted_time_out,  # Now in HH:MM AM/PM format
                                         hours_worked=str(hours_worked_decimal) if hours_worked_decimal else None,  # Keep for backward compatibility
                                         hours=hours_minutes['hours'],
                                         minutes=hours_minutes['minutes'],
