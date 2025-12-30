@@ -44,7 +44,7 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithM
 import aiohttp
 from pdf2image import convert_from_path
 from PIL import Image
-from time_utils import calculate_units_from_times, normalize_am_pm
+from time_utils import calculate_units_from_times, normalize_am_pm, format_time_24h
 from date_utils import normalize_dates_in_extracted_data
 from auth import (
     hash_password, 
