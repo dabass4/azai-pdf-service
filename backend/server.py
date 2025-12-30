@@ -1301,6 +1301,10 @@ Return ONLY the JSON object, no additional text or explanation."""
             # Normalize dates using week context
             extracted_json = normalize_dates_in_extracted_data(extracted_json)
             
+            # Get week range for date inference
+            week_of = extracted_json.get("week_of")
+            week_range = parse_week_range(week_of) if week_of else None
+            
             # Parse employee_entries array
             employee_entries = []
             employee_entries_data = extracted_json.get("employee_entries", [])
@@ -1315,6 +1319,11 @@ Return ONLY the JSON object, no additional text or explanation."""
                         if isinstance(time_entries_data, list):
                             for entry in time_entries_data:
                                 if isinstance(entry, dict):
+                                    # Get and infer date if needed
+                                    raw_date = entry.get("date", "")
+                                    inferred_date = parse_date_with_context(raw_date, week_range) if raw_date else ""
+                                    entry['date'] = inferred_date if inferred_date else raw_date
+                                    
                                     # Get original times
                                     time_in = entry.get("time_in", "")
                                     time_out = entry.get("time_out", "")
