@@ -2195,6 +2195,7 @@ async def get_pdf_status():
     """
     Check PDF processing status and scan parameters.
     Also reinstalls poppler-utils if missing.
+    All scan parameters are permanently configured in code.
     """
     import shutil
     
@@ -2237,19 +2238,37 @@ async def get_pdf_status():
             "dpi": 300,
             "jpeg_quality": 98,
             "color_mode": "RGB",
-            "thread_count": 2,
-            "date_format": "MM/DD/YYYY",
-            "date_inference": True,
-            "cross_timesheet_comparison": True
+            "thread_count": 2
+        },
+        "time_format": {
+            "display": "24-hour (HH:MM)",
+            "example": "09:00, 17:30",
+            "ocr_fixes": {
+                "decimal_to_colon": "6.70 → 06:10",
+                "invalid_minutes": "6:70 → 06:10 (70→10)"
+            },
+            "auto_applied": True
+        },
+        "date_format": {
+            "output": "MM/DD/YYYY",
+            "example": "12/30/2024",
+            "week_inference": True,
+            "cross_timesheet_comparison": True,
+            "auto_applied": True
+        },
+        "unit_calculation": {
+            "minutes_per_unit": 15,
+            "rounding": "nearest",
+            "auto_applied": True
         },
         "extraction_features": {
-            "service_code_detection": ["T1019", "T1020", "T1021", "S5125", "S5126", "S5130", "S5131"],
+            "service_codes": ["T1019", "T1020", "T1021", "S5125", "S5126", "S5130", "S5131"],
             "signature_detection": True,
             "similar_employee_matching": True,
-            "ocr_error_handling": True,
-            "week_context_inference": True
+            "name_correction": True,
+            "auto_applied": True
         },
-        "message": "PDF processing is ready" if poppler_installed else "PDF processing unavailable - poppler-utils installation failed"
+        "message": "PDF processing ready. All scan parameters are permanently configured." if poppler_installed else "PDF processing unavailable - poppler-utils installation failed"
     }
 
 
