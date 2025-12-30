@@ -320,15 +320,71 @@ const TimesheetEditor = () => {
               <CardContent className="pt-6 space-y-6">
                 {/* Employee Details */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
+                  <div className="relative">
                     <Label htmlFor={`emp_name_${empIndex}`}>Employee Name</Label>
-                    <Input
-                      id={`emp_name_${empIndex}`}
-                      value={employee.employee_name || ""}
-                      onChange={(e) => handleEmployeeFieldChange(empIndex, "employee_name", e.target.value)}
-                      placeholder="Enter name"
-                      data-testid={`employee-name-${empIndex}`}
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        id={`emp_name_${empIndex}`}
+                        value={employee.employee_name || ""}
+                        onChange={(e) => handleEmployeeFieldChange(empIndex, "employee_name", e.target.value)}
+                        placeholder="Enter name"
+                        data-testid={`employee-name-${empIndex}`}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => fetchSimilarEmployees(empIndex, employee.employee_name)}
+                        disabled={loadingSimilar[empIndex]}
+                        title="Find similar employees"
+                      >
+                        <Users size={16} />
+                      </Button>
+                    </div>
+                    
+                    {/* Similar Employee Suggestions */}
+                    {showSuggestions[empIndex] && similarEmployees[empIndex]?.similar_employees?.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        <div className="p-2 bg-blue-50 border-b flex justify-between items-center">
+                          <span className="text-xs font-semibold text-blue-800">
+                            <Users size={12} className="inline mr-1" />
+                            Similar Employees Found ({similarEmployees[empIndex].similar_employees.length})
+                          </span>
+                          <button
+                            onClick={() => setShowSuggestions(prev => ({ ...prev, [empIndex]: false }))}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        {similarEmployees[empIndex].similar_employees.map((emp, idx) => (
+                          <div
+                            key={idx}
+                            className="p-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex justify-between items-center"
+                            onClick={() => applySuggestedEmployee(empIndex, emp)}
+                          >
+                            <div>
+                              <p className="font-medium text-sm">{emp.full_name}</p>
+                              <p className="text-xs text-gray-500">
+                                {emp.categories?.length > 0 ? emp.categories.join(", ") : "No category"} 
+                                {emp.is_complete ? " • Complete" : " • Incomplete"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                emp.similarity_score >= 0.95 ? 'bg-green-100 text-green-800' :
+                                emp.similarity_score >= 0.85 ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {Math.round(emp.similarity_score * 100)}% match
+                              </span>
+                              <Link size={14} className="text-blue-600" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor={`service_code_${empIndex}`}>Service Code</Label>
