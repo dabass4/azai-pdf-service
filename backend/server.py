@@ -2259,19 +2259,14 @@ async def get_pdf_status():
     
     return {
         "status": "ready" if poppler_installed else "unavailable",
+        "config_source": "scan_config.py (single source of truth)",
         "ocr_model": {
-            "provider": "Google Gemini",
-            "model": "gemini-2.0-flash",
-            "description": "Fast and reliable OCR model for production use",
-            "capabilities": [
-                "Handwriting recognition",
-                "Table extraction",
-                "Signature detection",
-                "Multilingual support",
-                "Poor quality scan handling"
-            ],
-            "alternatives": ["gpt-4o (OpenAI)", "claude-sonnet-4.5 (Anthropic)"],
-            "last_updated": "January 2025"
+            "provider": OCR_MODEL_SETTINGS['provider'].title(),
+            "model": OCR_MODEL_SETTINGS['model'],
+            "description": OCR_MODEL_SETTINGS.get('description', 'OCR model for timesheet processing'),
+            "capabilities": [cap.replace('_', ' ').title() for cap in OCR_MODEL_SETTINGS['capabilities']],
+            "alternatives": OCR_MODEL_SETTINGS['alternatives'],
+            "last_updated": OCR_MODEL_SETTINGS['last_updated']
         },
         "poppler_utils": {
             "installed": poppler_installed,
@@ -2280,41 +2275,42 @@ async def get_pdf_status():
             "install_attempted": install_attempted
         },
         "scan_parameters": {
-            "dpi": 300,
-            "jpeg_quality": 98,
-            "color_mode": "RGB",
-            "thread_count": 2
+            "dpi": PDF_SETTINGS['dpi'],
+            "jpeg_quality": PDF_SETTINGS['jpeg_quality'],
+            "color_mode": PDF_SETTINGS['color_mode'],
+            "thread_count": PDF_SETTINGS['thread_count']
         },
         "time_format": {
-            "display": "12-hour (HH:MM AM/PM)",
-            "example": "09:00 AM, 05:30 PM",
+            "display": f"{TIME_SETTINGS['display_format']} ({TIME_SETTINGS.get('display_example', 'N/A')})",
+            "example": TIME_SETTINGS.get('display_example', '09:00 AM, 05:30 PM'),
             "supports_24h_input": True,
             "ocr_fixes": {
-                "decimal_to_colon": "6.70 → 06:10 PM",
-                "invalid_minutes": "6:70 → 06:10 PM (70→10)"
+                "decimal_to_colon": TIME_SETTINGS['ocr_fixes'].get('decimal_to_colon_example', '6.70 → 06:10'),
+                "invalid_minutes": "6:70 → 06:10 (70→10)",
+                "enabled": TIME_SETTINGS['ocr_fixes']['decimal_to_colon']
             },
             "auto_applied": True
         },
         "date_format": {
-            "output": "MM/DD/YYYY",
+            "output": DATE_SETTINGS['output_format'],
             "example": "12/30/2024",
-            "week_inference": True,
-            "cross_timesheet_comparison": True,
+            "week_inference": DATE_SETTINGS['week_inference'],
+            "cross_timesheet_comparison": DATE_SETTINGS['cross_timesheet_comparison'],
             "auto_applied": True
         },
         "unit_calculation": {
-            "minutes_per_unit": 15,
-            "rounding": "nearest",
+            "minutes_per_unit": UNIT_SETTINGS['minutes_per_unit'],
+            "rounding": UNIT_SETTINGS['rounding'],
             "auto_applied": True
         },
         "extraction_features": {
-            "service_codes": ["T1019", "T1020", "T1021", "S5125", "S5126", "S5130", "S5131"],
-            "signature_detection": True,
-            "similar_employee_matching": True,
-            "name_correction": True,
+            "service_codes": EXTRACTION_SETTINGS['service_codes'],
+            "signature_detection": EXTRACTION_SETTINGS['signature_detection'],
+            "similar_employee_matching": EXTRACTION_SETTINGS['similar_employee_matching'],
+            "name_correction": EXTRACTION_SETTINGS.get('preserve_ocr_names', True),
             "auto_applied": True
         },
-        "message": "PDF processing ready. All scan parameters are permanently configured." if poppler_installed else "PDF processing unavailable - poppler-utils installation failed"
+        "message": "PDF processing ready. All settings loaded from scan_config.py." if poppler_installed else "PDF processing unavailable - poppler-utils installation failed"
     }
 
 
