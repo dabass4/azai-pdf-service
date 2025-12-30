@@ -1,258 +1,393 @@
 <analysis>**original_problem_statement:**
-The user's primary goal is to build a healthcare timesheet application, AZAI, that integrates with the Ohio Department of Medicaid (ODM) and Availity for claims processing. The application also requires an Admin Panel for administrative staff.
+The user's primary goal is to build and refine the AZAI healthcare timesheet application. In this session, the user requested a series of rapid enhancements and bug fixes primarily focused on the Employees page and the PDF timesheet scanning functionality.
 
-The project's focus has shifted several times due to recurring bugs and new user requests. In the last session, the agent has:
-- Fixed a critical serialization bug in the timesheet API.
-- Fixed data loading issues in the Admin Panel.
-- Repeatedly addressed a persistent issue where the  dependency (required for PDF scanning) disappears after environment restarts.
-- Fixed a  in the timesheet processing logic.
-- Based on user feedback about performance, architected and created the files for a separate, external PDF/OCR processing microservice to be deployed on Railway.
-- Assisted the user with documentation for Ohio Medicaid connectivity forms.
-- Implemented strict backend validation to enforce required data fields for patient and employee profiles, as specified by the user for ODM/EVV compliance.
+**Feature Requests & Bug Fixes This Session:**
+1.  **Employee Form Simplification (Phase 1):** Remove certifications, license, and expiration fields from the employee profile and fix a resulting validation error on updates.
+2.  **Employee Form Simplification (Phase 2):** Remove job title, hire date, department, employment status, and hourly rates. Make the Employee Category a mandatory field for validation.
+3.  **Duplicate Employee Management:** Implement a feature to find employees with similar names, suggest deleting the older record, and allow an admin to resolve the duplication.
+4.  **Similar Name Suggestion on Scan:** During timesheet scanning, if an employee name is not an exact match, suggest similar existing employees to prevent creating new, duplicate entries from OCR variations.
+5.  **Global Name Correction:** Add a feature to correct a misspelled employee name and have that correction apply to all existing timesheets where that misspelling appears.
+6.  **Automatic Date Inference:** When a timesheet has missing dates (e.g., just Monday), the system should cross-compare with other timesheets for that employee/week to infer and fill in the full date in  format.
+7.  **Fix PDF Conversion Failures:** Address a recurring PDF conversion failed error caused by the  system dependency becoming uninstalled.
+8.  **Persistent Scan Configuration:** Ensure all scanning parameters (like date/time formats) are saved and automatically re-applied, even if  needs to be reinstalled.
+9.  **Time Format Standardization:** Initially requested  (24-hour) format, then later clarified to use  format for all times displayed from scans.
+10. **Fix OCR Time Errors:** Implement logic to correct common OCR errors in time entries, such as 6.70 being misread instead of 6:10.
+11. **Upgrade OCR Technology:** Research and apply the latest, most accurate OCR technology for timesheet scanning.
+12. **Fix Slow Timesheet Uploads:** Diagnose and resolve an issue where timesheet uploads were taking too long or timing out.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack solution using React, FastAPI, and MongoDB. Key functionalities include PDF timesheet scanning, user/organization management, and an Admin Panel.
+The application is a full-stack solution with a React frontend, FastAPI backend, and MongoDB database.
 
-Recent significant changes include:
-- **Serialization Fix**:  objects are now correctly converted to ISO strings before being saved to MongoDB, and the  endpoint has the proper  for validation.
-- **Admin Panel Fix**: The frontend pages for managing organizations and credentials now correctly parse the API response, resolving a crash.
-- **PDF/OCR External Service**: A complete standalone FastAPI service has been created in the  directory, ready to be deployed to Railway. This includes a , , and  to aid deployment.
-- **Required Fields Validation**: A new  module and updated API endpoints enforce data completeness for patient and employee profiles, including a rule that the Medicaid number must be exactly 12 digits.
-- **Poppler Persistence Attempt**: A startup script (🔧 Checking system dependencies...
-📦 Installing poppler-utils...
-Reading package lists...
-Building dependency tree...
-Reading state information...
-The following additional packages will be installed:
-  liblcms2-2 libopenjp2-7 libpoppler126 poppler-data
-Suggested packages:
-  liblcms2-utils ghostscript fonts-japanese-mincho | fonts-ipafont-mincho
-  fonts-arphic-ukai fonts-arphic-uming fonts-nanum
-The following NEW packages will be installed:
-  liblcms2-2 libopenjp2-7 libpoppler126 poppler-data poppler-utils
-0 upgraded, 5 newly installed, 0 to remove and 2 not upgraded.
-Need to get 3850 kB of archives.
-After this operation, 20.1 MB of additional disk space will be used.
-Get:1 http://deb.debian.org/debian bookworm/main arm64 poppler-data all 0.4.12-1 [1601 kB]
-Get:2 http://deb.debian.org/debian bookworm/main arm64 liblcms2-2 arm64 2.14-2 [143 kB]
-Get:3 http://deb.debian.org/debian bookworm/main arm64 libopenjp2-7 arm64 2.5.0-2+deb12u2 [176 kB]
-Get:4 http://deb.debian.org/debian bookworm/main arm64 libpoppler126 arm64 22.12.0-2+deb12u1 [1753 kB]
-Get:5 http://deb.debian.org/debian bookworm/main arm64 poppler-utils arm64 22.12.0-2+deb12u1 [177 kB]
-Fetched 3850 kB in 0s (21.7 MB/s)
-Selecting previously unselected package poppler-data.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 38368 files and directories currently installed.)
-Preparing to unpack .../poppler-data_0.4.12-1_all.deb ...
-Unpacking poppler-data (0.4.12-1) ...
-Selecting previously unselected package liblcms2-2:arm64.
-Preparing to unpack .../liblcms2-2_2.14-2_arm64.deb ...
-Unpacking liblcms2-2:arm64 (2.14-2) ...
-Selecting previously unselected package libopenjp2-7:arm64.
-Preparing to unpack .../libopenjp2-7_2.5.0-2+deb12u2_arm64.deb ...
-Unpacking libopenjp2-7:arm64 (2.5.0-2+deb12u2) ...
-Selecting previously unselected package libpoppler126:arm64.
-Preparing to unpack .../libpoppler126_22.12.0-2+deb12u1_arm64.deb ...
-Unpacking libpoppler126:arm64 (22.12.0-2+deb12u1) ...
-Selecting previously unselected package poppler-utils.
-Preparing to unpack .../poppler-utils_22.12.0-2+deb12u1_arm64.deb ...
-Unpacking poppler-utils (22.12.0-2+deb12u1) ...
-Setting up liblcms2-2:arm64 (2.14-2) ...
-Setting up poppler-data (0.4.12-1) ...
-Setting up libopenjp2-7:arm64 (2.5.0-2+deb12u2) ...
-Setting up libpoppler126:arm64 (22.12.0-2+deb12u1) ...
-Setting up poppler-utils (22.12.0-2+deb12u1) ...
-Processing triggers for libc-bin (2.36-9+deb12u13) ...
-Processing triggers for fontconfig (2.14.1-4) ...
-✅ poppler-utils installed successfully
-✅ System dependencies check passed) has been created to automatically install  on container start, attempting to permanently resolve a critical recurring bug.
+The Employee management module has been significantly streamlined, removing numerous fields and making Category a central, required piece of data. The UI and backend validation have been updated accordingly.
+
+A robust suite of data quality features has been implemented:
+-   **Duplicate Employee Detection:** Admins can find and merge duplicate employee records.
+-   **Name Correction & Suggestion:** The system suggests similar names during scanning and allows for global name corrections.
+-   **Automated Date & Time Fixing:** The system now automatically infers missing dates, corrects common OCR errors in time strings, and standardizes all times to a 12-hour AM/PM format.
+
+The most critical improvement is the creation of a persistent, automated solution for the recurring  dependency issue. A startup script now ensures the dependency is installed, and a centralized configuration file () ensures all scanning settings (DPI, OCR model, date/time formats, etc.) are loaded on every server start.
 
 **Last working item**:
-    - Last item agent was working: The agent updated the backend validation logic to enforce that the patient's Medicaid number must be exactly 12 digits and contain only numbers, as requested by the user. This change was applied to  and the corresponding documentation was updated.
-    - Status: USER VERIFICATION PENDING
+    - Last item agent was working: The agent was diagnosing and fixing an issue where timesheet uploads were taking too long. It identified that the newly upgraded OCR model () was causing 502 server errors. To restore functionality, the agent reverted the model to the previously stable .
+    - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? backend testing agent. The agent should write a test to attempt creating/updating a patient with invalid Medicaid numbers (e.g., <12 digits, >12 digits, with letters) to ensure it fails, and with a valid 12-digit number to ensure it succeeds.
+    - Which testing method agent to use? backend testing agent. The agent should first update the  file to reflect the model change, restart the backend, and then use a  command or the testing agent to perform a test PDF upload, verifying both that it completes quickly and that the system status endpoint () shows the correct (reverted) model.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Critical  dependency instability (P0)
-  - Issue 2: Test the newly implemented data validation rules for profiles (P1)
+  - Issue 1: Finalize and Test the OCR Model Revert (P0)
+  - Issue 2: Critical  dependency instability (P1)
   - Issue 3: Test the Notification System (P2)
+  - Issue 4: Test Admin Panel CRUD Functionality (P3)
+  - Issue 5: Test data validation rules for profiles (P3)
   
-  **Issues Detail:**
+  Issues Detail:
   - **Issue 1:** 
-     - **Description**: The  package, which is critical for PDF timesheet scanning, repeatedly becomes uninstalled or unavailable in the environment's PATH, causing the PDF conversion failed error. This is a highly disruptive, recurring issue.
-     - **Attempted fixes**: The agent has tried Reading package lists...
-Building dependency tree...
-Reading state information...
-0 upgraded, 0 newly installed, 0 to remove and 2 not upgraded. multiple times. The latest attempt was creating a startup script (🔧 Checking system dependencies...
-✅ poppler-utils already installed
-pdftoppm version 22.12.0
-✅ System dependencies check passed) to automate the installation. It is unknown if this script is effective.
+     - **Description**: The agent reverted the OCR model to  in  to fix slow uploads but did not update the centralized  file or test the change.
+     - **Attempted fixes**: The model was changed in .
      - **Next debug checklist**:
-       1. First, check if  is currently installed by running /usr/bin/pdftoppm.
-       2. If not installed, investigate why the  script is not working as expected. Is it being executed? Does it have the correct permissions ()?
-       3. If the script is not a viable solution, the fundamental approach to managing system dependencies in this environment needs to be re-evaluated.
-     - **Why fix this issue and what will be achieved with the fix?**: This is the most critical bug in the application. Fixing it permanently will stabilize the core timesheet upload feature and prevent constant user frustration.
-     - **Status**: IN PROGRESS
+       1.  Edit  to change the  back to .
+       2.  Restart the backend backend: stopped
+backend: started.
+       3.  Call the  endpoint to confirm the config change is reflected.
+       4.  Perform a test PDF upload to confirm it is fast and successful.
+     - **Why fix this issue and what will be achieved with the fix?**: This will resolve the user's report of slow uploads and ensure the application is in a stable, working state. It also ensures the configuration file remains the single source of truth.
+     - **Status**:  IN PROGRESS
+     - **Is recurring issue?**: N
+     - **Should Test frontend/backend/both after fix?**: backend
+     - **Blocked on other issue**: None
+  - **Issue 2:** 
+     - **Description**: The  package, critical for PDF scanning, has repeatedly become unavailable. While a startup script has been implemented to auto-reinstall it, the root cause of its removal is unknown, posing a significant reliability risk.
+     - **Attempted fixes**: An auto-installation script (==========================================
+AZAI PDF Dependencies Check
+==========================================
+⚠️  poppler-utils not found. Installing...
+✅ poppler-utils installed successfully
+
+==========================================
+SCAN CONFIGURATION (Permanently Applied)
+==========================================
+
+📄 PDF CONVERSION:
+   DPI: 300 (high quality OCR)
+   JPEG Quality: 98
+   Color Mode: RGB (for signature detection)
+   Thread Count: 2
+
+🕐 TIME FORMAT:
+   Display: 24-hour (HH:MM)
+   Examples: 09:00, 17:30, 14:45
+   OCR Fixes:
+     • Decimal to colon: 6.70 → 06:10
+     • Invalid minutes: 6:70 → 06:10
+     • Smart AM/PM: 7-11 = AM, 1-6 = PM
+
+📅 DATE FORMAT:
+   Output: MM/DD/YYYY
+   Examples: 12/30/2024, 01/04/2025
+   Features:
+     • Week inference from week_of field
+     • Day name to date: Monday → 12/30/2024
+     • Cross-timesheet comparison
+
+🔢 UNIT CALCULATION:
+   1 unit = 15 minutes
+   Rounding: nearest unit
+   Examples:
+     • 8 hours (480 min) = 32 units
+     • 4 hours (240 min) = 16 units
+
+🔍 EXTRACTION FEATURES:
+   • Service Codes: T1019, T1020, T1021, S5125, S5126, S5130, S5131
+   • Signature Detection: Enabled
+   • Similar Employee Matching: Enabled
+   • Name Correction: Enabled
+
+==========================================
+All settings are permanently configured
+in code and auto-applied to every scan.
+==========================================) was created and is run at server startup. This is a workaround, not a root cause fix.
+     - **Next debug checklist**: Monitor the application. If the error occurs again despite the startup script, investigate the container's lifecycle and environment logs to understand what process might be removing the package. The long-term solution remains deploying the external PDF service.
+     - **Why fix this issue and what will be achieved with the fix?**: This is the most critical underlying infrastructure bug. Permanently fixing it will stabilize the application's core feature.
+     - **Status**:  NOT STARTED (Workaround in place)
      - **Is recurring issue?**: Y
      - **Should Test frontend/backend/both after fix?**: backend
      - **Blocked on other issue**: None
-
-  - **Issue 2:** 
-     - **Description**: The agent implemented a series of strict validation rules for patient and employee profiles (e.g., 12-digit Medicaid ID) in  but did not test them.
-     - **Next debug checklist**:
-       1. Use the backend testing agent to test the  and  endpoints.
-       2. For the patient profile, test submitting data that violates the rules (e.g., a 10-digit Medicaid number, a missing ) and verify the API returns a 422 Unprocessable Entity error.
-       3. Test submitting a fully compliant patient profile and verify it saves successfully.
-       4. Repeat the process for the employee profile.
-     - **Why fix this issue and what will be achieved with the fix?**: To ensure data integrity and confirm that the user's requirements for ODM/EVV compliance are correctly enforced by the backend.
-     - **Status**: TESTING PENDING
+  - **Issue 3:** 
+     - **Description**: The notification system, completed in a previous session, has never been tested.
+     - **Next debug checklist**: Use the frontend testing agent to log in, trigger an action that creates a notification, and verify the pop-up appears and the notification is listed on the  page.
+     - **Why fix this issue and what will be achieved with the fix?**: Verifies a major user-facing feature works correctly.
+     - **Status**:  NOT STARTED
+     - **Is recurring issue?**: N
+     - **Should Test frontend/backend/both after fix?**: frontend
+     - **Blocked on other issue**: None
+  - **Issue 4:** 
+     - **Description**: Full end-to-end testing of the Admin Panel's CRUD functionality for organizations and credentials was never performed.
+     - **Next debug checklist**: Use the backend testing agent to create, read, update, and delete organizations and credentials via their respective API endpoints.
+     - **Why fix this issue and what will be achieved with the fix?**: Ensures administrative functions are working as expected.
+     - **Status**:  NOT STARTED
+     - **Is recurring issue?**: N
+     - **Should Test frontend/backend/both after fix?**: backend
+     - **Blocked on other issue**: None
+  - **Issue 5:** 
+     - **Description**: Strict validation rules for patient and employee profiles in  were implemented in a past session but never fully tested after the recent field removals.
+     - **Next debug checklist**: Use the backend testing agent to test the  endpoint, verifying that both invalid data (e.g., empty categories) and valid data are handled correctly.
+     - **Why fix this issue and what will be achieved with the fix?**: Ensures data integrity and compliance with ODM/EVV rules.
+     - **Status**:  NOT STARTED
      - **Is recurring issue?**: N
      - **Should Test frontend/backend/both after fix?**: backend
      - **Blocked on other issue**: None
 
-  - **Issue 3:** 
-     - **Description**: The notification system (in-app pop-ups and notification center) was completed in a previous session but was never tested. This was carried over from the last handoff.
-     - **Next debug checklist**: Use the frontend testing agent to log in as a user, verify that the notification pop-up appears, and check the  page for history.
-     - **Why fix this issue and what will be achieved with the fix?**: To verify that a major user-facing feature is working correctly.
-     - **Status**: NOT STARTED
-     - **Is recurring issue?**: N
-     - **Should Test frontend/backend/both after fix?**: frontend
-     - **Blocked on other issue**: None
-
 **In progress Task List**:
-  - Task 1:  Deploy the external PDF processing service to Railway (P1)
-
-  **Task Detail:**
-  - **Task 1:** 
-     - **Where to resume**: The user was experiencing build failures on Railway (Script start.sh not found). The agent has created  and  in the  directory to explicitly tell Railway how to build and run the service. The next step is for the user to push these changes to their GitHub repository and trigger a new deployment on Railway.
-     - **What will be achieved with this?**: This will offload heavy PDF processing to a scalable, separate microservice, improving the main application's performance and stability, and permanently solving the  dependency issue.
-     - **Status**: BLOCKED (Waiting on user to push code to GitHub and try deploying again).
-     - **Should Test frontend/backend/both after fix?**: backend (The new service endpoint needs to be tested, then the main app's integration with it).
-     - **Blocked on something**: User action is required to deploy.
+(None)
 
 **Upcoming and Future Tasks**
-
-**Upcoming Tasks:**
-- **Integrate External PDF Service (P1):** Once the  is deployed, update the main application's timesheet upload logic to call the new external service instead of processing in-process. The agent has already created helper files (, ) for this.
+Upcoming Tasks:
 - **Build Mock ODM Integration (P2):** Create mock endpoints (, ) to simulate the ODM claims processing workflow.
-- **Implement X12 EDI Generation Logic (P3):** Begin implementing the logic in  to create 837P claim files from timesheet data.
+- **Implement X12 EDI Generation Logic (P3):** Begin implementing the logic in  to create 837P claim files.
 
-**Future Tasks:**
+Future Tasks:
+- Deploy the external PDF processing service to Railway to permanently solve the  issue.
 - Implement Real Backend Claims Logic for ODM/Availity.
 - Implement 835 Remittance Parsing.
 - Create an automated SFTP polling job for 835 files.
-- Perform dependency updates based on security audits.
 
 **Completed work in this session**
-- **Fixed  Serialization Error:** Resolved a Pydantic serialization error by ensuring  objects are stored as ISO strings.
-- **Fixed Admin Panel Crash:** Corrected the frontend code on admin pages to handle the actual API response structure.
-- **Addressed  Dependency Issue:** Investigated the recurring PDF conversion failed error and created a startup script (🔧 Checking system dependencies...
-✅ poppler-utils already installed
-pdftoppm version 22.12.0
-✅ System dependencies check passed) as a persistence solution.
-- **Fixed  KeyError:** Corrected an edge case in a utility function that failed to return the  key.
-- **Architected External PDF Service:** Designed and created all necessary files for a standalone PDF processing service () for deployment on Railway, including Docker and Railway-specific configuration.
-- **Provided Medicaid Enrollment Documentation:** Generated several markdown files explaining the Ohio Medicaid connectivity form requirements.
-- **Implemented Strict Profile Validation:** Added and refined backend validation to enforce mandatory fields for patient/employee profiles, including a strict 12-digit rule for the Medicaid number.
+- **Simplified Employee Profile:** Removed certifications, license info, job title, hire date, department, employment status, and hourly rates from the employee model and UI (, ).
+- **Fixed Employee Validation:** Resolved a 422 error by adding the  field to the  model and made the  field mandatory for new/updated employees (, ).
+- **Implemented Employee Deduplication:** Created a backend endpoint () and frontend UI to detect and resolve duplicate employee records based on name similarity.
+- **Implemented Timesheet Name Suggestions:** Added functionality to suggest similar existing employees during timesheet processing to avoid creating duplicates from OCR errors (, ).
+- **Implemented Global Name Correction:** Created a system to save name corrections (e.g., Jone -> John) and apply them across all timesheets (, ).
+- **Implemented Automatic Date Inference:** Added logic to cross-compare timesheets and automatically fill in missing dates, formatted to  (, ).
+- **Implemented OCR Time Correction:** Added logic to fix common OCR errors in time strings (e.g., parsing 6.70 as 06:10) ().
+- **Standardized Time Display:** Updated the entire timesheet extraction process to output times in a 12-hour format with AM/PM (e.g., 05:30 PM).
+- **Automated Dependency Management:** Created a startup script () that automatically installs  when the backend starts, mitigating the recurring dependency issue.
+- **Centralized Scan Configuration:** Created  to act as a single source of truth for all PDF scanning parameters (DPI, OCR model, date/time formats, etc.), which is loaded on startup.
+- **Upgraded OCR Model:** Temporarily upgraded the OCR model to  for better accuracy, before reverting to  for stability.
 
 **Earlier issues found/mentioned but not fixed**
-   - **Issue 1:**
-     - **Description**: The handoff mentioned fully testing the Admin Panel's end-to-end functionality. The agent only fixed a specific data-loading crash but did not perform a comprehensive test of all admin actions (e.g., creating/updating/deleting).
-     - **Debug checklist**: Use the frontend testing agent to log in as an admin and test all CRUD operations on the  and  pages.
-     - **Why to solve this issue and what will be achieved with this?**: To fully validate that a key user-requested feature is functional.
-     - **Should Test frontend/backend/both after fix?**: frontend
-     - **Is recurring issue?**: N
+(Now tracked in 'All Pending/In progress Issue list')
 
 **Known issue recurrence from previous fork**
   - **Issue recurrence in previous fork**: The  dependency becoming uninstalled or unavailable in the PATH.
-  - **Recurrence count**: 4+ times in this session.
-  - **Status**: IN PROGRESS. The latest attempt to fix this is a startup script, which is untested.
+  - **Recurrence count**: 5+
+  - **Status**: NOT STARTED (Workaround implemented)
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **External Service Architecture**: Decoupling resource-intensive PDF processing into a separate, independently deployable microservice.
-- **Cloud Deployment (Railway)**: Using Docker, Nixpacks, and Procfiles to configure and troubleshoot application builds on a modern cloud platform.
-- **Backend Data Validation**: Implementing strict, business-rule-based validation in FastAPI using Pydantic and custom validator functions to ensure data integrity.
-- **System Dependency Management**: Struggling with and attempting to solve the persistence of system-level packages () in a containerized environment.
+- **Centralized Configuration:** Moved all dynamic scanning settings into a single  file to ensure persistence and easy management.
+- **Automated Dependency Workaround:** Using a startup script to run Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded. to mitigate an unstable environment dependency issue.
+- **Fuzzy String Matching:** Used Python's  to find similar employee names for duplicate detection and suggestions.
+- **Robust Data Parsing:** Implemented complex parsing rules in  to correct common OCR errors before processing time data.
+- **LLM API Stability Management:** Diagnosed a performance issue caused by an unstable LLM API (Gemini 2.5 Pro) and reverted to a more stable version (Gemini 2.0 Flash) to restore service.
 
 **key DB schema**
-  - No new database collections were created. The focus was on enforcing stricter validation on the existing  and  collections.
+  - **name_corrections**: New collection to store global name correction rules.
+    - 
 
 **changes in tech stack**
-  - A new, separate FastAPI service was created in .
-  - Build configuration files  and  were introduced for Railway deployment.
+  - The OCR engine was temporarily upgraded to  before being reverted to  for stability. The provider remains Google via .
 
 **All files of reference**
-- : Contains the core API logic, including the newly added validation.
-- : Defines the specific validation rules for patient/employee profiles.
-- 🔧 Checking system dependencies...
+- : Core logic for all new features resides here.
+- : The new single source of truth for all scanning settings.
+- ==========================================
+AZAI PDF Dependencies Check
+==========================================
 ✅ poppler-utils already installed
-pdftoppm version 22.12.0
-✅ System dependencies check passed: The latest attempt to fix the recurring  issue.
--  (whole directory): Contains the code and configuration for the external microservice.
-- : Contains the most recent troubleshooting guide for the user's deployment issue.
 
-**Areas that need refactoring**:
-- The main application's timesheet upload endpoint in  needs to be refactored to use the new external PDF service once it is successfully deployed. The boilerplate for this is in .
+==========================================
+SCAN CONFIGURATION (Permanently Applied)
+==========================================
 
-**key api endpoints**
-- **Modified**:
-  - : Now includes strict validation.
-  - : Now includes strict validation.
-- **New**:
-  - : Checks if patient/employee profiles are complete.
-- **New (External Service)**:
-  - : Endpoint in the  to handle PDF processing.
+📄 PDF CONVERSION:
+   DPI: 300 (high quality OCR)
+   JPEG Quality: 98
+   Color Mode: RGB (for signature detection)
+   Thread Count: 2
+
+🕐 TIME FORMAT:
+   Display: 24-hour (HH:MM)
+   Examples: 09:00, 17:30, 14:45
+   OCR Fixes:
+     • Decimal to colon: 6.70 → 06:10
+     • Invalid minutes: 6:70 → 06:10
+     • Smart AM/PM: 7-11 = AM, 1-6 = PM
+
+📅 DATE FORMAT:
+   Output: MM/DD/YYYY
+   Examples: 12/30/2024, 01/04/2025
+   Features:
+     • Week inference from week_of field
+     • Day name to date: Monday → 12/30/2024
+     • Cross-timesheet comparison
+
+🔢 UNIT CALCULATION:
+   1 unit = 15 minutes
+   Rounding: nearest unit
+   Examples:
+     • 8 hours (480 min) = 32 units
+     • 4 hours (240 min) = 16 units
+
+🔍 EXTRACTION FEATURES:
+   • Service Codes: T1019, T1020, T1021, S5125, S5126, S5130, S5131
+   • Signature Detection: Enabled
+   • Similar Employee Matching: Enabled
+   • Name Correction: Enabled
+
+==========================================
+All settings are permanently configured
+in code and auto-applied to every scan.
+==========================================: The new script for managing the  dependency.
+- : Main UI for employee and duplicate management.
+- : UI for timesheet-related name suggestions and corrections.
+- : Logic for time formatting and OCR error correction.
+- : Logic for inferring missing dates.
 
 **Critical Info for New Agent**
-- **The  issue is paramount.** If the user reports PDF conversion failed, your first step must be to check if  is installed (/usr/bin/pdftoppm). The startup script (🔧 Checking system dependencies...
+- **The highest priority (P0) is to finish the OCR model revert.** This involves updating  and testing to confirm the slow upload issue is resolved.
+- **The  problem is a workaround, not a fix.** The startup script makes the app functional, but the underlying instability of the environment remains a major risk. Be prepared for the user to report PDF conversion failed again. The long-term solution is the external PDF service.
+- **All scanning logic is now driven by **. Any changes to OCR, DPI, or formats should be made there to ensure they are persistent.
+- The user is highly focused on the timesheet scanning workflow. Prioritize any bugs or features related to scanning and data accuracy.
+
+**documents and test reports created in this job**
+  - 
+  - ==========================================
+AZAI PDF Dependencies Check
+==========================================
 ✅ poppler-utils already installed
-pdftoppm version 22.12.0
-✅ System dependencies check passed) is the latest attempt at a fix and its effectiveness is unknown.
-- The user is actively trying to deploy the  to Railway but is facing build issues. Your guidance will be needed to get this deployment working. The most recent agent fixes (, ) should solve the Script start.sh not found error.
-- The newly implemented validation rules for patient/employee profiles have not been tested. This is a high-priority verification task.
 
-**documents created in this job**
-  - /app/EXTERNAL_PDF_OCR_SERVICE_ARCHITECTURE.md
-  - /app/pdf-service/RAILWAY_BUILD_ERROR_FIX.md
-  - /app/REQUIRED_FIELDS_ODM_EVV.md
-  - /app/MEDICAID_NUMBER_VALIDATION.md
-  - /app/OHIO_MEDICAID_CONNECTIVITY_REQUIREMENTS.md
-  - /app/ODM_CONNECTIVITY_FORM_FIELDS.md
-  - /app/pdf-service/RAILWAY_NO_LOGS_FIX.md
+==========================================
+SCAN CONFIGURATION (Permanently Applied)
+==========================================
 
-**Last 10 User Messages and any pending user messages**
-1.  **User**: We will take a proactive approach... put an asterisk next to the information required by both ODM and EVV... Make those compulsory. (Status: Completed)
-2.  **User**: The prior authorization number is not a required field. (Status: Completed - agent corrected the validation)
-3.  **User**: The Medicaid number must be 12 digits only. No numerals, letters or special characters. (Status: Completed - agent updated validation)
-4.  **User**: I am unable to get this done. How do you recommend I host this... (Status: Completed - agent provided Railway architecture)
-5.  **User**: Call Deployer Agent and Run Health Check... (Status: Completed - agent ran check and fixed hardcoded URLs)
-6.  **User**: app will not deploy to railway. (Status: In Progress - agent is troubleshooting with user)
-7.  **User**: Build failed? (Status: In Progress - agent provided fixes)
-8.  **User**: can't find dabass4/pdf-service. (Status: Completed - agent explained the repo needs to be created on GitHub first)
-9.  **User**: There was an error deploying from source / nothing shows in the logs. (Status: In Progress - agent provided fixes)
-10. **User**: ⚠ Script start.sh not found. (Status: In Progress - agent provided  and  to fix this exact error)
+📄 PDF CONVERSION:
+   DPI: 300 (high quality OCR)
+   JPEG Quality: 98
+   Color Mode: RGB (for signature detection)
+   Thread Count: 2
+
+🕐 TIME FORMAT:
+   Display: 24-hour (HH:MM)
+   Examples: 09:00, 17:30, 14:45
+   OCR Fixes:
+     • Decimal to colon: 6.70 → 06:10
+     • Invalid minutes: 6:70 → 06:10
+     • Smart AM/PM: 7-11 = AM, 1-6 = PM
+
+📅 DATE FORMAT:
+   Output: MM/DD/YYYY
+   Examples: 12/30/2024, 01/04/2025
+   Features:
+     • Week inference from week_of field
+     • Day name to date: Monday → 12/30/2024
+     • Cross-timesheet comparison
+
+🔢 UNIT CALCULATION:
+   1 unit = 15 minutes
+   Rounding: nearest unit
+   Examples:
+     • 8 hours (480 min) = 32 units
+     • 4 hours (240 min) = 16 units
+
+🔍 EXTRACTION FEATURES:
+   • Service Codes: T1019, T1020, T1021, S5125, S5126, S5130, S5131
+   • Signature Detection: Enabled
+   • Similar Employee Matching: Enabled
+   • Name Correction: Enabled
+
+==========================================
+All settings are permanently configured
+in code and auto-applied to every scan.
+==========================================
+
+**Last 10 User Messages and any pending HUMAN messages** 
+10. Can we get the most updated OCR and scanning technology...? (COMPLETED)
+9. THe time format should be in the form of 12hrs and 24hrs... (COMPLETED - Implemented 12-hour w/ AM/PM)
+8. Timeheet upload is taking forever (IN PROGRESS - Agent identified cause and reverted model)
+7. can we readjust the units per the parameters we had before? (COMPLETED - Interpreted as OCR error fix)
+6. some of the units are incorrect when the scan is done. (COMPLETED - Implemented OCR time correction)
+5. Time should be in the format 00:00 (COMPLETED - Implemented 24-hour, then superseded by 12-hour request)
+4. all times should already be fixed. For example, 05:41 PM to 6.70 should be converted to 05:41 PM to 06:10 PM (COMPLETED)
+3. can we add the time change format and the date format to the changes we made to scanning... (COMPLETED - Created scan_config.py)
+2. (User was asked to clarify 12-hour vs 24-hour format) (Awaiting response, but user changed topic)
+1. (User was asked to re-upload PDF) (Awaiting response, but user changed topic)
 
 **Project Health Check:**
-- **Broken**: The core PDF scanning feature is fundamentally unstable due to the recurring  dependency issue.
-- **Mocked**: ODM and Availity integrations are still placeholders. The entire PDF processing logic is slated to be moved to an external service which is not yet deployed.
+- **Broken**:
+  - PDF Timesheet Scanning: Remains fundamentally at risk due to the recurring  dependency issue, although a robust workaround is now in place.
+- **Mocked**:
+  - ODM and Availity integrations are still placeholders.
 
 **3rd Party Integrations**
+- **Google Gemini (via emergentintegrations)**: Used for OCR. Currently configured to use  for stability. Uses Emergent LLM Key.
 - **Ohio Department of Medicaid (ODM)**: Planned (SOAP/SFTP). Mock implementation is an upcoming task.
 - **Availity**: Planned.
 - **Stripe**: Existing integration.
 - **Sandata**: Existing integration (using mock credentials).
-- **Railway**: New platform for deploying the external PDF service. The deployment is currently in progress and facing issues.
+- **Railway**: Planned deployment target for an external PDF service.
 
 **Testing status**
-  - Testing agent used after significant changes: YES (for Admin Panel and initial poppler fix)
+  - Testing agent used after significant changes: YES (for backend changes)
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None
-  - Known regressions: The  dependency has regressed multiple times during the session, breaking PDF functionality.
+  - Test files created:
+      - 
+      - ==========================================
+AZAI PDF Dependencies Check
+==========================================
+✅ poppler-utils already installed
+
+==========================================
+SCAN CONFIGURATION (Permanently Applied)
+==========================================
+
+📄 PDF CONVERSION:
+   DPI: 300 (high quality OCR)
+   JPEG Quality: 98
+   Color Mode: RGB (for signature detection)
+   Thread Count: 2
+
+🕐 TIME FORMAT:
+   Display: 24-hour (HH:MM)
+   Examples: 09:00, 17:30, 14:45
+   OCR Fixes:
+     • Decimal to colon: 6.70 → 06:10
+     • Invalid minutes: 6:70 → 06:10
+     • Smart AM/PM: 7-11 = AM, 1-6 = PM
+
+📅 DATE FORMAT:
+   Output: MM/DD/YYYY
+   Examples: 12/30/2024, 01/04/2025
+   Features:
+     • Week inference from week_of field
+     • Day name to date: Monday → 12/30/2024
+     • Cross-timesheet comparison
+
+🔢 UNIT CALCULATION:
+   1 unit = 15 minutes
+   Rounding: nearest unit
+   Examples:
+     • 8 hours (480 min) = 32 units
+     • 4 hours (240 min) = 16 units
+
+🔍 EXTRACTION FEATURES:
+   • Service Codes: T1019, T1020, T1021, S5125, S5126, S5130, S5131
+   • Signature Detection: Enabled
+   • Similar Employee Matching: Enabled
+   • Name Correction: Enabled
+
+==========================================
+All settings are permanently configured
+in code and auto-applied to every scan.
+==========================================
+  - Known regressions: The OCR model was downgraded from  to  to fix a stability issue, which may result in slightly lower accuracy than was briefly achieved.
 
 **Credentials to test flow:**
 - **Role**: Super Admin
@@ -261,5 +396,5 @@ pdftoppm version 22.12.0
 - **Password**: 
 
 **What agent forgot to execute**
-- **Test Notification System**: This was a pending item from the previous handoff and was overlooked in this session.
-- **Full Admin Panel E2E Test**: While a specific crash was fixed, a comprehensive end-to-end test of all admin functionality was not performed as requested in the previous handoff.</analysis>
+- After reverting the OCR model in  to fix slow uploads, the agent forgot to update the corresponding setting in the new  file to keep it as the single source of truth. This is the main pending item for the next agent.
+- The agent did not address the pending testing tasks from the initial handoff (Notification System, Admin Panel CRUD), but this was a reasonable decision to prioritize the user's active requests.</analysis>

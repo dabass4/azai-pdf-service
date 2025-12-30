@@ -202,7 +202,7 @@ async def test_pdf_service():
 
 Test it:
 ```bash
-curl https://claim-tracker-21.preview.emergentagent.com/api/test/pdf-service
+curl https://healthcare-tracking.preview.emergentagent.com/api/test/pdf-service
 ```
 
 ### Test 2: Upload a Real Timesheet
@@ -210,7 +210,7 @@ curl https://claim-tracker-21.preview.emergentagent.com/api/test/pdf-service
 Use your existing upload endpoint:
 ```bash
 # Upload a test PDF
-curl -X POST https://claim-tracker-21.preview.emergentagent.com/api/timesheets/upload \
+curl -X POST https://healthcare-tracking.preview.emergentagent.com/api/timesheets/upload \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@test_timesheet.pdf"
 ```
