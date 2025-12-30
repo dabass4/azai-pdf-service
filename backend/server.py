@@ -1137,9 +1137,11 @@ async def extract_timesheet_data(file_path: str, file_type: str, page_number: in
             await progress_tracker.update(status="processing", progress_percent=10, 
                                          current_step="Initializing AI model")
         
-        # Using Gemini 2.0 Flash for fast, reliable OCR
-        # This model provides excellent accuracy with much faster response times
-        # Alternatives: "gemini-2.5-pro" (slower but slightly more accurate), "gpt-4o" (OpenAI)
+        # Using OCR model from scan_config.py (SINGLE SOURCE OF TRUTH)
+        # Change OCR_MODEL_SETTINGS in scan_config.py to switch models
+        ocr_provider = OCR_MODEL_SETTINGS['provider']
+        ocr_model = OCR_MODEL_SETTINGS['model']
+        
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"timesheet-{uuid.uuid4()}",
@@ -1156,7 +1158,7 @@ Always extract all fields accurately and return valid JSON. Pay special attentio
 - Date formats (extract full dates when possible)
 - Employee names (preserve exact spelling for matching)
 - Service codes and billing information"""
-        ).with_model("gemini", "gemini-2.0-flash")
+        ).with_model(ocr_provider, ocr_model)
         
         # Convert PDF to image if needed (Gemini works better with images)
         processing_file_path = file_path
