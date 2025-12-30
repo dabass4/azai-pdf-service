@@ -242,3 +242,279 @@ def normalize_dates_in_extracted_data(extracted_data: dict) -> dict:
                             logger.warning(f"Could not normalize date: '{original_date}'")
     
     return extracted_data
+
+
+def format_date_mm_dd_yyyy(date_str: str) -> str:
+    """
+    Convert a date string to MM/DD/YYYY format
+    
+    Args:
+        date_str: Date in various formats (YYYY-MM-DD, MM/DD/YYYY, etc.)
+    
+    Returns:
+        Date in MM/DD/YYYY format
+    """
+    if not date_str:
+        return date_str
+    
+    try:
+        # Try YYYY-MM-DD format first
+        if re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
+            dt = datetime.strptime(date_str, '%Y-%m-%d')
+            return dt.strftime('%m/%d/%Y')
+        
+        # Try MM/DD/YYYY format (already correct)
+        if re.match(r'^\d{1,2}/\d{1,2}/\d{4}$', date_str):
+            dt = datetime.strptime(date_str, '%m/%d/%Y')
+            return dt.strftime('%m/%d/%Y')
+        
+        # Try MM-DD-YYYY format
+        if re.match(r'^\d{1,2}-\d{1,2}-\d{4}$', date_str):
+            dt = datetime.strptime(date_str, '%m-%d-%Y')
+            return dt.strftime('%m/%d/%Y')
+        
+        return date_str
+    except Exception as e:
+        logger.warning(f"Could not format date '{date_str}': {e}")
+        return date_str
+
+
+def infer_week_from_timesheets(timesheets: list) -> Optional[Tuple[datetime, datetime]]:
+    """
+    Infer week range from multiple timesheets by finding one with a valid week_of field
+    
+    Args:
+        timesheets: List of timesheet dictionaries
+    
+    Returns:
+        Tuple of (start_date, end_date) or None
+    """
+    for ts in timesheets:
+        extracted = ts.get('extracted_data', {})
+        if isinstance(extracted, dict):
+            week_of = extracted.get('week_of')
+            if week_of:
+                week_range = parse_week_range(week_of)
+                if week_range:
+                    logger.info(f"Inferred week range from timesheet: {week_range[0].strftime('%m/%d/%Y')} - {week_range[1].strftime('%m/%d/%Y')}")
+                    return week_range
+    
+    # Try to infer from dates in time entries
+    all_dates = []
+    for ts in timesheets:
+        extracted = ts.get('extracted_data', {})
+        if isinstance(extracted, dict):
+            for emp in extracted.get('employee_entries', []):
+                if isinstance(emp, dict):
+                    for entry in emp.get('time_entries', []):
+                        if isinstance(entry, dict):
+                            date_str = entry.get('date', '')
+                            # Try to parse complete dates
+                            parsed = None
+                            try:
+                                if re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
+                                    parsed = datetime.strptime(date_str, '%Y-%m-%d')
+                                elif re.match(r'^\d{1,2}/\d{1,2}/\d{4}$', date_str):
+                                    parsed = datetime.strptime(date_str, '%m/%d/%Y')
+                                elif re.match(r'^\d{1,2}-\d{1,2}-\d{4}$', date_str):
+                                    parsed = datetime.strptime(date_str, '%m-%d-%Y')
+                            except:
+                                pass
+                            if parsed:
+                                all_dates.append(parsed)
+    
+    if all_dates:
+        # Calculate week range from dates
+        min_date = min(all_dates)
+        max_date = max(all_dates)
+        
+        # Expand to full week (Sunday to Saturday)
+        # Find the Sunday before or on min_date
+        days_since_sunday = (min_date.weekday() + 1) % 7
+        week_start = min_date - timedelta(days=days_since_sunday)
+        
+        # Find the Saturday after or on max_date
+        days_until_saturday = (5 - max_date.weekday()) % 7
+        week_end = max_date + timedelta(days=days_until_saturday)
+        
+        logger.info(f"Inferred week range from dates: {week_start.strftime('%m/%d/%Y')} - {week_end.strftime('%m/%d/%Y')}")
+        return (week_start, week_end)
+    
+    return None
+
+
+def cross_compare_and_fill_dates(timesheets: list, organization_id: str = None) -> list:
+    """
+    Cross-compare timesheets and fill in missing dates.
+    Uses week context from other timesheets to infer dates.
+    
+    Timesheets are scanned weekly, so if one timesheet has a week_of field,
+    we can use it to fill in dates for other timesheets in the same batch.
+    
+    Args:
+        timesheets: List of timesheet dictionaries (extracted_data format)
+        organization_id: Optional organization ID for logging
+    
+    Returns:
+        List of timesheets with filled-in dates in MM/DD/YYYY format
+    """
+    if not timesheets:
+        return timesheets
+    
+    logger.info(f"Cross-comparing {len(timesheets)} timesheets to fill missing dates")
+    
+    # Step 1: Find the week range from available data
+    week_range = infer_week_from_timesheets(timesheets)
+    
+    if not week_range:
+        logger.warning("Could not infer week range from any timesheet")
+        return timesheets
+    
+    week_start, week_end = week_range
+    logger.info(f"Using week range: {week_start.strftime('%m/%d/%Y')} - {week_end.strftime('%m/%d/%Y')}")
+    
+    # Step 2: Build a mapping of day names/numbers to actual dates
+    day_to_date = {}
+    current = week_start
+    while current <= week_end:
+        # Map day number (1-31)
+        day_to_date[str(current.day)] = current
+        # Map day names
+        day_name_full = current.strftime('%A').lower()  # monday, tuesday, etc.
+        day_name_short = current.strftime('%a').lower()  # mon, tue, etc.
+        day_to_date[day_name_full] = current
+        day_to_date[day_name_short] = current
+        # Map MM/DD format
+        day_to_date[f"{current.month}/{current.day}"] = current
+        day_to_date[f"{current.month:02d}/{current.day:02d}"] = current
+        day_to_date[f"{current.month}-{current.day}"] = current
+        current += timedelta(days=1)
+    
+    # Step 3: Process each timesheet and fill missing dates
+    filled_count = 0
+    for ts in timesheets:
+        extracted = ts.get('extracted_data', {})
+        if not isinstance(extracted, dict):
+            continue
+        
+        # Set week_of if missing
+        if not extracted.get('week_of'):
+            extracted['week_of'] = f"{week_start.strftime('%m/%d/%Y')} - {week_end.strftime('%m/%d/%Y')}"
+            logger.info(f"Filled in week_of: {extracted['week_of']}")
+        
+        for emp in extracted.get('employee_entries', []):
+            if not isinstance(emp, dict):
+                continue
+            
+            for entry in emp.get('time_entries', []):
+                if not isinstance(entry, dict):
+                    continue
+                
+                original_date = entry.get('date', '').strip()
+                
+                # Check if date is already complete (MM/DD/YYYY)
+                if re.match(r'^\d{1,2}/\d{1,2}/\d{4}$', original_date):
+                    # Already in correct format, just ensure proper formatting
+                    entry['date'] = format_date_mm_dd_yyyy(original_date)
+                    continue
+                
+                # Check if date is in YYYY-MM-DD format
+                if re.match(r'^\d{4}-\d{2}-\d{2}$', original_date):
+                    entry['date'] = format_date_mm_dd_yyyy(original_date)
+                    continue
+                
+                # Try to infer date from context
+                date_lower = original_date.lower()
+                inferred_date = None
+                
+                # Check if it's a day name
+                if date_lower in day_to_date:
+                    inferred_date = day_to_date[date_lower]
+                
+                # Check if it's a partial date (MM/DD or MM-DD)
+                elif re.match(r'^\d{1,2}[/-]\d{1,2}$', original_date):
+                    # Extract month and day
+                    parts = re.split(r'[/-]', original_date)
+                    if len(parts) == 2:
+                        month, day = int(parts[0]), int(parts[1])
+                        # Find matching date in week range
+                        current = week_start
+                        while current <= week_end:
+                            if current.month == month and current.day == day:
+                                inferred_date = current
+                                break
+                            current += timedelta(days=1)
+                        
+                        # If not found in week, use week's year
+                        if not inferred_date:
+                            try:
+                                inferred_date = datetime(week_start.year, month, day)
+                            except ValueError:
+                                pass
+                
+                # Check if it's just a day number
+                elif re.match(r'^\d{1,2}$', original_date):
+                    day_num = int(original_date)
+                    # Find matching date in week range
+                    current = week_start
+                    while current <= week_end:
+                        if current.day == day_num:
+                            inferred_date = current
+                            break
+                        current += timedelta(days=1)
+                
+                # Apply the inferred date
+                if inferred_date:
+                    new_date = inferred_date.strftime('%m/%d/%Y')
+                    logger.info(f"Filled date: '{original_date}' → '{new_date}'")
+                    entry['date'] = new_date
+                    entry['date_inferred'] = True
+                    entry['original_date'] = original_date
+                    filled_count += 1
+                else:
+                    # Keep original but note it couldn't be inferred
+                    logger.warning(f"Could not infer date for: '{original_date}'")
+                    entry['date_inference_failed'] = True
+    
+    logger.info(f"Filled {filled_count} missing dates across timesheets")
+    return timesheets
+
+
+async def fill_missing_dates_for_timesheet(timesheet_data: dict, db, organization_id: str) -> dict:
+    """
+    Fill missing dates for a single timesheet by cross-comparing with other 
+    recent timesheets in the same organization.
+    
+    Args:
+        timesheet_data: The timesheet's extracted_data dictionary
+        db: Database connection
+        organization_id: Organization ID to filter timesheets
+    
+    Returns:
+        Updated timesheet_data with filled dates
+    """
+    from datetime import datetime, timezone
+    
+    # Get recent timesheets from the same organization (last 7 days)
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=7)
+    
+    try:
+        recent_timesheets = await db.timesheets.find({
+            "organization_id": organization_id,
+            "created_at": {"$gte": cutoff_date.isoformat()}
+        }, {"_id": 0, "extracted_data": 1, "week_of": 1}).to_list(100)
+        
+        # Add current timesheet to the list for processing
+        all_timesheets = [{"extracted_data": timesheet_data}] + recent_timesheets
+        
+        # Cross-compare and fill dates
+        filled = cross_compare_and_fill_dates(all_timesheets, organization_id)
+        
+        # Return the first timesheet (the one we're processing)
+        if filled and filled[0].get('extracted_data'):
+            return filled[0]['extracted_data']
+        
+        return timesheet_data
+    except Exception as e:
+        logger.error(f"Error filling missing dates: {e}")
+        return timesheet_data
