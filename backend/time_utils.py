@@ -10,6 +10,64 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def fix_ocr_time_errors(time_str: str) -> str:
+    """
+    Fix common OCR errors in time strings.
+    
+    Examples:
+        "6.70" -> "06:10" (decimal to colon, 7->1 OCR fix)
+        "5.41" -> "05:41"
+        "10.30" -> "10:30"
+        "6:70" -> "06:10" (invalid 70 min -> 10 min)
+        "9.00" -> "09:00"
+    """
+    if not time_str:
+        return time_str
+    
+    original = time_str
+    time_str = time_str.strip()
+    
+    # Replace decimal point with colon (common OCR error)
+    time_str = time_str.replace('.', ':')
+    
+    # Match time pattern HH:MM or H:MM (with optional AM/PM)
+    match = re.match(r'^(\d{1,2}):(\d{1,2})\s*(AM|PM|am|pm|a|p)?$', time_str, re.IGNORECASE)
+    
+    if match:
+        hour = int(match.group(1))
+        minute_str = match.group(2)
+        minute = int(minute_str)
+        am_pm = match.group(3) or ''
+        
+        # Fix invalid minutes (OCR errors where 1 looks like 7)
+        # 70-79 -> 10-19 (7 misread as 1)
+        # 60-69 -> 00-09 (6 misread as 0, or just invalid)
+        if minute >= 60:
+            if minute >= 70 and minute <= 79:
+                minute = minute - 60  # 70->10, 71->11, etc.
+                logger.info(f"OCR fix: minute {minute_str} -> {minute:02d}")
+            elif minute >= 60 and minute <= 69:
+                minute = minute - 60  # 60->00, 61->01, etc.
+                logger.info(f"OCR fix: minute {minute_str} -> {minute:02d}")
+            else:
+                # For other invalid minutes, try common OCR substitutions
+                # 80 might be 00, 90 might be 00
+                minute = minute % 60
+                logger.info(f"OCR fix: minute {minute_str} -> {minute:02d}")
+        
+        # Reconstruct the time string
+        fixed_time = f"{hour}:{minute:02d}"
+        if am_pm:
+            fixed_time += f" {am_pm.upper()}"
+        
+        if fixed_time != original:
+            logger.info(f"Fixed OCR time: '{original}' -> '{fixed_time}'")
+        
+        return fixed_time
+    
+    return time_str
+
+
 def normalize_am_pm(time_str: str) -> str:
     """
     Normalize any time format to consistent 12-hour format with AM/PM
@@ -27,6 +85,9 @@ def normalize_am_pm(time_str: str) -> str:
     """
     if not time_str:
         return time_str
+    
+    # First fix OCR errors (decimal points, invalid minutes)
+    time_str = fix_ocr_time_errors(time_str)
     
     # Clean input - remove extra spaces and common OCR errors
     time_str = time_str.strip().replace('O', '0').replace('o', '0')
