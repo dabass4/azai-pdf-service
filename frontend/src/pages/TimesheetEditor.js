@@ -64,6 +64,36 @@ const TimesheetEditor = () => {
         }
       };
     });
+    
+    // If employee name changed, fetch similar employees
+    if (field === 'employee_name' && value && value.length >= 2) {
+      fetchSimilarEmployees(empIndex, value);
+    }
+  };
+
+  const fetchSimilarEmployees = async (empIndex, name) => {
+    if (!name || name.length < 2) return;
+    
+    setLoadingSimilar(prev => ({ ...prev, [empIndex]: true }));
+    try {
+      const response = await axios.get(`${API}/employees/similar/${encodeURIComponent(name)}`);
+      setSimilarEmployees(prev => ({ ...prev, [empIndex]: response.data }));
+      
+      // Auto-show suggestions if we found matches
+      if (response.data.similar_employees?.length > 0) {
+        setShowSuggestions(prev => ({ ...prev, [empIndex]: true }));
+      }
+    } catch (e) {
+      console.error("Error fetching similar employees:", e);
+    } finally {
+      setLoadingSimilar(prev => ({ ...prev, [empIndex]: false }));
+    }
+  };
+
+  const applySuggestedEmployee = (empIndex, employee) => {
+    handleEmployeeFieldChange(empIndex, 'employee_name', employee.full_name);
+    setShowSuggestions(prev => ({ ...prev, [empIndex]: false }));
+    toast.success(`Applied: ${employee.full_name}`);
   };
 
   const handleTimeEntryChange = (empIndex, entryIndex, field, value) => {
