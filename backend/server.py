@@ -2273,11 +2273,12 @@ async def get_pdf_status():
             "thread_count": 2
         },
         "time_format": {
-            "display": "24-hour (HH:MM)",
-            "example": "09:00, 17:30",
+            "display": "12-hour (HH:MM AM/PM)",
+            "example": "09:00 AM, 05:30 PM",
+            "supports_24h_input": True,
             "ocr_fixes": {
-                "decimal_to_colon": "6.70 → 06:10",
-                "invalid_minutes": "6:70 → 06:10 (70→10)"
+                "decimal_to_colon": "6.70 → 06:10 PM",
+                "invalid_minutes": "6:70 → 06:10 PM (70→10)"
             },
             "auto_applied": True
         },
