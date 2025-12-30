@@ -3256,6 +3256,236 @@ async def link_scanned_employee_to_existing(
     }
 
 
+@api_router.post("/employees/name-corrections")
+async def create_name_correction(
+    incorrect_name: str,
+    correct_name: str,
+    apply_to_all: bool = True,
+    organization_id: str = Depends(get_organization_id)
+):
+    """
+    Create a name correction mapping and optionally apply it to all timesheets.
+    
+    This is useful when:
+    - OCR consistently misreads a name
+    - Names are written differently on various timesheets
+    - You want to standardize name spelling across all records
+    
+    Args:
+        incorrect_name: The misspelled/incorrect name to find
+        correct_name: The correct name to replace it with
+        apply_to_all: If True, immediately apply to all existing timesheets
+    
+    Returns:
+        Summary of corrections applied
+    """
+    if not incorrect_name or not correct_name:
+        raise HTTPException(status_code=400, detail="Both incorrect_name and correct_name are required")
+    
+    incorrect_name = incorrect_name.strip()
+    correct_name = correct_name.strip()
+    
+    if incorrect_name.lower() == correct_name.lower():
+        raise HTTPException(status_code=400, detail="Incorrect and correct names cannot be the same")
+    
+    # Store the correction mapping for future use
+    correction_doc = {
+        "id": str(uuid.uuid4()),
+        "organization_id": organization_id,
+        "incorrect_name": incorrect_name,
+        "correct_name": correct_name,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "times_applied": 0
+    }
+    
+    # Check if this correction already exists
+    existing = await db.name_corrections.find_one({
+        "organization_id": organization_id,
+        "incorrect_name": {"$regex": f"^{incorrect_name}$", "$options": "i"}
+    })
+    
+    if existing:
+        # Update existing correction
+        await db.name_corrections.update_one(
+            {"id": existing["id"]},
+            {"$set": {"correct_name": correct_name, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        correction_id = existing["id"]
+    else:
+        await db.name_corrections.insert_one(correction_doc)
+        correction_id = correction_doc["id"]
+    
+    timesheets_updated = 0
+    entries_corrected = 0
+    
+    if apply_to_all:
+        # Apply correction to all timesheets
+        timesheets_updated, entries_corrected = await apply_name_correction_to_timesheets(
+            incorrect_name, correct_name, organization_id
+        )
+    
+    logger.info(f"Name correction created: '{incorrect_name}' → '{correct_name}', applied to {timesheets_updated} timesheets")
+    
+    return {
+        "status": "success",
+        "correction_id": correction_id,
+        "incorrect_name": incorrect_name,
+        "correct_name": correct_name,
+        "applied_to_all": apply_to_all,
+        "timesheets_updated": timesheets_updated,
+        "entries_corrected": entries_corrected,
+        "message": f"Name correction saved. Updated {entries_corrected} entries across {timesheets_updated} timesheets."
+    }
+
+
+async def apply_name_correction_to_timesheets(
+    incorrect_name: str, 
+    correct_name: str, 
+    organization_id: str
+) -> Tuple[int, int]:
+    """
+    Apply a name correction to all timesheets in an organization.
+    
+    Returns:
+        Tuple of (timesheets_updated, entries_corrected)
+    """
+    timesheets_updated = 0
+    entries_corrected = 0
+    
+    # Find all timesheets for this organization
+    timesheets = await db.timesheets.find(
+        {"organization_id": organization_id},
+        {"_id": 0}
+    ).to_list(10000)
+    
+    incorrect_lower = incorrect_name.lower()
+    
+    for ts in timesheets:
+        updated = False
+        extracted = ts.get('extracted_data', {})
+        
+        if not isinstance(extracted, dict):
+            continue
+        
+        # Check and update employee entries
+        employee_entries = extracted.get('employee_entries', [])
+        for emp in employee_entries:
+            if isinstance(emp, dict):
+                emp_name = emp.get('employee_name', '')
+                if emp_name and emp_name.lower() == incorrect_lower:
+                    emp['employee_name'] = correct_name
+                    emp['name_corrected_from'] = emp_name
+                    emp['name_corrected_at'] = datetime.now(timezone.utc).isoformat()
+                    entries_corrected += 1
+                    updated = True
+        
+        # Also check registration_results
+        reg_results = ts.get('registration_results', {})
+        if isinstance(reg_results, dict):
+            for emp in reg_results.get('employees', []):
+                if isinstance(emp, dict):
+                    emp_first = emp.get('first_name', '')
+                    emp_last = emp.get('last_name', '')
+                    full_name = f"{emp_first} {emp_last}".strip()
+                    if full_name.lower() == incorrect_lower:
+                        # Parse correct name
+                        parts = correct_name.split()
+                        if len(parts) >= 2:
+                            emp['first_name'] = parts[0]
+                            emp['last_name'] = ' '.join(parts[1:])
+                        else:
+                            emp['last_name'] = correct_name
+                        emp['name_corrected_from'] = full_name
+                        updated = True
+        
+        if updated:
+            await db.timesheets.update_one(
+                {"id": ts['id']},
+                {"$set": {
+                    "extracted_data": extracted,
+                    "registration_results": reg_results,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            timesheets_updated += 1
+    
+    # Update the correction count
+    await db.name_corrections.update_one(
+        {"organization_id": organization_id, "incorrect_name": {"$regex": f"^{incorrect_name}$", "$options": "i"}},
+        {"$inc": {"times_applied": entries_corrected}}
+    )
+    
+    return timesheets_updated, entries_corrected
+
+
+@api_router.get("/employees/name-corrections")
+async def get_name_corrections(organization_id: str = Depends(get_organization_id)):
+    """
+    Get all saved name corrections for the organization.
+    """
+    corrections = await db.name_corrections.find(
+        {"organization_id": organization_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    
+    return {
+        "corrections": corrections,
+        "total": len(corrections)
+    }
+
+
+@api_router.post("/employees/name-corrections/apply-all")
+async def apply_all_name_corrections(organization_id: str = Depends(get_organization_id)):
+    """
+    Apply all saved name corrections to all timesheets.
+    Useful after bulk imports or when corrections were saved but not applied.
+    """
+    corrections = await db.name_corrections.find(
+        {"organization_id": organization_id},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    if not corrections:
+        return {
+            "status": "no_corrections",
+            "message": "No name corrections found"
+        }
+    
+    total_timesheets = 0
+    total_entries = 0
+    
+    for corr in corrections:
+        ts_updated, entries_corrected = await apply_name_correction_to_timesheets(
+            corr['incorrect_name'],
+            corr['correct_name'],
+            organization_id
+        )
+        total_timesheets += ts_updated
+        total_entries += entries_corrected
+    
+    return {
+        "status": "success",
+        "corrections_applied": len(corrections),
+        "timesheets_updated": total_timesheets,
+        "entries_corrected": total_entries,
+        "message": f"Applied {len(corrections)} corrections to {total_entries} entries across {total_timesheets} timesheets"
+    }
+
+
+@api_router.delete("/employees/name-corrections/{correction_id}")
+async def delete_name_correction(correction_id: str, organization_id: str = Depends(get_organization_id)):
+    """Delete a name correction mapping"""
+    result = await db.name_corrections.delete_one({
+        "id": correction_id,
+        "organization_id": organization_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Name correction not found")
+    
+    return {"message": "Name correction deleted"}
+
+
 @api_router.get("/employees/duplicates/find")
 async def find_duplicate_employees(organization_id: str = Depends(get_organization_id)):
     """
