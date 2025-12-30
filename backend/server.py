@@ -10,7 +10,7 @@ load_dotenv(ROOT_DIR / '.env')
 
 # Ensure PDF dependencies are installed on startup
 def ensure_pdf_dependencies():
-    """Check and install poppler-utils if not present"""
+    """Check and install poppler-utils if not present, then display scan config"""
     try:
         result = subprocess.run(['which', 'pdftoppm'], capture_output=True, text=True)
         if result.returncode != 0:
@@ -20,6 +20,17 @@ def ensure_pdf_dependencies():
             print("✅ poppler-utils installed")
         else:
             print("✅ poppler-utils ready")
+        
+        # Display scan configuration summary
+        print("\n" + "="*50)
+        print("SCAN CONFIGURATION LOADED")
+        print("="*50)
+        print("Time Format: 24-hour (HH:MM)")
+        print("Date Format: MM/DD/YYYY")
+        print("OCR Fixes: Enabled (decimal→colon, invalid minutes)")
+        print("DPI: 300 | Quality: 98")
+        print("Unit Calculation: 15 min/unit")
+        print("="*50 + "\n")
     except Exception as e:
         print(f"⚠️  Could not check/install poppler-utils: {e}")
 
