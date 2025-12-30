@@ -391,15 +391,15 @@ class SimilarEmployeeFeatureTester:
                 self.log_test("Link to Existing Employee", False, "Failed to create test employees")
                 return False
 
-            # Test the link endpoint
+            # Test the link endpoint - parameters should be query params, not JSON body
             headers = self.get_auth_headers()
-            link_data = {
+            params = {
                 "scanned_employee_id": scanned_id,
                 "existing_employee_id": existing_id
             }
             
             response = requests.post(f"{self.api_url}/employees/link-to-existing", 
-                                   json=link_data, headers=headers, timeout=10)
+                                   params=params, headers=headers, timeout=10)
             
             success = response.status_code == 200
             
