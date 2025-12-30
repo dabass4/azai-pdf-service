@@ -133,6 +133,58 @@ def normalize_am_pm(time_str: str) -> str:
     return f"{hour:02d}:{minute:02d} {am_pm_str}"
 
 
+def format_time_24h(time_str: str) -> str:
+    """
+    Convert any time format to 24-hour HH:MM format (00:00)
+    
+    Examples:
+        "9:00 AM" -> "09:00"
+        "5:30 PM" -> "17:30"
+        "08:30 AM" -> "08:30"
+        "1800" -> "18:00"
+        "830" -> "08:30"
+    
+    Args:
+        time_str: Time in any format
+    
+    Returns:
+        Time in HH:MM format (e.g., "09:00", "17:30")
+    """
+    if not time_str:
+        return time_str
+    
+    # Clean input
+    time_str = time_str.strip().replace('O', '0').replace('o', '0')
+    
+    # First normalize to get consistent AM/PM format
+    normalized = normalize_am_pm(time_str)
+    
+    # Parse the normalized time
+    match = re.match(r'^(\d{1,2}):(\d{2})\s*(AM|PM)$', normalized, re.IGNORECASE)
+    
+    if not match:
+        # If normalization failed, try to parse directly
+        # Check for HH:MM format without AM/PM (might already be 24-hour)
+        direct_match = re.match(r'^(\d{1,2}):(\d{2})$', time_str)
+        if direct_match:
+            hour = int(direct_match.group(1))
+            minute = int(direct_match.group(2))
+            return f"{hour:02d}:{minute:02d}"
+        return time_str
+    
+    hour = int(match.group(1))
+    minute = int(match.group(2))
+    am_pm = match.group(3).upper()
+    
+    # Convert to 24-hour format
+    if am_pm == 'PM' and hour != 12:
+        hour += 12
+    elif am_pm == 'AM' and hour == 12:
+        hour = 0
+    
+    return f"{hour:02d}:{minute:02d}"
+
+
 def parse_time_string(time_str: str) -> Optional[time]:
     """
     Parse time string to time object
