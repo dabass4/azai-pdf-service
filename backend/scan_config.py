@@ -1,22 +1,25 @@
 """
-Scan Configuration - Centralized settings for timesheet scanning
+Scan Configuration - SINGLE SOURCE OF TRUTH for timesheet scanning
+=====================================================================
 All parameters are automatically applied when processing timesheets.
 These settings persist across poppler-utils reinstalls.
 
-OCR MODEL: Gemini 2.0 Flash (Fast & Reliable)
-- Fast and reliable OCR processing
-- Good accuracy for document OCR
-- Stable for production use
+This file is imported by:
+- server.py (for OCR processing and status endpoint)
+- ensure_pdf_dependencies.sh reads these values indirectly via server.py startup
+
+IMPORTANT: All scan-related settings should be changed HERE, not in server.py
 """
 
 # =============================================================================
-# AI MODEL SETTINGS (OCR)
+# AI MODEL SETTINGS (OCR) - CENTRAL CONFIGURATION
 # =============================================================================
 OCR_MODEL_SETTINGS = {
     "provider": "gemini",
-    "model": "gemini-2.0-flash",        # Fast and reliable model
+    "model": "gemini-2.0-flash",        # Fast and reliable model (DO NOT CHANGE without testing)
+    "description": "Fast and reliable OCR model for production use",
     "alternatives": [
-        "gemini-2.5-pro",               # Higher accuracy but slower
+        "gemini-2.5-pro",               # Higher accuracy but slower/less stable
         "gpt-4o",                       # OpenAI alternative
         "claude-sonnet-4-5-20250929",   # Anthropic alternative
     ],
@@ -46,7 +49,8 @@ PDF_SETTINGS = {
 # TIME FORMAT SETTINGS
 # =============================================================================
 TIME_SETTINGS = {
-    "display_format": "24h",       # "24h" for HH:MM (e.g., 17:30) or "12h" for H:MM AM/PM
+    "display_format": "12h",       # "12h" for H:MM AM/PM (user preference)
+    "display_example": "09:00 AM, 05:30 PM",
     "input_formats": [
         "H:MM AM/PM",              # 9:00 AM, 5:30 PM
         "HH:MM",                   # 09:00, 17:30
@@ -56,6 +60,7 @@ TIME_SETTINGS = {
     "ocr_fixes": {
         "decimal_to_colon": True,  # 6.70 -> 6:10
         "fix_invalid_minutes": True,  # 70 -> 10 (OCR misread)
+        "decimal_to_colon_example": "6.70 → 06:10 PM",
         "minute_corrections": {
             # minute >= 60: subtract 60
             # 70-79 -> 10-19 (7 looks like 1)
