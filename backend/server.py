@@ -2244,6 +2244,20 @@ async def get_pdf_status():
     
     return {
         "status": "ready" if poppler_installed else "unavailable",
+        "ocr_model": {
+            "provider": "Google Gemini",
+            "model": "gemini-2.5-pro",
+            "description": "Latest high-accuracy OCR model (2025)",
+            "capabilities": [
+                "Handwriting recognition",
+                "Table extraction",
+                "Signature detection",
+                "Multilingual support",
+                "Poor quality scan handling"
+            ],
+            "alternatives": ["gpt-4o (OpenAI)", "claude-sonnet-4.5 (Anthropic)"],
+            "last_updated": "January 2025"
+        },
         "poppler_utils": {
             "installed": poppler_installed,
             "path": pdftoppm_path,
