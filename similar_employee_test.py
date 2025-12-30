@@ -451,13 +451,13 @@ class SimilarEmployeeFeatureTester:
             fake_existing_id = "fake-existing-id-67890"
             
             headers = self.get_auth_headers()
-            link_data = {
+            params = {
                 "scanned_employee_id": fake_scanned_id,
                 "existing_employee_id": fake_existing_id
             }
             
             response = requests.post(f"{self.api_url}/employees/link-to-existing", 
-                                   json=link_data, headers=headers, timeout=10)
+                                   params=params, headers=headers, timeout=10)
             
             # Should return 404 for non-existent employee
             success = response.status_code == 404
