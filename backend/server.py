@@ -1191,19 +1191,29 @@ DATE EXTRACTION RULES (CRITICAL):
 - ALWAYS try to find the year - check corners, headers, footers
 - Common date separators: / - . (space)
 
-NAME EXTRACTION RULES (CRITICAL):
-- Extract FULL names - First Middle Last if present
+NAME EXTRACTION RULES (CRITICAL - ENHANCED FOR SIMILAR MATCHING):
+- Extract FULL names exactly as written - First Middle Last if present
+- PRESERVE original spelling even if it looks like a typo (system will suggest corrections)
 - Look for multiple name formats:
   * "Smith, John" → extract as "John Smith"
   * "John Smith" → extract as "John Smith"
   * "J. Smith" → extract as "J. Smith"
   * "SMITH JOHN" (all caps) → extract as "John Smith" (capitalize properly)
-- Check for common OCR errors:
-  * "0" (zero) instead of "O" in names
-  * "1" (one) instead of "I" or "l"
-  * "5" instead of "S"
-- If a name appears unclear, include all readable characters
+- For handwritten names:
+  * Extract best readable interpretation
+  * Include all characters you can identify
+  * System will match against employee database for suggestions
+- Check for common OCR errors but EXTRACT AS-IS:
+  * "0" (zero) instead of "O" in names - extract as seen
+  * "1" (one) instead of "I" or "l" - extract as seen
+  * "5" instead of "S" - extract as seen
 - Employee signatures may contain initials - extract full name from printed section
+- If name is partially illegible, extract what you CAN read (e.g., "J??? Smith" → "J Smith")
+
+SERVICE CODE EXTRACTION:
+- Common Ohio Medicaid service codes: T1019, T1020, T1021, S5125, S5126, S5130, S5131
+- Extract exactly as shown - preserve case and formatting
+- If unclear, extract best interpretation
 
 TIME FORMAT RULES:
 - Extract times EXACTLY as shown in the document
@@ -1224,6 +1234,11 @@ HOURS WORKED FORMAT:
   * 45 minutes = 0.75 → displays as 0:45
   * 35 minutes = 0.58 → displays as 0:35
   * 10 hours 15 minutes = 10.25 → displays as 10:15
+
+SIGNATURE DETECTION:
+- Look for: handwritten signatures, initials, "X" marks, stamps
+- "Yes" if ANY signature mark is present in signature area
+- "No" if signature area is blank or marked "N/A"
 
 ORDERING:
 - Maintain the exact order entries appear in the document
