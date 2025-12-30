@@ -996,8 +996,9 @@ def calculate_name_similarity(name1: str, name2: str) -> float:
 
 async def check_or_create_employee(employee_name: str, organization_id: str) -> Dict[str, Any]:
     """
-    Check if employee exists by name, create if not found
-    Returns employee info with is_complete flag
+    Check if employee exists by name, create if not found.
+    Now includes similar employee suggestions when no exact match is found.
+    Returns employee info with is_complete flag and similar_employees list.
     """
     if not employee_name or employee_name.strip() == "":
         return None
@@ -1026,8 +1027,19 @@ async def check_or_create_employee(employee_name: str, organization_id: str) -> 
             "first_name": existing_employee["first_name"],
             "last_name": existing_employee["last_name"],
             "is_complete": existing_employee.get("is_complete", True),
-            "exists": True
+            "exists": True,
+            "similar_employees": []  # No suggestions needed for exact match
         }
+    
+    # No exact match found - look for similar employees
+    similar_employees = await find_similar_employees(employee_name, organization_id, threshold=0.5)
+    
+    # If we found very similar employees (>= 0.85 similarity), suggest using them instead
+    high_similarity_matches = [e for e in similar_employees if e['similarity_score'] >= 0.85]
+    
+    if high_similarity_matches:
+        # Found very similar names - suggest them but still create the new profile
+        logger.info(f"Found {len(high_similarity_matches)} similar employees for '{employee_name}' - suggesting matches")
     
     # Create new incomplete employee profile
     logger.info(f"Auto-creating employee: {first_name} {last_name} for org: {organization_id}")
@@ -1051,7 +1063,9 @@ async def check_or_create_employee(employee_name: str, organization_id: str) -> 
         "last_name": last_name,
         "is_complete": False,
         "exists": False,
-        "message": "Auto-created incomplete profile - please update"
+        "message": "Auto-created incomplete profile - please update",
+        "similar_employees": similar_employees,  # Include suggestions
+        "has_similar_matches": len(high_similarity_matches) > 0
     }
 
 async def extract_timesheet_data(file_path: str, file_type: str, page_number: int = 1, progress_tracker: ExtractionProgress = None) -> Tuple[ExtractedData, float, dict]:
