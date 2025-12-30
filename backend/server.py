@@ -2820,6 +2820,125 @@ async def get_employees(
     return employees
 
 
+@api_router.get("/employees/similar/{name}")
+async def get_similar_employees(name: str, organization_id: str = Depends(get_organization_id)):
+    """
+    Find employees with names similar to the given name.
+    Useful for suggesting existing employees when scanning timesheets.
+    
+    Args:
+        name: The name to search for (from timesheet scan)
+    
+    Returns:
+        List of similar employees with similarity scores
+    """
+    similar = await find_similar_employees(name, organization_id, threshold=0.5)
+    
+    return {
+        "search_name": name,
+        "similar_employees": similar,
+        "total_found": len(similar),
+        "has_exact_match": any(e['similarity_score'] >= 0.95 for e in similar),
+        "has_close_match": any(e['similarity_score'] >= 0.85 for e in similar)
+    }
+
+
+@api_router.post("/employees/link-to-existing")
+async def link_scanned_employee_to_existing(
+    scanned_employee_id: str,
+    existing_employee_id: str,
+    organization_id: str = Depends(get_organization_id)
+):
+    """
+    Link a scanned/auto-created employee to an existing employee.
+    This is used when a timesheet scan creates a new employee but
+    there's actually an existing employee with a similar name.
+    
+    - Transfers any timesheet references from scanned to existing
+    - Deletes the scanned (duplicate) employee
+    
+    Args:
+        scanned_employee_id: ID of the auto-created employee to remove
+        existing_employee_id: ID of the existing employee to link to
+    """
+    # Verify both employees exist
+    scanned_emp = await db.employees.find_one(
+        {"id": scanned_employee_id, "organization_id": organization_id},
+        {"_id": 0}
+    )
+    if not scanned_emp:
+        raise HTTPException(status_code=404, detail="Scanned employee not found")
+    
+    existing_emp = await db.employees.find_one(
+        {"id": existing_employee_id, "organization_id": organization_id},
+        {"_id": 0}
+    )
+    if not existing_emp:
+        raise HTTPException(status_code=404, detail="Existing employee not found")
+    
+    # Update any timesheets that reference the scanned employee
+    scanned_name = f"{scanned_emp.get('first_name', '')} {scanned_emp.get('last_name', '')}".strip()
+    existing_name = f"{existing_emp.get('first_name', '')} {existing_emp.get('last_name', '')}".strip()
+    
+    # Find timesheets with the scanned employee in registration_results
+    timesheets_updated = 0
+    timesheets = await db.timesheets.find({
+        "organization_id": organization_id,
+        "registration_results.employees.id": scanned_employee_id
+    }, {"_id": 0}).to_list(10000)
+    
+    for ts in timesheets:
+        updated = False
+        reg_results = ts.get('registration_results', {})
+        
+        # Update employee references
+        if 'employees' in reg_results:
+            for emp in reg_results['employees']:
+                if emp.get('id') == scanned_employee_id:
+                    emp['id'] = existing_employee_id
+                    emp['first_name'] = existing_emp.get('first_name')
+                    emp['last_name'] = existing_emp.get('last_name')
+                    emp['linked_from'] = scanned_name
+                    updated = True
+        
+        # Update extracted_data employee names
+        if ts.get('extracted_data') and isinstance(ts['extracted_data'], dict):
+            for entry in ts['extracted_data'].get('employee_entries', []):
+                if isinstance(entry, dict):
+                    emp_name = entry.get('employee_name', '').lower()
+                    if scanned_name.lower() in emp_name or emp_name in scanned_name.lower():
+                        entry['employee_name'] = existing_name
+                        entry['linked_from_scanned'] = scanned_name
+                        updated = True
+        
+        if updated:
+            await db.timesheets.update_one(
+                {"id": ts['id']},
+                {"$set": {
+                    "registration_results": reg_results,
+                    "extracted_data": ts.get('extracted_data'),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            timesheets_updated += 1
+    
+    # Delete the scanned (duplicate) employee
+    await db.employees.delete_one({"id": scanned_employee_id, "organization_id": organization_id})
+    
+    logger.info(f"Linked scanned employee '{scanned_name}' to existing '{existing_name}', updated {timesheets_updated} timesheets")
+    
+    return {
+        "status": "success",
+        "message": f"Linked '{scanned_name}' to existing employee '{existing_name}'",
+        "scanned_employee_deleted": scanned_name,
+        "linked_to": {
+            "id": existing_employee_id,
+            "name": existing_name
+        },
+        "timesheets_updated": timesheets_updated
+    }
+
+
 @api_router.get("/employees/duplicates/find")
 async def find_duplicate_employees(organization_id: str = Depends(get_organization_id)):
     """
