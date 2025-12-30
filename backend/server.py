@@ -1101,15 +1101,27 @@ async def extract_timesheet_data(file_path: str, file_type: str, page_number: in
                     await progress_tracker.update(progress_percent=20, current_step="Converting PDF to image")
                 
                 logger.info(f"Converting PDF page {page_number} to image: {file_path}")
-                # Convert specific PDF page to image
-                images = convert_from_path(file_path, first_page=page_number, last_page=page_number, dpi=200)
+                # Convert specific PDF page to image with optimized settings for OCR
+                # DPI 300 provides better text clarity for handwritten entries
+                # Using 'rgb' format for color preservation
+                images = convert_from_path(
+                    file_path, 
+                    first_page=page_number, 
+                    last_page=page_number, 
+                    dpi=300,  # Higher DPI for better OCR accuracy
+                    fmt='jpeg',
+                    thread_count=2,  # Parallel processing
+                    grayscale=False,  # Keep color for signature detection
+                    transparent=False
+                )
                 if images:
-                    # Save as JPEG
+                    # Save as JPEG with high quality for OCR
                     image_path = file_path.replace('.pdf', f'_page{page_number}.jpg')
-                    images[0].save(image_path, 'JPEG', quality=95)
+                    # Quality 98 preserves text clarity while keeping file size reasonable
+                    images[0].save(image_path, 'JPEG', quality=98, optimize=True)
                     processing_file_path = image_path
                     temp_image_created = True
-                    logger.info(f"PDF page {page_number} converted to image: {image_path}")
+                    logger.info(f"PDF page {page_number} converted to image at 300 DPI: {image_path}")
                 else:
                     raise Exception("No images returned from PDF conversion")
             except Exception as e:
