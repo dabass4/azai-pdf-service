@@ -252,6 +252,71 @@ def format_time_24h(time_str: str) -> str:
     return f"{hour:02d}:{minute:02d}"
 
 
+def format_time_12h(time_str: str) -> str:
+    """
+    Convert any time format to 12-hour HH:MM AM/PM format
+    Fixes OCR errors and normalizes to consistent format with AM/PM
+    
+    Examples:
+        "9:00 AM" -> "09:00 AM"
+        "17:30" -> "05:30 PM"
+        "1800" -> "06:00 PM"
+        "6.70" -> "06:10 PM" (OCR fix + PM inference)
+        "5.41 PM" -> "05:41 PM"
+        "830" -> "08:30 AM"
+    
+    Args:
+        time_str: Time in any format
+    
+    Returns:
+        Time in HH:MM AM/PM format (e.g., "09:00 AM", "05:30 PM")
+    """
+    if not time_str:
+        return time_str
+    
+    # First fix OCR errors
+    time_str = fix_ocr_time_errors(time_str)
+    
+    # Clean input
+    time_str = time_str.strip().replace('O', '0').replace('o', '0')
+    
+    # First normalize to get consistent AM/PM format
+    normalized = normalize_am_pm(time_str)
+    
+    # Parse the normalized time
+    match = re.match(r'^(\d{1,2}):(\d{2})\s*(AM|PM)$', normalized, re.IGNORECASE)
+    
+    if match:
+        hour = int(match.group(1))
+        minute = int(match.group(2))
+        am_pm = match.group(3).upper()
+        return f"{hour:02d}:{minute:02d} {am_pm}"
+    
+    # Try to parse 24-hour format and convert to 12-hour
+    direct_match = re.match(r'^(\d{1,2}):(\d{2})$', time_str)
+    if direct_match:
+        hour = int(direct_match.group(1))
+        minute = int(direct_match.group(2))
+        
+        # Convert 24-hour to 12-hour
+        if hour == 0:
+            display_hour = 12
+            am_pm = "AM"
+        elif hour < 12:
+            display_hour = hour
+            am_pm = "AM"
+        elif hour == 12:
+            display_hour = 12
+            am_pm = "PM"
+        else:
+            display_hour = hour - 12
+            am_pm = "PM"
+        
+        return f"{display_hour:02d}:{minute:02d} {am_pm}"
+    
+    return time_str
+
+
 def parse_time_string(time_str: str) -> Optional[time]:
     """
     Parse time string to time object
