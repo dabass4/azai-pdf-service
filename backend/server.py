@@ -2047,6 +2047,101 @@ async def rescan_timesheet(timesheet_id: str, organization_id: str = Depends(get
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.post("/timesheets/fill-dates")
+async def fill_missing_dates_batch(
+    timesheet_ids: List[str] = None,
+    organization_id: str = Depends(get_organization_id)
+):
+    """
+    Fill missing dates for timesheets by cross-comparing with other timesheets.
+    
+    Timesheets are scanned weekly, so if one timesheet has a week_of field or
+    complete dates, we can infer dates for other timesheets in the same batch.
+    
+    Args:
+        timesheet_ids: Optional list of specific timesheet IDs to process.
+                      If not provided, processes all timesheets from the last 7 days.
+    
+    Returns:
+        Summary of dates filled
+    """
+    try:
+        # Get timesheets to process
+        query = {"organization_id": organization_id}
+        
+        if timesheet_ids:
+            query["id"] = {"$in": timesheet_ids}
+        else:
+            # Get timesheets from last 7 days
+            cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+            query["created_at"] = {"$gte": cutoff.isoformat()}
+        
+        timesheets = await db.timesheets.find(query, {"_id": 0}).to_list(500)
+        
+        if not timesheets:
+            return {
+                "status": "no_timesheets",
+                "message": "No timesheets found to process"
+            }
+        
+        logger.info(f"Processing {len(timesheets)} timesheets for date filling")
+        
+        # Convert to format expected by cross_compare_and_fill_dates
+        timesheet_data = []
+        for ts in timesheets:
+            extracted = ts.get('extracted_data', {})
+            if isinstance(extracted, dict):
+                timesheet_data.append({
+                    "id": ts.get('id'),
+                    "extracted_data": extracted
+                })
+        
+        # Cross-compare and fill dates
+        filled_timesheets = cross_compare_and_fill_dates(timesheet_data, organization_id)
+        
+        # Update timesheets in database
+        updated_count = 0
+        filled_dates_count = 0
+        
+        for ts_data in filled_timesheets:
+            ts_id = ts_data.get('id')
+            if not ts_id:
+                continue
+            
+            extracted = ts_data.get('extracted_data', {})
+            
+            # Count filled dates
+            for emp in extracted.get('employee_entries', []):
+                for entry in emp.get('time_entries', []):
+                    if entry.get('date_inferred'):
+                        filled_dates_count += 1
+            
+            # Update in database
+            result = await db.timesheets.update_one(
+                {"id": ts_id, "organization_id": organization_id},
+                {
+                    "$set": {
+                        "extracted_data": extracted,
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            )
+            if result.modified_count > 0:
+                updated_count += 1
+        
+        return {
+            "status": "success",
+            "message": f"Processed {len(timesheets)} timesheets",
+            "timesheets_updated": updated_count,
+            "dates_filled": filled_dates_count,
+            "date_format": "MM/DD/YYYY"
+        }
+    
+    except Exception as e:
+        logger.error(f"Error filling dates: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/timesheets/{timesheet_id}/resubmit")
 async def resubmit_timesheet(timesheet_id: str):
     """Manually resubmit timesheet to Sandata with validation"""
