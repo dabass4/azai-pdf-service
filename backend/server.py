@@ -43,6 +43,14 @@ from payments import (
     PLANS
 )
 from extraction_service import ConfidenceScorer, ExtractionProgress
+from date_utils import (
+    parse_week_range, 
+    parse_date_with_context, 
+    normalize_dates_in_extracted_data,
+    cross_compare_and_fill_dates,
+    fill_missing_dates_for_timesheet,
+    format_date_mm_dd_yyyy
+)
 
 
 # Utility function to convert decimal hours to hours and minutes
