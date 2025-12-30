@@ -374,7 +374,69 @@ const TimesheetEditor = () => {
                       >
                         <Users size={16} />
                       </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setShowNameCorrection(prev => ({ ...prev, [empIndex]: !prev[empIndex] }))}
+                        title="Apply name correction to all timesheets"
+                        className="text-purple-600 hover:bg-purple-50"
+                      >
+                        <Wand2 size={16} />
+                      </Button>
                     </div>
+                    
+                    {/* Name Correction Panel */}
+                    {showNameCorrection[empIndex] && (
+                      <div className="absolute z-20 w-80 mt-1 bg-white border-2 border-purple-200 rounded-lg shadow-xl p-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-semibold text-purple-800">
+                            <Wand2 size={14} className="inline mr-1" />
+                            Apply to All Timesheets
+                          </span>
+                          <button
+                            onClick={() => setShowNameCorrection(prev => ({ ...prev, [empIndex]: false }))}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-600 mb-2">
+                          Type the correct name below. This will update ALL timesheets with "{employee.employee_name || 'this name'}".
+                        </p>
+                        <div className="space-y-2">
+                          <div>
+                            <Label className="text-xs">Current (incorrect):</Label>
+                            <Input 
+                              value={employee.employee_name || ""} 
+                              disabled 
+                              className="bg-gray-100 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Correct name:</Label>
+                            <Input
+                              id={`correct_name_${empIndex}`}
+                              placeholder="Enter correct name"
+                              className="text-sm"
+                              defaultValue=""
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="w-full bg-purple-600 hover:bg-purple-700"
+                            disabled={correctingName === empIndex}
+                            onClick={() => {
+                              const correctName = document.getElementById(`correct_name_${empIndex}`).value;
+                              applyNameCorrectionToAll(empIndex, employee.employee_name, correctName);
+                            }}
+                          >
+                            {correctingName === empIndex ? "Applying..." : "Apply to All Timesheets"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Similar Employee Suggestions */}
                     {showSuggestions[empIndex] && similarEmployees[empIndex]?.similar_employees?.length > 0 && (
