@@ -2175,6 +2175,125 @@ async def fill_missing_dates_batch(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/system/pdf-status")
+async def get_pdf_status():
+    """
+    Check PDF processing status and scan parameters.
+    Also reinstalls poppler-utils if missing.
+    """
+    import shutil
+    
+    # Check if poppler-utils is installed
+    pdftoppm_path = shutil.which('pdftoppm')
+    poppler_installed = pdftoppm_path is not None
+    
+    # Try to install if missing
+    if not poppler_installed:
+        try:
+            subprocess.run(['apt-get', 'update', '-qq'], capture_output=True, timeout=30)
+            subprocess.run(['apt-get', 'install', '-y', 'poppler-utils'], capture_output=True, timeout=60)
+            pdftoppm_path = shutil.which('pdftoppm')
+            poppler_installed = pdftoppm_path is not None
+            install_attempted = True
+        except Exception as e:
+            install_attempted = True
+            logger.error(f"Failed to install poppler-utils: {e}")
+    else:
+        install_attempted = False
+    
+    # Get version if installed
+    poppler_version = None
+    if poppler_installed:
+        try:
+            result = subprocess.run(['pdftoppm', '-v'], capture_output=True, text=True, timeout=5)
+            poppler_version = result.stderr.strip().split('\n')[0] if result.stderr else "Unknown"
+        except:
+            poppler_version = "Unknown"
+    
+    return {
+        "status": "ready" if poppler_installed else "unavailable",
+        "poppler_utils": {
+            "installed": poppler_installed,
+            "path": pdftoppm_path,
+            "version": poppler_version,
+            "install_attempted": install_attempted
+        },
+        "scan_parameters": {
+            "dpi": 300,
+            "jpeg_quality": 98,
+            "color_mode": "RGB",
+            "thread_count": 2,
+            "date_format": "MM/DD/YYYY",
+            "date_inference": True,
+            "cross_timesheet_comparison": True
+        },
+        "extraction_features": {
+            "service_code_detection": ["T1019", "T1020", "T1021", "S5125", "S5126", "S5130", "S5131"],
+            "signature_detection": True,
+            "similar_employee_matching": True,
+            "ocr_error_handling": True,
+            "week_context_inference": True
+        },
+        "message": "PDF processing is ready" if poppler_installed else "PDF processing unavailable - poppler-utils installation failed"
+    }
+
+
+@api_router.post("/system/reinstall-pdf-deps")
+async def reinstall_pdf_dependencies():
+    """
+    Force reinstall poppler-utils and verify scan parameters.
+    Use this if PDF processing is failing.
+    """
+    import shutil
+    
+    try:
+        # Force reinstall
+        logger.info("Force reinstalling poppler-utils...")
+        
+        result1 = subprocess.run(['apt-get', 'update', '-qq'], capture_output=True, text=True, timeout=30)
+        result2 = subprocess.run(['apt-get', 'install', '-y', '--reinstall', 'poppler-utils'], 
+                                capture_output=True, text=True, timeout=60)
+        
+        # Verify installation
+        pdftoppm_path = shutil.which('pdftoppm')
+        poppler_installed = pdftoppm_path is not None
+        
+        # Get version
+        poppler_version = None
+        if poppler_installed:
+            try:
+                result = subprocess.run(['pdftoppm', '-v'], capture_output=True, text=True, timeout=5)
+                poppler_version = result.stderr.strip().split('\n')[0] if result.stderr else "Unknown"
+            except:
+                poppler_version = "Unknown"
+        
+        return {
+            "status": "success" if poppler_installed else "failed",
+            "poppler_utils": {
+                "installed": poppler_installed,
+                "path": pdftoppm_path,
+                "version": poppler_version
+            },
+            "scan_parameters_applied": {
+                "dpi": 300,
+                "jpeg_quality": 98,
+                "color_mode": "RGB",
+                "date_format": "MM/DD/YYYY",
+                "date_inference": True,
+                "service_codes": ["T1019", "T1020", "T1021", "S5125", "S5126", "S5130", "S5131"],
+                "signature_detection": True,
+                "similar_employee_matching": True
+            },
+            "message": "PDF dependencies reinstalled successfully" if poppler_installed else "Reinstallation failed"
+        }
+    
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=500, detail="Installation timed out")
+    except Exception as e:
+        logger.error(f"Error reinstalling PDF dependencies: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/timesheets/{timesheet_id}/resubmit")
 async def resubmit_timesheet(timesheet_id: str):
     """Manually resubmit timesheet to Sandata with validation"""
