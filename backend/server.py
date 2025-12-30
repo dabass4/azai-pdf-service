@@ -1332,9 +1332,14 @@ Return ONLY the JSON object, no additional text or explanation."""
                                     # Convert decimal hours to hours and minutes
                                     hours_minutes = decimal_hours_to_hours_minutes(hours_worked_decimal)
                                     
+                                    # Format date to MM/DD/YYYY
+                                    entry_date = entry.get("date", "")
+                                    if entry_date:
+                                        entry_date = format_date_mm_dd_yyyy(entry_date)
+                                    
                                     # Create TimeEntry with normalized times, calculated units, and formatted hours
                                     time_entry = TimeEntry(
-                                        date=entry.get("date"),
+                                        date=entry_date,
                                         time_in=normalized_time_in,
                                         time_out=normalized_time_out,
                                         hours_worked=str(hours_worked_decimal) if hours_worked_decimal else None,  # Keep for backward compatibility
