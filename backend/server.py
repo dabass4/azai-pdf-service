@@ -1579,6 +1579,29 @@ async def upload_timesheet_enhanced(file: UploadFile = File(...), organization_i
                     str(file_path), file_extension, page_num, progress_tracker
                 )
                 
+                # Fill missing dates by cross-comparing with other timesheets
+                if extracted_data:
+                    try:
+                        # Convert to dict for date processing
+                        extracted_dict = extracted_data.model_dump() if hasattr(extracted_data, 'model_dump') else dict(extracted_data)
+                        
+                        # Fill missing dates using cross-comparison
+                        filled_data = await fill_missing_dates_for_timesheet(extracted_dict, db, organization_id)
+                        
+                        # Convert dates to MM/DD/YYYY format
+                        if filled_data.get('employee_entries'):
+                            for emp in filled_data['employee_entries']:
+                                if emp.get('time_entries'):
+                                    for entry in emp['time_entries']:
+                                        if entry.get('date'):
+                                            entry['date'] = format_date_mm_dd_yyyy(entry['date'])
+                        
+                        # Update extracted_data with filled dates
+                        extracted_data = ExtractedData(**filled_data) if filled_data else extracted_data
+                        logger.info(f"Dates filled for timesheet page {page_num}")
+                    except Exception as e:
+                        logger.warning(f"Could not fill missing dates: {e}")
+                
                 timesheet.extracted_data = extracted_data
                 timesheet.status = "completed"
                 
