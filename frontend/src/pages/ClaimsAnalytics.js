@@ -262,24 +262,6 @@ const ClaimsAnalytics = () => {
     toast.success("Report exported successfully");
   };
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border">
-          <p className="font-semibold text-gray-900">{label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
-              {entry.name}: {typeof entry.value === "number" && entry.name.includes("mount") 
-                ? `$${entry.value.toLocaleString()}` 
-                : entry.value}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" data-testid="claims-analytics">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
