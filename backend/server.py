@@ -2101,12 +2101,39 @@ async def get_timesheets(
     
     timesheets = await db.timesheets.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     
-    # Convert datetime objects to ISO strings for JSON serialization
+    # Normalize and fix corrupted data
     for ts in timesheets:
+        # Convert datetime objects to ISO strings for JSON serialization
         if isinstance(ts.get('created_at'), datetime):
             ts['created_at'] = ts['created_at'].isoformat()
         if isinstance(ts.get('updated_at'), datetime):
             ts['updated_at'] = ts['updated_at'].isoformat()
+        
+        # Fix corrupted extracted_data (stored as array instead of dict)
+        extracted = ts.get('extracted_data')
+        if extracted is not None:
+            if isinstance(extracted, list):
+                # Some corrupted records have [dict, float, dict] format
+                # Extract the first element if it's a dict
+                if len(extracted) > 0 and isinstance(extracted[0], dict):
+                    ts['extracted_data'] = extracted[0]
+                    logger.warning(f"Fixed corrupted extracted_data (array->dict) for timesheet {ts.get('id')}")
+                else:
+                    # If completely malformed, set to empty valid structure
+                    ts['extracted_data'] = {
+                        'client_name': 'Error: Data corrupted',
+                        'week_of': None,
+                        'employee_entries': []
+                    }
+                    logger.warning(f"Reset malformed extracted_data for timesheet {ts.get('id')}")
+            elif not isinstance(extracted, dict):
+                # Handle any other non-dict type
+                ts['extracted_data'] = {
+                    'client_name': 'Error: Invalid data type',
+                    'week_of': None,
+                    'employee_entries': []
+                }
+                logger.warning(f"Reset invalid extracted_data type for timesheet {ts.get('id')}")
     
     return timesheets
 
