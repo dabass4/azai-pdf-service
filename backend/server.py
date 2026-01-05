@@ -705,8 +705,66 @@ class BillableService(BaseModel):
     description: Optional[str] = None
     is_active: bool = True
 
+class Payer(BaseModel):
+    """Payer/Insurance company - permanent entity with contact info"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: Optional[str] = None  # Multi-tenant isolation
+    
+    # Payer Identity
+    name: str  # e.g., Ohio Department of Medicaid
+    short_name: Optional[str] = None  # e.g., ODM
+    payer_type: str  # "State", "Managed Care", "MyCare Ohio", "Medicare", "Private"
+    insurance_type: str  # Medicaid, Medicare, Private, etc.
+    edi_payer_id: Optional[str] = None  # EDI Payer ID for electronic claims
+    
+    # Payer Contact & Address (for claims submission)
+    address: Optional[str] = None  # P.O. Box or Street Address
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    phone: Optional[str] = None  # Provider hotline
+    website: Optional[str] = None
+    
+    # Additional Info
+    notes: Optional[str] = None  # Disputes address, special instructions
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class PayerContract(BaseModel):
+    """Contract with a payer - time-bound agreement with rates and services"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: Optional[str] = None  # Multi-tenant isolation
+    payer_id: str  # Links to Payer.id
+    
+    # Contract Details
+    contract_number: Optional[str] = None
+    contract_name: Optional[str] = None  # e.g., "2024 Rate Agreement", "Q1 2025 Contract"
+    start_date: str  # YYYY-MM-DD
+    end_date: Optional[str] = None  # YYYY-MM-DD or None for ongoing
+    
+    # Your Internal Contact for this contract
+    contact_person: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    
+    # Billable Services & Rates for this contract period
+    billable_services: List[BillableService] = []
+    
+    notes: Optional[str] = None  # Contract-specific notes
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+# Keep old model for backward compatibility during migration
 class InsuranceContract(BaseModel):
-    """Insurance/Payer contract information"""
+    """Insurance/Payer contract information - DEPRECATED: Use Payer + PayerContract"""
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
