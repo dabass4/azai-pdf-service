@@ -2151,6 +2151,25 @@ async def get_timesheet(timesheet_id: str, organization_id: str = Depends(get_or
     if isinstance(timesheet.get('updated_at'), datetime):
         timesheet['updated_at'] = timesheet['updated_at'].isoformat()
     
+    # Fix corrupted extracted_data (stored as array instead of dict)
+    extracted = timesheet.get('extracted_data')
+    if extracted is not None:
+        if isinstance(extracted, list):
+            if len(extracted) > 0 and isinstance(extracted[0], dict):
+                timesheet['extracted_data'] = extracted[0]
+            else:
+                timesheet['extracted_data'] = {
+                    'client_name': 'Error: Data corrupted',
+                    'week_of': None,
+                    'employee_entries': []
+                }
+        elif not isinstance(extracted, dict):
+            timesheet['extracted_data'] = {
+                'client_name': 'Error: Invalid data type',
+                'week_of': None,
+                'employee_entries': []
+            }
+    
     # Return as dict for proper JSON serialization
     return timesheet
 
