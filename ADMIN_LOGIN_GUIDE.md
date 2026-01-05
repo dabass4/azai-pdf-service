@@ -38,7 +38,7 @@ python create_super_admin.py --email admin@medicaidservices.com --password Secur
 ## Step 2: Login to Admin Panel
 
 ### Access URL
-**Production URL:** `https://medstaff-portal-27.preview.emergentagent.com`
+**Production URL:** `https://timesheet-fixer-1.preview.emergentagent.com`
 
 ### Login Steps:
 1. Navigate to the application URL

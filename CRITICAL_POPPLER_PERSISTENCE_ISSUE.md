@@ -155,7 +155,7 @@ When you see "PDF conversion failed":
 python3 -c "from pdf2image import convert_from_path; print('✅ Working')"
 
 # Full test - upload via API
-curl -X POST https://medstaff-portal-27.preview.emergentagent.com/api/timesheets/upload \
+curl -X POST https://timesheet-fixer-1.preview.emergentagent.com/api/timesheets/upload \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@test.pdf"
 ```

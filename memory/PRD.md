@@ -145,7 +145,7 @@ Build a comprehensive healthcare application for Ohio Medicaid providers featuri
 
 ## Test Credentials
 - **Super Admin**: admin@medicaidservices.com / Admin2024!
-- **API URL**: https://medstaff-portal-27.preview.emergentagent.com
+- **API URL**: https://timesheet-fixer-1.preview.emergentagent.com
 
 ## EDI Claim Generation Guide
 ```python
