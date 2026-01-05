@@ -880,7 +880,7 @@ const Payers = () => {
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-xl font-bold text-gray-900">{contract.payer_name}</h3>
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                             contract.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
@@ -890,6 +890,30 @@ const Payers = () => {
                           <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
                             {contract.insurance_type}
                           </span>
+                        </div>
+                        
+                        {/* Payer Contact Info - Phone & Address */}
+                        <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
+                          {contract.payer_phone && (
+                            <div className="flex items-center gap-2 text-blue-700 font-semibold">
+                              <Phone size={16} />
+                              <a href={`tel:${contract.payer_phone.replace(/[^0-9]/g, '')}`} className="hover:underline">
+                                {contract.payer_phone}
+                              </a>
+                            </div>
+                          )}
+                          {contract.payer_id && (
+                            <div className="flex items-center gap-1 text-gray-600">
+                              <span className="text-xs">Payer ID:</span>
+                              <span className="font-mono font-semibold">{contract.payer_id}</span>
+                            </div>
+                          )}
+                          {contract.payer_address && (
+                            <div className="flex items-center gap-1 text-gray-600 text-xs">
+                              <MapPin size={14} />
+                              <span>{contract.payer_address}, {contract.payer_city}, {contract.payer_state} {contract.payer_zip}</span>
+                            </div>
+                          )}
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -904,7 +928,7 @@ const Payers = () => {
                           
                           {(contract.contact_person || contract.contact_phone || contract.contact_email) && (
                             <div>
-                              <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Contact</h4>
+                              <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Your Contact</h4>
                               <div className="space-y-1 text-sm text-gray-700">
                                 {contract.contact_person && <p className="font-semibold">{contract.contact_person}</p>}
                                 {contract.contact_phone && <p className="text-xs">{contract.contact_phone}</p>}
