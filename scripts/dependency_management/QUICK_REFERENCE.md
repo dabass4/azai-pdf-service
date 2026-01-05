@@ -46,7 +46,7 @@ sudo supervisorctl restart backend
 
 ### Test Upload Feature:
 ```bash
-curl -X POST https://healthcare-tracking.preview.emergentagent.com/api/timesheets/upload \
+curl -X POST https://medstaff-portal-27.preview.emergentagent.com/api/timesheets/upload \
   -F "file=@/tmp/test_timesheet.pdf" \
   -F "organization_id=test-org"
 ```
@@ -109,7 +109,7 @@ sudo supervisorctl restart backend frontend
 sudo supervisorctl status
 
 # 3. Test critical endpoints
-curl https://healthcare-tracking.preview.emergentagent.com/api/health
+curl https://medstaff-portal-27.preview.emergentagent.com/api/health
 
 # 4. Check for errors
 tail -n 50 /var/log/supervisor/backend.err.log

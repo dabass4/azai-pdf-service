@@ -126,7 +126,7 @@ For Sandata submission, **each patient must have a complete profile** with the f
 
 **Option 2: Via API**
 ```bash
-curl -X PUT "https://healthcare-tracking.preview.emergentagent.com/api/patients/{patient_id}" \
+curl -X PUT "https://medstaff-portal-27.preview.emergentagent.com/api/patients/{patient_id}" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -194,7 +194,7 @@ For Sandata submission, **each employee (Direct Care Worker) must have a complet
 
 **Option 2: Via API**
 ```bash
-curl -X PUT "https://healthcare-tracking.preview.emergentagent.com/api/employees/{employee_id}" \
+curl -X PUT "https://medstaff-portal-27.preview.emergentagent.com/api/employees/{employee_id}" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -277,10 +277,10 @@ Each timesheet must have a valid **service code** configured with Sandata/EVV re
 **Test Commands:**
 ```bash
 # Check current incomplete profiles
-curl "https://healthcare-tracking.preview.emergentagent.com/api/patients?is_complete=false" \
+curl "https://medstaff-portal-27.preview.emergentagent.com/api/patients?is_complete=false" \
   -H "Authorization: Bearer YOUR_TOKEN"
 
-curl "https://healthcare-tracking.preview.emergentagent.com/api/employees?is_complete=false" \
+curl "https://medstaff-portal-27.preview.emergentagent.com/api/employees?is_complete=false" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -352,7 +352,7 @@ You'll see:
 4. **Test Connection**
    ```bash
    # Create a test endpoint to verify connection
-   curl "https://healthcare-tracking.preview.emergentagent.com/api/sandata/test-connection" \
+   curl "https://medstaff-portal-27.preview.emergentagent.com/api/sandata/test-connection" \
      -H "Authorization: Bearer YOUR_TOKEN"
    ```
 
