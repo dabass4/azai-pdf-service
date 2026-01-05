@@ -415,43 +415,57 @@ const Payers = () => {
 
                 {/* Ohio Medicaid Services */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Billable Services (Ohio Medicaid)</h3>
-                  <p className="text-sm text-gray-600 mb-4">Toggle services that are billable under this contract</p>
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
-                    <div className="space-y-2">
-                      {OHIO_MEDICAID_SERVICES.map((service) => (
-                        <div key={service.code} className="flex items-center justify-between p-3 bg-white rounded border border-gray-200 hover:bg-blue-50" data-testid={`service-${service.code}`}>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <span className="font-mono text-sm font-semibold text-blue-900">{service.code}</span>
-                              <span className="font-medium text-gray-900">{service.name}</span>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">{service.description}</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleServiceToggle(service.code)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${
-                              isServiceActive(service.code)
-                                ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                            }`}
-                            data-testid={`toggle-${service.code}`}
-                          >
-                            {isServiceActive(service.code) ? (
-                              <>
-                                <ToggleRight size={20} />
-                                <span className="text-sm font-medium">Active</span>
-                              </>
-                            ) : (
-                              <>
-                                <ToggleLeft size={20} />
-                                <span className="text-sm font-medium">Inactive</span>
-                              </>
-                            )}
-                          </button>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Billable Services (Ohio Medicaid HCPCS Codes)</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Toggle services that are billable under this contract. 
+                    <span className="font-medium"> {formData.billable_services.filter(s => s.is_active).length} of {OHIO_MEDICAID_SERVICES.length}</span> services enabled.
+                  </p>
+                  <div className="border border-gray-200 rounded-lg bg-gray-50 max-h-[500px] overflow-y-auto">
+                    {/* Group services by category */}
+                    {Object.entries(
+                      OHIO_MEDICAID_SERVICES.reduce((acc, service) => {
+                        const cat = service.category || 'Other';
+                        if (!acc[cat]) acc[cat] = [];
+                        acc[cat].push(service);
+                        return acc;
+                      }, {})
+                    ).map(([category, services]) => (
+                      <div key={category} className="border-b border-gray-200 last:border-b-0">
+                        <div className="bg-gray-100 px-4 py-2 sticky top-0">
+                          <h4 className="font-semibold text-gray-700 text-sm">{category}</h4>
                         </div>
-                      ))}
+                        <div className="p-2 space-y-1">
+                          {services.map((service, idx) => {
+                            const uniqueKey = `${service.code}-${service.modifier || idx}`;
+                            return (
+                              <div 
+                                key={uniqueKey} 
+                                className="flex items-center justify-between p-3 bg-white rounded border border-gray-200 hover:bg-blue-50 transition-colors" 
+                                data-testid={`service-${service.code}`}
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-sm font-semibold text-blue-700">{service.code}</span>
+                                    {service.modifier && (
+                                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">
+                                        {service.modifier}
+                                      </span>
+                                    )}
+                                    <span className="font-medium text-gray-900 text-sm">{service.name}</span>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">{service.description}</p>
+                                </div>
+                                <Switch
+                                  checked={isServiceActive(service.code)}
+                                  onCheckedChange={() => handleServiceToggle(service.code)}
+                                  data-testid={`toggle-${service.code}`}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                     </div>
                   </div>
                   <p className="text-sm text-gray-500 mt-2">
