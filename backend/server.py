@@ -6812,15 +6812,17 @@ from routes_authorizations import router as authorizations_router, set_db as set
 api_router.include_router(authorizations_router)
 set_authorizations_db(db)  # Inject database
 
-# Import and include notifications router
-from routes_notifications import router as notifications_router, set_db as set_notifications_db
-api_router.include_router(notifications_router)
-set_notifications_db(db)  # Inject database
-
-# Import and include extended notifications router (read/unread tracking)
+# Import and include extended notifications router FIRST (read/unread tracking)
+# This must come before the main notifications router to avoid route conflicts
+# The main router has /{notification_id} which would catch /unread, /unread-count, etc.
 from routes_notifications_extended import router as notifications_ext_router, set_db as set_notifications_ext_db
 api_router.include_router(notifications_ext_router)
 set_notifications_ext_db(db)  # Inject database
+
+# Import and include notifications router (has catch-all /{notification_id} route)
+from routes_notifications import router as notifications_router, set_db as set_notifications_db
+api_router.include_router(notifications_router)
+set_notifications_db(db)  # Inject database
 
 # Import and include ICD-10 lookup router
 from routes_icd10 import router as icd10_router
