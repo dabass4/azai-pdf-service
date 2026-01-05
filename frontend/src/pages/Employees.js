@@ -758,6 +758,42 @@ const Employees = () => {
                     )}
                   </div>
 
+                  {/* Billing Codes Section */}
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">
+                      Billing Codes (HCPCS)
+                      <span className="text-xs font-normal text-gray-500 ml-2">Select codes this employee can bill</span>
+                    </Label>
+                    <div className="border rounded-lg p-3 max-h-64 overflow-y-auto bg-gray-50">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {COMMON_BILLING_CODES.map(bc => {
+                          const isSelected = formData.billing_codes?.includes(bc.code) || false;
+                          return (
+                            <label
+                              key={bc.code}
+                              className={`flex items-center p-2 rounded cursor-pointer transition-colors ${
+                                isSelected ? 'bg-blue-100 border border-blue-300' : 'bg-white border border-gray-200 hover:bg-gray-100'
+                              }`}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => handleBillingCodeToggle(bc.code)}
+                                className="mr-2"
+                              />
+                              <div className="flex-1">
+                                <span className="font-mono text-sm font-semibold text-blue-700">{bc.code}</span>
+                                <span className="text-xs text-gray-600 ml-2">{bc.name}</span>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {formData.billing_codes?.length || 0} code(s) selected. These will appear in dropdown when editing timesheets.
+                    </p>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="employee_id">Employee ID</Label>
