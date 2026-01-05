@@ -274,7 +274,8 @@ const Employees = () => {
       address_state: employee.address_state || "OH",
       address_zip: employee.address_zip || "",
       employee_id: employee.employee_id || "",
-      categories: employee.categories || []
+      categories: employee.categories || [],
+      billing_codes: employee.billing_codes || []
     });
     setShowForm(true);
   };
@@ -307,7 +308,17 @@ const Employees = () => {
       address_state: "",
       address_zip: "",
       employee_id: "",
-      categories: []
+      categories: [],
+      billing_codes: []
+    });
+  };
+
+  const handleBillingCodeToggle = (code) => {
+    setFormData(prev => {
+      const newCodes = prev.billing_codes.includes(code)
+        ? prev.billing_codes.filter(c => c !== code)
+        : [...prev.billing_codes, code];
+      return { ...prev, billing_codes: newCodes };
     });
   };
 
