@@ -789,7 +789,7 @@ const ClaimsDashboard = () => {
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     <FileSearch className="mx-auto h-12 w-12 mb-4 text-gray-300" />
-                    <p>Enter a claim number and click "Check Claim Status"</p>
+                    <p>Enter a claim number and click &quot;Check Claim Status&quot;</p>
                   </div>
                 )}
               </CardContent>
