@@ -312,6 +312,62 @@ export default function EVVManagement() {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold mb-4">Export EVV Data</h2>
           
+          {/* JSON File Download Section for Manual Sandata Submission */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <Download className="mr-2 text-blue-600 mt-0.5" size={20} />
+              <div>
+                <h3 className="font-semibold text-blue-800">Download JSON Files for Manual Sandata Submission</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  If API transmission fails, download JSON files and manually upload to the 
+                  <a href="https://ohevv.sandata.com" target="_blank" rel="noopener noreferrer" className="underline ml-1">
+                    Sandata Portal
+                  </a>
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button 
+                onClick={() => window.open(`${API}/evv/download/individuals`, '_blank')} 
+                variant="outline" 
+                className="border-blue-500 text-blue-700"
+                disabled={!businessEntity}
+              >
+                <Download className="mr-2" size={16} />
+                Download Individuals JSON
+              </Button>
+              <Button 
+                onClick={() => window.open(`${API}/evv/download/direct-care-workers`, '_blank')} 
+                variant="outline"
+                className="border-blue-500 text-blue-700"
+                disabled={!businessEntity}
+              >
+                <Download className="mr-2" size={16} />
+                Download DCWs JSON
+              </Button>
+              <Button 
+                onClick={() => window.open(`${API}/evv/download/visits`, '_blank')} 
+                variant="outline"
+                className="border-blue-500 text-blue-700"
+                disabled={!businessEntity}
+              >
+                <Download className="mr-2" size={16} />
+                Download Visits JSON
+              </Button>
+              <Button 
+                onClick={() => window.open(`${API}/evv/download/all`, '_blank')} 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={!businessEntity}
+              >
+                <Download className="mr-2" size={16} />
+                Download All EVV Data
+              </Button>
+            </div>
+            <p className="text-xs text-blue-600 mt-3">
+              Format: Ohio Alternate EVV Technical Specifications v4.1 (July 2024)
+            </p>
+          </div>
+          
           <Card>
             <CardHeader>
               <CardTitle>Export Individuals (Patients)</CardTitle>
