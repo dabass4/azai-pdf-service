@@ -466,7 +466,6 @@ const Payers = () => {
                         </div>
                       </div>
                     ))}
-                    </div>
                   </div>
                   <p className="text-sm text-gray-500 mt-2">
                     {formData.billable_services.filter(s => s.is_active).length} service(s) selected
