@@ -880,6 +880,7 @@ function App() {
                   <Route path="/claims" element={<Claims />} />
                   <Route path="/evv" element={<EVVManagement />} />
                   <Route path="/service-codes" element={<ServiceCodes />} />
+                  <Route path="/billing-codes" element={<BillingCodes />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/timesheet/edit/:id" element={<TimesheetEditor />} />
                   
