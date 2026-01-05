@@ -96,6 +96,41 @@ from date_utils import (
     format_date_mm_dd_yyyy
 )
 
+# Import all models from centralized models.py
+from models import (
+    BusinessEntityConfig,
+    EVVCall,
+    EVVException,
+    EVVVisitChange,
+    EVVVisit,
+    EVVTransmission,
+    EVVCredentials,
+    Organization,
+    User,
+    ServiceCodeConfig,
+    EmployeeProfile,
+    EmployeeProfileUpdate,
+    PatientPhone,
+    PatientResponsibleParty,
+    OtherInsurance,
+    PatientProfile,
+    PatientProfileUpdate,
+    BillableService,
+    Payer,
+    PayerContract,
+    InsuranceContract,
+    ClaimLineItem,
+    MedicaidClaim,
+    TimeEntry,
+    EmployeeEntry,
+    ExtractedData,
+    Timesheet,
+    TimesheetCreate,
+    BulkUpdateRequest,
+    BulkDeleteRequest,
+    AuthResponse,
+)
+
 
 # Utility function to convert decimal hours to hours and minutes
 def decimal_hours_to_hours_minutes(decimal_hours: float) -> dict:
