@@ -697,10 +697,17 @@ const Home = () => {
                           // Helper function to calculate units from time in and time out
                           const calculateUnits = (timeIn, timeOut, date) => {
                             try {
+                              if (!timeIn || !timeOut) return 0;
+                              
                               // Parse time strings (e.g., "08:00 AM")
                               const dateStr = date || '2025-01-01'; // Use date or default
                               const timeInDate = new Date(`${dateStr} ${timeIn}`);
                               const timeOutDate = new Date(`${dateStr} ${timeOut}`);
+                              
+                              // Check for invalid dates
+                              if (isNaN(timeInDate.getTime()) || isNaN(timeOutDate.getTime())) {
+                                return 0;
+                              }
                               
                               // Calculate difference in minutes
                               let diffMinutes = (timeOutDate - timeInDate) / (1000 * 60);
@@ -710,6 +717,11 @@ const Home = () => {
                                 diffMinutes += 24 * 60; // Add 24 hours
                               }
                               
+                              // Validate diffMinutes is a valid number
+                              if (isNaN(diffMinutes) || !isFinite(diffMinutes)) {
+                                return 0;
+                              }
+                              
                               // Special rounding rule: if > 35 minutes and < 45 minutes, round to 3 units (45 min)
                               if (diffMinutes > 35 && diffMinutes < 45) {
                                 return 3;
@@ -717,7 +729,7 @@ const Home = () => {
                               
                               // Convert minutes to units (1 unit = 15 minutes)
                               const units = Math.round(diffMinutes / 15);
-                              return units;
+                              return isNaN(units) ? 0 : units;
                             } catch (e) {
                               console.error('Error calculating units:', e);
                               return 0;
