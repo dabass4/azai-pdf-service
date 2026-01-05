@@ -740,7 +740,7 @@ class PayerContract(BaseModel):
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     organization_id: Optional[str] = None  # Multi-tenant isolation
-    payer_id: str  # Links to Payer.id
+    payer_id: Optional[str] = None  # Links to Payer.id - set by endpoint
     
     # Contract Details
     contract_number: Optional[str] = None
@@ -754,7 +754,7 @@ class PayerContract(BaseModel):
     contact_email: Optional[str] = None
     
     # Billable Services & Rates for this contract period
-    billable_services: List[BillableService] = []
+    billable_services: List[dict] = []  # Simple dict list for flexibility
     
     notes: Optional[str] = None  # Contract-specific notes
     is_active: bool = True
