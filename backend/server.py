@@ -513,6 +513,10 @@ class EmployeeProfile(BaseModel):
     # HHA = Home Health Aide, DSP = Direct Support Professional
     categories: List[str] = []  # Array of category codes: ["RN", "LPN", "HHA", "DSP"]
     
+    # Billing Codes - HCPCS codes this employee can bill
+    # Populated from the payer's billable services
+    billing_codes: List[str] = []  # Array of HCPCS codes: ["T1019", "G0156", "T1000"]
+    
     # EVV DCW Fields
     staff_pin: Optional[str] = None  # EVV: Staff PIN for telephony (9 digits) - Auto-generated for Sandata
     staff_other_id: Optional[str] = None  # EVV: External system ID
