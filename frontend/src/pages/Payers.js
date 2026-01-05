@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { DollarSign, Plus, Edit, Trash2, X, ToggleLeft, ToggleRight } from "lucide-react";
+import { DollarSign, Plus, Edit, Trash2, X, ToggleLeft, ToggleRight, MapPin, Phone, Globe, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,195 @@ import { toast } from "sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Ohio Payer Directory with Official Addresses
+const OHIO_PAYERS = {
+  // State Agencies
+  "ODM": {
+    name: "Ohio Department of Medicaid",
+    type: "State",
+    category: "state",
+    address: "P.O. Box 182709",
+    city: "Columbus",
+    state: "OH",
+    zip: "43218-2709",
+    phone: "1-800-686-1516",
+    website: "medicaid.ohio.gov",
+    payerId: "OHMED",
+    notes: "Provider Hotline: 1-800-686-1516, Consumer: 1-800-324-8680"
+  },
+  "DODD": {
+    name: "Ohio Department of Developmental Disabilities",
+    type: "State",
+    category: "state",
+    address: "30 E Broad St, 13th Floor",
+    city: "Columbus",
+    state: "OH",
+    zip: "43215",
+    phone: "1-800-617-6733",
+    website: "dodd.ohio.gov",
+    payerId: "DODD",
+    notes: "Electronic claims only via PAWS system"
+  },
+  // Managed Care Organizations
+  "AmeriHealth": {
+    name: "AmeriHealth Caritas Ohio",
+    type: "Managed Care",
+    category: "mco",
+    address: "P.O. Box 7346",
+    city: "London",
+    state: "KY",
+    zip: "40742",
+    phone: "1-800-575-4114",
+    website: "amerihealthcaritasoh.com",
+    payerId: "35374",
+    notes: "Claims Disputes: P.O. Box 7126, London, KY 40742"
+  },
+  "Anthem": {
+    name: "Anthem Blue Cross Blue Shield",
+    type: "Managed Care",
+    category: "mco",
+    address: "P.O. Box 105187",
+    city: "Atlanta",
+    state: "GA",
+    zip: "30348-5187",
+    phone: "1-855-223-0747",
+    website: "anthem.com",
+    payerId: "OHBCBS",
+    notes: "Electronic claims preferred via EDI"
+  },
+  "Buckeye": {
+    name: "Buckeye Health Plan",
+    type: "Managed Care",
+    category: "mco",
+    address: "P.O. Box 6200",
+    city: "Farmington",
+    state: "MO",
+    zip: "63640",
+    phone: "1-866-246-4358",
+    website: "buckeyehealthplan.com",
+    payerId: "BUCKEYE",
+    notes: "Main office: 4349 Easton Way, Columbus, OH 43219"
+  },
+  "CareSource": {
+    name: "CareSource",
+    type: "Managed Care",
+    category: "mco",
+    address: "P.O. Box 8738",
+    city: "Dayton",
+    state: "OH",
+    zip: "45401-8738",
+    phone: "1-800-488-0134",
+    website: "caresource.com",
+    payerId: "31114",
+    notes: "Electronic claims via Provider Portal preferred"
+  },
+  "Humana": {
+    name: "Humana Healthy Horizons",
+    type: "Managed Care",
+    category: "mco",
+    address: "P.O. Box 14601",
+    city: "Lexington",
+    state: "KY",
+    zip: "40512-4601",
+    phone: "1-800-282-4548",
+    website: "humana.com",
+    payerId: "HUMANA",
+    notes: "Provider Relations: OHMedicaidProviderRelations@humana.com"
+  },
+  "Molina": {
+    name: "Molina Healthcare of Ohio",
+    type: "Managed Care",
+    category: "mco",
+    address: "P.O. Box 22712",
+    city: "Long Beach",
+    state: "CA",
+    zip: "90801",
+    phone: "1-800-578-0775",
+    website: "molinahealthcare.com",
+    payerId: "20149",
+    notes: "Disputes: P.O. Box 349020, Columbus, OH 43234-9020"
+  },
+  "UHC": {
+    name: "UnitedHealthcare Community Plan",
+    type: "Managed Care",
+    category: "mco",
+    address: "P.O. Box 31364",
+    city: "Salt Lake City",
+    state: "UT",
+    zip: "84131",
+    phone: "1-800-600-9007",
+    website: "uhccommunityplan.com",
+    payerId: "87726",
+    notes: "Appeals Fax: (801) 994-1082"
+  },
+  // MyCare Ohio (Dual Eligible)
+  "Aetna-MyCare": {
+    name: "Aetna Better Health (MyCare Ohio)",
+    type: "MyCare Ohio",
+    category: "mycare",
+    address: "P.O. Box 982966",
+    city: "El Paso",
+    state: "TX",
+    zip: "79998-2966",
+    phone: "1-855-364-0974",
+    website: "aetnabetterhealth.com/ohio",
+    payerId: "50023",
+    notes: "Grievances: P.O. Box 818070, Cleveland, OH 44181"
+  },
+  "Buckeye-MyCare": {
+    name: "Buckeye Community Health Plan (MyCare Ohio)",
+    type: "MyCare Ohio",
+    category: "mycare",
+    address: "P.O. Box 6200",
+    city: "Farmington",
+    state: "MO",
+    zip: "63640",
+    phone: "1-866-246-4358",
+    website: "buckeyehealthplan.com",
+    payerId: "BUCKEYE-MC",
+    notes: "Same as Buckeye Health Plan"
+  },
+  "CareSource-MyCare": {
+    name: "CareSource (MyCare Ohio)",
+    type: "MyCare Ohio",
+    category: "mycare",
+    address: "P.O. Box 8738",
+    city: "Dayton",
+    state: "OH",
+    zip: "45401-8738",
+    phone: "1-855-475-3163",
+    website: "caresource.com",
+    payerId: "31114-MC",
+    notes: "MyCare Ohio dual eligible program"
+  },
+  "Molina-MyCare": {
+    name: "Molina Dual Options (MyCare Ohio)",
+    type: "MyCare Ohio",
+    category: "mycare",
+    address: "P.O. Box 22712",
+    city: "Long Beach",
+    state: "CA",
+    zip: "90801",
+    phone: "1-855-665-4623",
+    website: "molinahealthcare.com",
+    payerId: "20149-MC",
+    notes: "Molina MyCare Ohio dual eligible"
+  },
+  "UHC-MyCare": {
+    name: "UnitedHealthcare (MyCare Ohio)",
+    type: "MyCare Ohio",
+    category: "mycare",
+    address: "P.O. Box 31364",
+    city: "Salt Lake City",
+    state: "UT",
+    zip: "84131",
+    phone: "1-877-542-9236",
+    website: "uhccommunityplan.com",
+    payerId: "87726-MC",
+    notes: "UHC MyCare Ohio dual eligible"
+  }
+};
 
 // Ohio Medicaid Billable Services (Complete list from RhinoBill)
 const OHIO_MEDICAID_SERVICES = [
