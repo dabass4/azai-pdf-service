@@ -23,7 +23,7 @@ import ManualClockIn from "@/pages/ManualClockIn";
 import NotificationCenter from "@/pages/NotificationCenter";
 import NotificationPreferences from "@/pages/NotificationPreferences";
 import Payers from "@/pages/Payers";
-import Claims from "@/pages/Claims";
+import ClaimsDashboard from "@/pages/ClaimsDashboard";
 import EVVManagement from "@/pages/EVVManagement";
 import ServiceCodes from "@/pages/ServiceCodes";
 import BillingCodes from "@/pages/BillingCodes";
