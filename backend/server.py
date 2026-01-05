@@ -3571,6 +3571,72 @@ async def delete_name_correction(correction_id: str, organization_id: str = Depe
     return {"message": "Name correction deleted"}
 
 
+@api_router.get("/employees/{employee_id}/billing-codes")
+async def get_employee_billing_codes(employee_id: str, organization_id: str = Depends(get_organization_id)):
+    """Get the billing codes assigned to an employee"""
+    employee = await db.employees.find_one(
+        {"id": employee_id, "organization_id": organization_id},
+        {"_id": 0, "id": 1, "first_name": 1, "last_name": 1, "billing_codes": 1, "categories": 1}
+    )
+    
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    return {
+        "employee_id": employee["id"],
+        "employee_name": f"{employee.get('first_name', '')} {employee.get('last_name', '')}",
+        "billing_codes": employee.get("billing_codes", []),
+        "categories": employee.get("categories", [])
+    }
+
+
+@api_router.get("/employees/by-name/{name}/billing-codes")
+async def get_employee_billing_codes_by_name(name: str, organization_id: str = Depends(get_organization_id)):
+    """Get billing codes for an employee by name (for timesheet editing)"""
+    # Normalize search name
+    search_name = name.strip().lower()
+    
+    # Try to find exact match first
+    employees = await db.employees.find(
+        {"organization_id": organization_id},
+        {"_id": 0, "id": 1, "first_name": 1, "last_name": 1, "billing_codes": 1, "categories": 1}
+    ).to_list(10000)
+    
+    # Look for best match
+    best_match = None
+    best_score = 0.0
+    
+    for emp in employees:
+        full_name = f"{emp.get('first_name', '')} {emp.get('last_name', '')}".strip().lower()
+        
+        # Exact match
+        if full_name == search_name:
+            best_match = emp
+            break
+        
+        # Calculate similarity
+        similarity = calculate_name_similarity(search_name, full_name)
+        if similarity > best_score and similarity >= 0.8:
+            best_score = similarity
+            best_match = emp
+    
+    if not best_match:
+        # Return default codes if no employee found
+        return {
+            "employee_found": False,
+            "billing_codes": ["T1019", "T1020", "T1021", "G0156"],  # Default common codes
+            "message": "No matching employee found, showing default codes"
+        }
+    
+    return {
+        "employee_found": True,
+        "employee_id": best_match["id"],
+        "employee_name": f"{best_match.get('first_name', '')} {best_match.get('last_name', '')}",
+        "billing_codes": best_match.get("billing_codes", []),
+        "categories": best_match.get("categories", [])
+    }
+
+
 @api_router.get("/employees/duplicates/find")
 async def find_duplicate_employees(organization_id: str = Depends(get_organization_id)):
     """
