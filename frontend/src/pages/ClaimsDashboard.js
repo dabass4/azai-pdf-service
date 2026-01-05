@@ -708,9 +708,9 @@ const ClaimsDashboard = () => {
                 
                 <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
                   <strong>Mock Test Patterns:</strong><br/>
-                  • Claims starting with 'P': Paid<br/>
-                  • Claims starting with 'D': Denied<br/>
-                  • Claims starting with 'R': Pending review<br/>
+                  • Claims starting with P: Paid<br/>
+                  • Claims starting with D: Denied<br/>
+                  • Claims starting with R: Pending review<br/>
                   • Other: Random status
                 </div>
               </CardContent>
