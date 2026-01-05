@@ -2206,6 +2206,65 @@ async def delete_timesheet(timesheet_id: str, organization_id: str = Depends(get
     return {"message": "Timesheet deleted successfully"}
 
 
+@api_router.post("/timesheets/fix-corrupted-data")
+async def fix_corrupted_timesheet_data(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Fix corrupted extracted_data in timesheets.
+    
+    Some timesheets may have extracted_data stored as an array [dict, float, dict]
+    instead of a plain dictionary. This endpoint finds and fixes those records.
+    
+    Requires admin access.
+    """
+    organization_id = current_user.get("organization_id")
+    
+    # Find timesheets with array-type extracted_data
+    # MongoDB $type: 4 = array
+    corrupted_timesheets = await db.timesheets.find({
+        "organization_id": organization_id,
+        "extracted_data": {"$type": "array"}
+    }, {"_id": 0, "id": 1, "extracted_data": 1}).to_list(length=1000)
+    
+    fixed_count = 0
+    errors = []
+    
+    for ts in corrupted_timesheets:
+        try:
+            extracted = ts.get('extracted_data', [])
+            
+            # Extract the first element if it's a dict
+            if isinstance(extracted, list) and len(extracted) > 0 and isinstance(extracted[0], dict):
+                fixed_data = extracted[0]
+            else:
+                fixed_data = {
+                    'client_name': 'Error: Data corrupted (auto-fixed)',
+                    'week_of': None,
+                    'employee_entries': []
+                }
+            
+            # Update the record
+            await db.timesheets.update_one(
+                {"id": ts['id']},
+                {"$set": {"extracted_data": fixed_data}}
+            )
+            fixed_count += 1
+            logger.info(f"Fixed corrupted extracted_data for timesheet {ts['id']}")
+            
+        except Exception as e:
+            errors.append({"timesheet_id": ts.get('id'), "error": str(e)})
+            logger.error(f"Failed to fix timesheet {ts.get('id')}: {e}")
+    
+    return {
+        "success": True,
+        "message": f"Fixed {fixed_count} corrupted timesheet records",
+        "fixed_count": fixed_count,
+        "total_corrupted_found": len(corrupted_timesheets),
+        "errors": errors
+    }
+
+
 @api_router.post("/timesheets/{timesheet_id}/rescan")
 async def rescan_timesheet(timesheet_id: str, organization_id: str = Depends(get_organization_id)):
     """
