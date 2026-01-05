@@ -480,6 +480,24 @@ const Payers = () => {
             <Plus className="mr-2" size={18} />
             Add Contract
           </Button>
+          <Button
+            onClick={async () => {
+              try {
+                const response = await axios.post(`${API}/insurance-contracts/seed-ohio-payers`);
+                toast.success(`Ohio payers added: ${response.data.added} new, ${response.data.skipped} already exist`);
+                fetchContracts();
+              } catch (e) {
+                console.error("Error seeding payers:", e);
+                toast.error("Failed to seed Ohio payers");
+              }
+            }}
+            variant="outline"
+            className="border-green-500 text-green-700 hover:bg-green-50"
+            data-testid="seed-ohio-btn"
+          >
+            <MapPin className="mr-2" size={18} />
+            Load Ohio Payers
+          </Button>
         </div>
 
         {/* Contract Form */}
