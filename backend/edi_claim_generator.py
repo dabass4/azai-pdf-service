@@ -2,12 +2,22 @@
 
 This module generates complete HIPAA 5010-compliant 837 Professional claims
 from timesheet data for submission to Ohio Department of Medicaid.
+
+Supports:
+- 837P (Professional) claims for home health/personal care services
+- Ohio Medicaid HCPCS codes (T1019, T1020, S5125, etc.)
+- Batch claim generation for SFTP submission
+- Individual claim generation for testing
+
+Ohio Medicaid Companion Guide Reference:
+https://medicaid.ohio.gov/resources-for-providers/billing/companion-guides
 """
 
 from typing import List, Dict, Any, Optional
 from datetime import date, datetime
 from decimal import Decimal
 import logging
+import uuid
 
 from edi_x12_builder import (
     ISABuilder, NM1SegmentBuilder, CLMSegmentBuilder,
@@ -15,6 +25,39 @@ from edi_x12_builder import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# Ohio Medicaid specific constants
+OHIO_MEDICAID_PAYER_ID = "ODMITS"
+OHIO_MEDICAID_PAYER_NAME = "OHIO DEPARTMENT OF MEDICAID"
+
+# Common HCPCS codes for Ohio Medicaid home care services
+OHIO_HCPCS_CODES = {
+    "T1019": {"description": "Personal Care Services", "unit_type": "UN", "typical_rate": 17.50},
+    "T1020": {"description": "Personal Care Services - Live-In", "unit_type": "UN", "typical_rate": 15.00},
+    "S5125": {"description": "Attendant Care Services", "unit_type": "UN", "typical_rate": 18.00},
+    "S5126": {"description": "Attendant Care Services - Live-In", "unit_type": "UN", "typical_rate": 16.00},
+    "T2025": {"description": "Waiver Services - NOS", "unit_type": "UN", "typical_rate": 20.00},
+    "T2026": {"description": "Specialized Medical Equipment", "unit_type": "UN", "typical_rate": 25.00},
+    "H0004": {"description": "Behavioral Health Counseling", "unit_type": "UN", "typical_rate": 75.00},
+    "H2015": {"description": "Comprehensive Community Support", "unit_type": "UN", "typical_rate": 45.00},
+    "H2016": {"description": "Comprehensive Community Support per diem", "unit_type": "UN", "typical_rate": 150.00},
+    "99211": {"description": "Office Visit - Minimal", "unit_type": "UN", "typical_rate": 25.00},
+    "99212": {"description": "Office Visit - Straightforward", "unit_type": "UN", "typical_rate": 45.00},
+    "99213": {"description": "Office Visit - Low Complexity", "unit_type": "UN", "typical_rate": 75.00},
+}
+
+# Place of Service codes relevant to Ohio Medicaid
+PLACE_OF_SERVICE = {
+    "11": "Office",
+    "12": "Home",
+    "13": "Assisted Living Facility",
+    "14": "Group Home",
+    "31": "Skilled Nursing Facility",
+    "32": "Nursing Facility",
+    "33": "Custodial Care Facility",
+    "99": "Other Place of Service",
+}
 
 
 class ClaimGenerator:
