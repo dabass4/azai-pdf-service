@@ -182,7 +182,8 @@ async def get_organization_details(
         
         # Get credentials status
         org_config = await database.organization_config.find_one(
-            {"organization_id": organization_id}
+            {"organization_id": organization_id},
+            {"_id": 0}
         )
         
         credentials_status = {
@@ -190,6 +191,19 @@ async def get_organization_details(
             "availity_configured": bool(org_config and org_config.get("availity_api_key")),
             "sandata_configured": bool(org_config and org_config.get("sandata_api_key"))
         }
+        
+        # Convert datetime to ISO strings for JSON serialization
+        if isinstance(org.get('created_at'), datetime):
+            org['created_at'] = org['created_at'].isoformat()
+        if isinstance(org.get('updated_at'), datetime):
+            org['updated_at'] = org['updated_at'].isoformat()
+        
+        # Convert user timestamps
+        for user in users:
+            if isinstance(user.get('created_at'), datetime):
+                user['created_at'] = user['created_at'].isoformat()
+            if isinstance(user.get('last_login_at'), datetime):
+                user['last_login_at'] = user['last_login_at'].isoformat()
         
         return {
             "success": True,
