@@ -30,6 +30,25 @@ const EMPLOYEE_CATEGORIES = [
   { code: "DSP", label: "Direct Support Professional", color: "bg-orange-100 text-orange-800" }
 ];
 
+// Common billing codes for quick selection
+const COMMON_BILLING_CODES = [
+  { code: "T1019", name: "Personal Care Aide", category: "Personal Care" },
+  { code: "T1020", name: "Personal Care (per diem)", category: "Personal Care" },
+  { code: "T1021", name: "Home Health Aide (per visit)", category: "Personal Care" },
+  { code: "G0156", name: "Home Health Aide", category: "Nursing" },
+  { code: "G0299", name: "RN Direct Skilled Nursing", category: "Nursing" },
+  { code: "G0300", name: "LPN Direct Skilled Nursing", category: "Nursing" },
+  { code: "T1000", name: "Private Duty Nursing", category: "PDN" },
+  { code: "T1001", name: "Nursing Assessment", category: "Assessment" },
+  { code: "T1002", name: "RN Waiver Nursing", category: "Waiver Nursing" },
+  { code: "T1003", name: "LPN Waiver Nursing", category: "Waiver Nursing" },
+  { code: "G0151", name: "Physical Therapy", category: "Therapy" },
+  { code: "G0152", name: "Occupational Therapy", category: "Therapy" },
+  { code: "G0153", name: "Speech Therapy", category: "Therapy" },
+  { code: "S5125", name: "Attendant Care Services", category: "Personal Care" },
+  { code: "S5126", name: "Attendant Care (per 15 min)", category: "Personal Care" },
+];
+
 const Employees = () => {
   const [employees, setEmployees] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -57,7 +76,8 @@ const Employees = () => {
     address_state: "",
     address_zip: "",
     employee_id: "",
-    categories: []  // Array of category codes: RN, LPN, HHA, DSP (REQUIRED)
+    categories: [],  // Array of category codes: RN, LPN, HHA, DSP (REQUIRED)
+    billing_codes: []  // Array of HCPCS billing codes employee can bill
   });
 
   useEffect(() => {
