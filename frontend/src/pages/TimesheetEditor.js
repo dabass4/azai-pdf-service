@@ -703,7 +703,7 @@ const TimesheetEditor = () => {
                             <Input
                               id={`date_${empIndex}_${entryIndex}`}
                               type="date"
-                              value={entry.date || ""}
+                              value={formatDateForInput(entry.date) || ""}
                               onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "date", e.target.value)}
                               data-testid={`date-${empIndex}-${entryIndex}`}
                             />
@@ -713,9 +713,8 @@ const TimesheetEditor = () => {
                             <Input
                               id={`time_in_${empIndex}_${entryIndex}`}
                               type="time"
-                              value={entry.time_in || ""}
-                              onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "time_in", e.target.value)}
-                              placeholder="HH:MM AM/PM"
+                              value={convertTo24Hour(entry.time_in) || ""}
+                              onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "time_in", convertTo12Hour(e.target.value))}
                               data-testid={`time-in-${empIndex}-${entryIndex}`}
                             />
                           </div>
@@ -724,9 +723,8 @@ const TimesheetEditor = () => {
                             <Input
                               id={`time_out_${empIndex}_${entryIndex}`}
                               type="time"
-                              value={entry.time_out || ""}
-                              onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "time_out", e.target.value)}
-                              placeholder="HH:MM AM/PM"
+                              value={convertTo24Hour(entry.time_out) || ""}
+                              onChange={(e) => handleTimeEntryChange(empIndex, entryIndex, "time_out", convertTo12Hour(e.target.value))}
                               data-testid={`time-out-${empIndex}-${entryIndex}`}
                             />
                           </div>
