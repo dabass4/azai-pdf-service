@@ -146,7 +146,6 @@ const TimesheetEditor = () => {
     fetchEmployeeBillingCodes(empIndex, employee.full_name);
     toast.success(`Applied: ${employee.full_name}`);
   };
-  };
 
   const applyNameCorrectionToAll = async (empIndex, incorrectName, correctName) => {
     if (!correctName || correctName.trim() === '') {
