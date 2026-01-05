@@ -31,6 +31,25 @@ const COLORS = {
 
 const PIE_COLORS = ["#22c55e", "#f59e0b", "#ef4444", "#3b82f6", "#8b5cf6"];
 
+// Custom tooltip component (defined outside to prevent re-creation on each render)
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 rounded-lg shadow-lg border">
+        <p className="font-semibold text-gray-900">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={index} style={{ color: entry.color }} className="text-sm">
+            {entry.name}: {typeof entry.value === "number" && entry.name.includes("mount") 
+              ? `$${entry.value.toLocaleString()}` 
+              : entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 const ClaimsAnalytics = () => {
   const [claims, setClaims] = useState([]);
   const [timesheets, setTimesheets] = useState([]);
