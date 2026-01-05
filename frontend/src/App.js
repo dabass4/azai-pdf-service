@@ -24,6 +24,7 @@ import NotificationCenter from "@/pages/NotificationCenter";
 import NotificationPreferences from "@/pages/NotificationPreferences";
 import Payers from "@/pages/Payers";
 import ClaimsDashboard from "@/pages/ClaimsDashboard";
+import ClaimsAnalytics from "@/pages/ClaimsAnalytics";
 import EVVManagement from "@/pages/EVVManagement";
 import ServiceCodes from "@/pages/ServiceCodes";
 import BillingCodes from "@/pages/BillingCodes";
