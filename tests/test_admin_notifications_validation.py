@@ -268,17 +268,14 @@ class TestAdminOrganizations:
         if not organizations:
             pytest.skip("No organizations found to test")
         
-        org_id = organizations[0].get("id")
+        org_id = organizations[0].get("id") or organizations[0].get("organization_id")
         
         response = authenticated_client.get(f"{BASE_URL}/api/admin/organizations/{org_id}")
         
         print(f"Get organization details response: {response.status_code} - {response.text[:500]}")
         
-        # This will fail due to the bug - documenting it
-        if response.status_code == 404:
-            print("BUG CONFIRMED: get_organization_details queries by 'organization_id' but DB has 'id' field")
-            # Mark as expected failure due to known bug
-            pytest.xfail("Known bug: endpoint queries by 'organization_id' but DB uses 'id'")
+        # Bug has been fixed - should now work correctly
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
     
