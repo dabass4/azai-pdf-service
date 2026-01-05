@@ -744,14 +744,15 @@ const Home = () => {
                               employee.time_entries.forEach(entry => {
                                 // Use units from backend if available, otherwise calculate
                                 const units = entry.units || calculateUnits(entry.time_in, entry.time_out, entry.date);
-                                totalUnits += units;
+                                // Ensure units is a valid number before adding
+                                totalUnits += (isNaN(units) ? 0 : units);
                                 
                                 allEntries.push({
                                   ...entry,
                                   employee_name: employee.employee_name,
                                   service_code: employee.service_code,
                                   signature: employee.signature,
-                                  units: units,
+                                  units: isNaN(units) ? 0 : units,
                                   scan_order: entryIndex++ // Track original order
                                 });
                               });
@@ -771,7 +772,7 @@ const Home = () => {
                                   • {timesheet.extracted_data.employee_entries.length} Employee{timesheet.extracted_data.employee_entries.length !== 1 ? 's' : ''}
                                 </span>
                                 <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">
-                                  {totalUnits} Total Units
+                                  {isNaN(totalUnits) ? 0 : totalUnits} Total Units
                                 </span>
                               </h3>
                               
