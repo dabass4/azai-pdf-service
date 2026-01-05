@@ -6830,6 +6830,10 @@ api_router.include_router(icd10_router)
 from routes_npi import router as npi_router
 api_router.include_router(npi_router)
 
+# Import and include Mock ODM router (for testing claims workflow)
+from routes_mock_odm import router as mock_odm_router
+api_router.include_router(mock_odm_router)
+
 # Include the router in the main app
 app.include_router(api_router)
 
