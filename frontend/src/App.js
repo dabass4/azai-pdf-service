@@ -26,6 +26,7 @@ import Payers from "@/pages/Payers";
 import Claims from "@/pages/Claims";
 import EVVManagement from "@/pages/EVVManagement";
 import ServiceCodes from "@/pages/ServiceCodes";
+import BillingCodes from "@/pages/BillingCodes";
 import Settings from "@/pages/Settings";
 import { formatDateForDisplay} from "./utils/dateUtils";
 
