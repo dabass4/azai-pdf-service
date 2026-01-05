@@ -11,6 +11,76 @@ import { toast } from "sonner";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Helper function to convert 12-hour time (e.g., "09:00 AM") to 24-hour format for input type="time"
+const convertTo24Hour = (time12h) => {
+  if (!time12h) return "";
+  
+  // If already in 24-hour format (e.g., "09:00" or "14:30"), return as-is
+  if (time12h.match(/^\d{2}:\d{2}$/)) {
+    return time12h;
+  }
+  
+  // Parse 12-hour format like "09:00 AM" or "9:00 AM" or "09:00AM"
+  const match = time12h.match(/^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?$/i);
+  if (!match) return time12h; // Return original if can't parse
+  
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const period = (match[3] || "").toUpperCase();
+  
+  // Convert to 24-hour
+  if (period === "AM") {
+    if (hours === 12) hours = 0;
+  } else if (period === "PM") {
+    if (hours !== 12) hours += 12;
+  }
+  
+  return `${hours.toString().padStart(2, "0")}:${minutes}`;
+};
+
+// Helper function to convert 24-hour time to 12-hour format for display/storage
+const convertTo12Hour = (time24h) => {
+  if (!time24h) return "";
+  
+  // If already has AM/PM, return as-is
+  if (time24h.match(/AM|PM/i)) {
+    return time24h;
+  }
+  
+  const match = time24h.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return time24h;
+  
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const period = hours >= 12 ? "PM" : "AM";
+  
+  if (hours === 0) hours = 12;
+  else if (hours > 12) hours -= 12;
+  
+  return `${hours.toString().padStart(2, "0")}:${minutes} ${period}`;
+};
+
+// Helper to format date for input type="date" (YYYY-MM-DD)
+const formatDateForInput = (dateStr) => {
+  if (!dateStr) return "";
+  
+  // If already in YYYY-MM-DD format
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateStr;
+  }
+  
+  // Parse MM/DD/YYYY format
+  const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (match) {
+    const month = match[1].padStart(2, "0");
+    const day = match[2].padStart(2, "0");
+    const year = match[3];
+    return `${year}-${month}-${day}`;
+  }
+  
+  return dateStr;
+};
+
 // Default billing codes if employee has none assigned
 const DEFAULT_BILLING_CODES = [
   { code: "T1019", name: "Personal Care Aide" },
