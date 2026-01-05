@@ -463,3 +463,530 @@ class ClaimGenerator:
             control_number.zfill(9),
         ]
         return "*".join(iea_segments) + "~"
+
+
+# ==================== CONVENIENCE FUNCTIONS ====================
+
+def generate_837p_claim(
+    claims_data: List[Dict[str, Any]],
+    sender_id: str,
+    receiver_id: str = "ODMITS",
+    provider_name: str = "HEALTHCARE PROVIDER",
+    provider_npi: str = "1234567890",
+    test_mode: bool = True
+) -> str:
+    """
+    Generate complete 837P EDI file from claims data
+    
+    This is the main entry point for generating claims from timesheet data.
+    
+    Args:
+        claims_data: List of claim dictionaries containing:
+            - claim: Claim record from database
+            - timesheet: Timesheet record
+            - patient: Patient record
+            - employee: Employee/DCW record
+        sender_id: 7-digit ODM Trading Partner ID
+        receiver_id: ODM system receiver ID (default: ODMITS)
+        provider_name: Billing provider organization name
+        provider_npi: Billing provider NPI (10 digits)
+        test_mode: Whether to generate test (T) or production (P) claims
+    
+    Returns:
+        Complete EDI file content as string
+    """
+    generator = ClaimGenerator(
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        test_mode=test_mode
+    )
+    
+    # If single claim, just generate it
+    if len(claims_data) == 1:
+        claim_dict = _transform_claim_data(claims_data[0], provider_name, provider_npi)
+        return generator.generate_claim(claim_dict)
+    
+    # For multiple claims, generate batch file
+    return generate_837p_batch(
+        claims_data=claims_data,
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        provider_name=provider_name,
+        provider_npi=provider_npi,
+        test_mode=test_mode
+    )
+
+
+def generate_837p_batch(
+    claims_data: List[Dict[str, Any]],
+    sender_id: str,
+    receiver_id: str = "ODMITS",
+    provider_name: str = "HEALTHCARE PROVIDER",
+    provider_npi: str = "1234567890",
+    test_mode: bool = True
+) -> str:
+    """
+    Generate batch 837P EDI file with multiple claims
+    
+    Creates a single EDI file containing multiple claim transactions,
+    suitable for SFTP batch submission to Ohio Medicaid.
+    
+    Args:
+        claims_data: List of claim data dictionaries
+        sender_id: Trading Partner ID
+        receiver_id: ODM receiver ID
+        provider_name: Billing provider name
+        provider_npi: Billing provider NPI
+        test_mode: Test or production mode
+    
+    Returns:
+        Complete batch EDI file content
+    """
+    segments = []
+    test_indicator = "T" if test_mode else "P"
+    control_number = datetime.now().strftime("%Y%m%d%H%M%S")[:9]
+    
+    # ISA - Interchange Control Header
+    isa = ISABuilder.build(
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        interchange_control_number=control_number,
+        test_indicator=test_indicator
+    )
+    segments.append(isa)
+    
+    # GS - Functional Group Header
+    gs_elements = [
+        "GS",
+        "HC",  # Health Care Claim
+        sender_id,
+        receiver_id,
+        datetime.now().strftime("%Y%m%d"),
+        datetime.now().strftime("%H%M"),
+        control_number,
+        "X",
+        "005010X222A1",
+    ]
+    segments.append("*".join(gs_elements) + "~")
+    
+    # Generate each claim as a separate ST-SE transaction
+    transaction_count = 0
+    for idx, claim_data in enumerate(claims_data, start=1):
+        try:
+            claim_dict = _transform_claim_data(claim_data, provider_name, provider_npi)
+            claim_segments = _build_claim_transaction_set(claim_dict, str(idx).zfill(4))
+            segments.extend(claim_segments)
+            transaction_count += 1
+        except Exception as e:
+            logger.error(f"Failed to generate claim {idx}: {str(e)}")
+            continue
+    
+    # GE - Functional Group Trailer
+    ge_elements = ["GE", str(transaction_count), control_number]
+    segments.append("*".join(ge_elements) + "~")
+    
+    # IEA - Interchange Control Trailer
+    iea_elements = ["IEA", "1", control_number.zfill(9)]
+    segments.append("*".join(iea_elements) + "~")
+    
+    return "".join(segments)
+
+
+def _transform_claim_data(
+    raw_data: Dict[str, Any],
+    provider_name: str,
+    provider_npi: str
+) -> Dict[str, Any]:
+    """
+    Transform raw database records into claim generator format
+    
+    Extracts and formats data from timesheet, patient, and employee records
+    into the structure expected by ClaimGenerator.
+    """
+    claim = raw_data.get('claim', {})
+    timesheet = raw_data.get('timesheet', {})
+    patient = raw_data.get('patient', {})
+    employee = raw_data.get('employee', {})
+    
+    # Determine service code from timesheet
+    service_code = timesheet.get('service_code') or timesheet.get('billing_code') or 'T1019'
+    
+    # Get rate information
+    hourly_rate = Decimal(str(timesheet.get('hourly_rate', 0)))
+    if hourly_rate == 0 and service_code in OHIO_HCPCS_CODES:
+        hourly_rate = Decimal(str(OHIO_HCPCS_CODES[service_code]['typical_rate']))
+    
+    # Calculate units (typically hours for personal care)
+    total_hours = Decimal(str(timesheet.get('total_hours', 0)))
+    units = total_hours if total_hours > 0 else Decimal('1')
+    
+    # Calculate charge
+    charge_amount = units * hourly_rate
+    
+    # Build service lines from timesheet entries
+    service_lines = []
+    
+    # Check if timesheet has multiple entries
+    timesheet_entries = timesheet.get('entries', [])
+    if timesheet_entries:
+        for entry in timesheet_entries:
+            entry_hours = Decimal(str(entry.get('hours', 0)))
+            entry_rate = Decimal(str(entry.get('rate', hourly_rate)))
+            service_lines.append({
+                'service_code': entry.get('service_code', service_code),
+                'service_date': entry.get('date', timesheet.get('date')),
+                'units': entry_hours,
+                'charge_amount': entry_hours * entry_rate,
+            })
+    else:
+        # Single service line from timesheet totals
+        service_lines.append({
+            'service_code': service_code,
+            'service_date': timesheet.get('date', datetime.now().strftime('%Y-%m-%d')),
+            'units': units,
+            'charge_amount': charge_amount,
+        })
+    
+    # Build patient info
+    patient_info = {
+        'first_name': patient.get('first_name', ''),
+        'last_name': patient.get('last_name', ''),
+        'medicaid_id': patient.get('medicaid_number') or patient.get('medicaid_id', ''),
+        'date_of_birth': patient.get('dob') or patient.get('date_of_birth', ''),
+        'gender': _normalize_gender(patient.get('gender', 'U')),
+        'address_street': patient.get('address', ''),
+        'address_city': patient.get('city', ''),
+        'address_state': patient.get('state', 'OH'),
+        'address_zip': patient.get('zip', ''),
+    }
+    
+    # Build rendering provider info (the DCW/employee who provided service)
+    rendering_name = f"{employee.get('first_name', '')} {employee.get('last_name', '')}".strip()
+    rendering_npi = employee.get('npi', '')
+    
+    # Diagnosis codes (default Z codes for routine encounters if none specified)
+    diagnosis_1 = claim.get('diagnosis_code_1') or patient.get('primary_diagnosis') or 'Z0000'
+    diagnosis_2 = claim.get('diagnosis_code_2') or patient.get('secondary_diagnosis')
+    
+    return {
+        'claim_id': claim.get('claim_id') or str(uuid.uuid4()),
+        'billing_provider_name': provider_name,
+        'billing_provider_npi': provider_npi,
+        'rendering_provider_name': rendering_name,
+        'rendering_provider_npi': rendering_npi,
+        'patient': patient_info,
+        'place_of_service': timesheet.get('place_of_service', '12'),  # Default: Home
+        'diagnosis_code_1': diagnosis_1,
+        'diagnosis_code_2': diagnosis_2,
+        'service_lines': service_lines,
+        'authorization_number': claim.get('authorization_number') or timesheet.get('authorization_number'),
+        'original_claim_number': claim.get('original_claim_number'),  # For replacements
+    }
+
+
+def _normalize_gender(gender: str) -> str:
+    """Normalize gender value for X12 format"""
+    if not gender:
+        return 'U'
+    gender_upper = gender.upper()
+    if gender_upper in ['M', 'MALE']:
+        return 'M'
+    elif gender_upper in ['F', 'FEMALE']:
+        return 'F'
+    else:
+        return 'U'
+
+
+def _build_claim_transaction_set(
+    claim_data: Dict[str, Any],
+    transaction_control_number: str
+) -> List[str]:
+    """
+    Build a complete ST-SE transaction set for a single claim
+    
+    Returns list of segment strings for one claim transaction.
+    """
+    segments = []
+    
+    # ST - Transaction Set Header
+    st_elements = ["ST", "837", transaction_control_number, "005010X222A1"]
+    segments.append("*".join(st_elements) + "~")
+    
+    # BHT - Beginning of Hierarchical Transaction
+    bht_elements = [
+        "BHT",
+        "0019",  # Hierarchical Structure Code
+        "00",    # Original
+        claim_data.get('claim_id', '')[:30],  # Reference ID
+        datetime.now().strftime("%Y%m%d"),
+        datetime.now().strftime("%H%M%S"),
+        "CH",    # Claim
+    ]
+    segments.append("*".join(bht_elements) + "~")
+    
+    # Loop 1000A - Submitter Name
+    segments.append(_build_submitter_loop(claim_data))
+    
+    # Loop 1000B - Receiver Name
+    segments.append(_build_receiver_loop())
+    
+    # Loop 2000A - Billing Provider Hierarchical Level
+    segments.extend(_build_billing_provider_loop(claim_data))
+    
+    # Loop 2000B - Subscriber Hierarchical Level
+    segments.extend(_build_subscriber_loop(claim_data))
+    
+    # Loop 2300 - Claim Information
+    segments.extend(_build_claim_info_loop(claim_data))
+    
+    # Loop 2400 - Service Line Information
+    for idx, service_line in enumerate(claim_data.get('service_lines', []), start=1):
+        segments.extend(_build_service_line_loop(service_line, idx))
+    
+    # SE - Transaction Set Trailer
+    segment_count = len(segments) + 1
+    se_elements = ["SE", str(segment_count), transaction_control_number]
+    segments.append("*".join(se_elements) + "~")
+    
+    return segments
+
+
+def _build_submitter_loop(claim_data: Dict[str, Any]) -> str:
+    """Build Loop 1000A - Submitter Name"""
+    submitter_name = claim_data.get('billing_provider_name', 'PROVIDER')
+    # NM1 - Submitter Name
+    nm1 = f"NM1*41*2*{submitter_name}*****46*{claim_data.get('billing_provider_npi', '')}~"
+    # PER - Submitter Contact
+    per = "PER*IC*EDI DEPT*TE*6145551234~"
+    return nm1 + per
+
+
+def _build_receiver_loop() -> str:
+    """Build Loop 1000B - Receiver Name"""
+    return f"NM1*40*2*{OHIO_MEDICAID_PAYER_NAME}*****46*{OHIO_MEDICAID_PAYER_ID}~"
+
+
+def _build_billing_provider_loop(claim_data: Dict[str, Any]) -> List[str]:
+    """Build Loop 2000A - Billing Provider"""
+    segments = []
+    
+    # HL - Hierarchical Level (Billing Provider)
+    segments.append("HL*1**20*1~")
+    
+    # PRV - Provider Information
+    segments.append("PRV*BI*PXC*251E00000X~")  # Home Health taxonomy
+    
+    # NM1 - Billing Provider Name
+    provider_name = claim_data.get('billing_provider_name', 'PROVIDER')
+    provider_npi = claim_data.get('billing_provider_npi', '1234567890')
+    segments.append(f"NM1*85*2*{provider_name}*****XX*{provider_npi}~")
+    
+    # N3 - Provider Address (required by Ohio Medicaid)
+    segments.append("N3*123 PROVIDER ST~")
+    
+    # N4 - Provider City/State/Zip
+    segments.append("N4*COLUMBUS*OH*432150000~")
+    
+    # REF - Provider Tax ID
+    segments.append("REF*EI*123456789~")
+    
+    return segments
+
+
+def _build_subscriber_loop(claim_data: Dict[str, Any]) -> List[str]:
+    """Build Loop 2000B - Subscriber/Patient"""
+    segments = []
+    patient = claim_data.get('patient', {})
+    
+    # HL - Hierarchical Level (Subscriber)
+    segments.append("HL*2*1*22*0~")
+    
+    # SBR - Subscriber Information
+    segments.append("SBR*P*18*******MB~")  # MB = Medicaid
+    
+    # NM1 - Subscriber Name
+    last_name = patient.get('last_name', 'DOE')
+    first_name = patient.get('first_name', 'JOHN')
+    medicaid_id = patient.get('medicaid_id', '')
+    segments.append(f"NM1*IL*1*{last_name}*{first_name}****MI*{medicaid_id}~")
+    
+    # N3 - Patient Address
+    address = patient.get('address_street', '123 MAIN ST')
+    segments.append(f"N3*{address}~")
+    
+    # N4 - Patient City/State/Zip
+    city = patient.get('address_city', 'COLUMBUS')
+    state = patient.get('address_state', 'OH')
+    zip_code = patient.get('address_zip', '43215')
+    segments.append(f"N4*{city}*{state}*{zip_code}~")
+    
+    # DMG - Demographic Information
+    dob = patient.get('date_of_birth', '')
+    if isinstance(dob, str):
+        dob_formatted = dob.replace('-', '')
+    elif hasattr(dob, 'strftime'):
+        dob_formatted = dob.strftime('%Y%m%d')
+    else:
+        dob_formatted = '19900101'
+    
+    gender = patient.get('gender', 'U')
+    segments.append(f"DMG*D8*{dob_formatted}*{gender}~")
+    
+    return segments
+
+
+def _build_claim_info_loop(claim_data: Dict[str, Any]) -> List[str]:
+    """Build Loop 2300 - Claim Information"""
+    segments = []
+    
+    # Calculate total charge
+    total_charge = sum(
+        Decimal(str(line.get('charge_amount', 0)))
+        for line in claim_data.get('service_lines', [])
+    )
+    
+    claim_id = claim_data.get('claim_id', '')[:20]
+    pos = claim_data.get('place_of_service', '12')
+    
+    # CLM - Claim Information
+    segments.append(f"CLM*{claim_id}*{total_charge:.2f}***{pos}:B:1*Y*A*Y*Y~")
+    
+    # DTP - Service Date (statement dates)
+    service_lines = claim_data.get('service_lines', [])
+    if service_lines:
+        first_date = service_lines[0].get('service_date', '')
+        last_date = service_lines[-1].get('service_date', '')
+        
+        if isinstance(first_date, str):
+            first_date_fmt = first_date.replace('-', '')
+        else:
+            first_date_fmt = first_date.strftime('%Y%m%d') if first_date else datetime.now().strftime('%Y%m%d')
+        
+        if isinstance(last_date, str):
+            last_date_fmt = last_date.replace('-', '')
+        else:
+            last_date_fmt = last_date.strftime('%Y%m%d') if last_date else first_date_fmt
+        
+        segments.append(f"DTP*434*RD8*{first_date_fmt}-{last_date_fmt}~")
+    
+    # REF - Prior Authorization (if present)
+    auth_num = claim_data.get('authorization_number')
+    if auth_num:
+        segments.append(f"REF*G1*{auth_num}~")
+    
+    # HI - Diagnosis Codes
+    diag_1 = claim_data.get('diagnosis_code_1', 'Z0000').replace('.', '')
+    hi_segment = f"HI*ABK:{diag_1}"
+    
+    diag_2 = claim_data.get('diagnosis_code_2')
+    if diag_2:
+        hi_segment += f"*ABF:{diag_2.replace('.', '')}"
+    
+    segments.append(hi_segment + "~")
+    
+    # NM1 - Rendering Provider (if different from billing)
+    rendering_npi = claim_data.get('rendering_provider_npi')
+    rendering_name = claim_data.get('rendering_provider_name', '')
+    
+    if rendering_npi and rendering_name:
+        name_parts = rendering_name.split()
+        last_name = name_parts[-1] if name_parts else ''
+        first_name = name_parts[0] if len(name_parts) > 1 else ''
+        segments.append(f"NM1*82*1*{last_name}*{first_name}****XX*{rendering_npi}~")
+    
+    return segments
+
+
+def _build_service_line_loop(service_line: Dict[str, Any], line_number: int) -> List[str]:
+    """Build Loop 2400 - Service Line Information"""
+    segments = []
+    
+    # LX - Service Line Number
+    segments.append(f"LX*{line_number}~")
+    
+    # SV1 - Professional Service
+    service_code = service_line.get('service_code', 'T1019')
+    charge = Decimal(str(service_line.get('charge_amount', 0)))
+    units = Decimal(str(service_line.get('units', 1)))
+    
+    # Get unit type from HCPCS definition or default
+    unit_type = "UN"
+    if service_code in OHIO_HCPCS_CODES:
+        unit_type = OHIO_HCPCS_CODES[service_code].get('unit_type', 'UN')
+    
+    # Build SV1 with procedure code composite
+    sv1_elements = [
+        "SV1",
+        f"HC:{service_code}",  # Procedure code
+        f"{charge:.2f}",       # Charge amount
+        unit_type,             # Unit type
+        str(units),            # Units
+        "",                    # Place of service (blank - in CLM)
+        "",                    # Service type code (blank)
+        "1",                   # Diagnosis code pointer
+    ]
+    segments.append("*".join(sv1_elements) + "~")
+    
+    # DTP - Service Date
+    service_date = service_line.get('service_date', '')
+    if isinstance(service_date, str):
+        date_formatted = service_date.replace('-', '')
+    elif hasattr(service_date, 'strftime'):
+        date_formatted = service_date.strftime('%Y%m%d')
+    else:
+        date_formatted = datetime.now().strftime('%Y%m%d')
+    
+    segments.append(f"DTP*472*D8*{date_formatted}~")
+    
+    return segments
+
+
+# ==================== VALIDATION UTILITIES ====================
+
+def validate_claim_data(claim_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validate claim data before generation
+    
+    Returns dict with 'valid' boolean and 'errors' list
+    """
+    errors = []
+    
+    # Check required fields
+    if not claim_data.get('billing_provider_npi'):
+        errors.append("Missing billing provider NPI")
+    elif len(claim_data['billing_provider_npi']) != 10:
+        errors.append("Billing provider NPI must be 10 digits")
+    
+    patient = claim_data.get('patient', {})
+    if not patient.get('medicaid_id'):
+        errors.append("Missing patient Medicaid ID")
+    elif len(patient['medicaid_id']) != 12:
+        errors.append("Medicaid ID must be 12 digits")
+    
+    if not patient.get('last_name'):
+        errors.append("Missing patient last name")
+    
+    if not patient.get('first_name'):
+        errors.append("Missing patient first name")
+    
+    service_lines = claim_data.get('service_lines', [])
+    if not service_lines:
+        errors.append("No service lines provided")
+    
+    for idx, line in enumerate(service_lines, start=1):
+        if not line.get('service_code'):
+            errors.append(f"Service line {idx}: Missing service code")
+        if not line.get('charge_amount') or Decimal(str(line.get('charge_amount', 0))) <= 0:
+            errors.append(f"Service line {idx}: Invalid charge amount")
+        if not line.get('service_date'):
+            errors.append(f"Service line {idx}: Missing service date")
+    
+    return {
+        'valid': len(errors) == 0,
+        'errors': errors
+    }
+
+
+def get_hcpcs_info(code: str) -> Optional[Dict[str, Any]]:
+    """Get information about an Ohio Medicaid HCPCS code"""
+    return OHIO_HCPCS_CODES.get(code)
