@@ -3984,6 +3984,237 @@ async def delete_contract(contract_id: str):
     
     return {"message": "Contract deleted successfully"}
 
+
+@api_router.post("/insurance-contracts/seed-ohio-payers")
+async def seed_ohio_payers(organization_id: str = Depends(get_organization_id)):
+    """Seed all Ohio Medicaid payers with official addresses"""
+    
+    ohio_payers = [
+        # State Agencies
+        {
+            "payer_name": "Ohio Department of Medicaid",
+            "insurance_type": "Medicaid",
+            "payer_id": "OHMED",
+            "payer_address": "P.O. Box 182709",
+            "payer_city": "Columbus",
+            "payer_state": "OH",
+            "payer_zip": "43218-2709",
+            "payer_phone": "1-800-686-1516",
+            "notes": "Provider Hotline: 1-800-686-1516, Consumer: 1-800-324-8680",
+            "category": "state"
+        },
+        {
+            "payer_name": "Ohio Department of Developmental Disabilities",
+            "insurance_type": "Medicaid",
+            "payer_id": "DODD",
+            "payer_address": "30 E Broad St, 13th Floor",
+            "payer_city": "Columbus",
+            "payer_state": "OH",
+            "payer_zip": "43215",
+            "payer_phone": "1-800-617-6733",
+            "notes": "Electronic claims only via PAWS system",
+            "category": "state"
+        },
+        # Managed Care Organizations
+        {
+            "payer_name": "AmeriHealth Caritas Ohio",
+            "insurance_type": "Medicaid",
+            "payer_id": "35374",
+            "payer_address": "P.O. Box 7346",
+            "payer_city": "London",
+            "payer_state": "KY",
+            "payer_zip": "40742",
+            "payer_phone": "1-800-575-4114",
+            "notes": "Claims Disputes: P.O. Box 7126, London, KY 40742",
+            "category": "mco"
+        },
+        {
+            "payer_name": "Anthem Blue Cross Blue Shield",
+            "insurance_type": "Medicaid",
+            "payer_id": "OHBCBS",
+            "payer_address": "P.O. Box 105187",
+            "payer_city": "Atlanta",
+            "payer_state": "GA",
+            "payer_zip": "30348-5187",
+            "payer_phone": "1-855-223-0747",
+            "notes": "Electronic claims preferred via EDI",
+            "category": "mco"
+        },
+        {
+            "payer_name": "Buckeye Health Plan",
+            "insurance_type": "Medicaid",
+            "payer_id": "BUCKEYE",
+            "payer_address": "P.O. Box 6200",
+            "payer_city": "Farmington",
+            "payer_state": "MO",
+            "payer_zip": "63640",
+            "payer_phone": "1-866-246-4358",
+            "notes": "Main office: 4349 Easton Way, Columbus, OH 43219",
+            "category": "mco"
+        },
+        {
+            "payer_name": "CareSource",
+            "insurance_type": "Medicaid",
+            "payer_id": "31114",
+            "payer_address": "P.O. Box 8738",
+            "payer_city": "Dayton",
+            "payer_state": "OH",
+            "payer_zip": "45401-8738",
+            "payer_phone": "1-800-488-0134",
+            "notes": "Electronic claims via Provider Portal preferred",
+            "category": "mco"
+        },
+        {
+            "payer_name": "Humana Healthy Horizons",
+            "insurance_type": "Medicaid",
+            "payer_id": "HUMANA",
+            "payer_address": "P.O. Box 14601",
+            "payer_city": "Lexington",
+            "payer_state": "KY",
+            "payer_zip": "40512-4601",
+            "payer_phone": "1-800-282-4548",
+            "notes": "Provider Relations: OHMedicaidProviderRelations@humana.com",
+            "category": "mco"
+        },
+        {
+            "payer_name": "Molina Healthcare of Ohio",
+            "insurance_type": "Medicaid",
+            "payer_id": "20149",
+            "payer_address": "P.O. Box 22712",
+            "payer_city": "Long Beach",
+            "payer_state": "CA",
+            "payer_zip": "90801",
+            "payer_phone": "1-800-578-0775",
+            "notes": "Disputes: P.O. Box 349020, Columbus, OH 43234-9020",
+            "category": "mco"
+        },
+        {
+            "payer_name": "UnitedHealthcare Community Plan",
+            "insurance_type": "Medicaid",
+            "payer_id": "87726",
+            "payer_address": "P.O. Box 31364",
+            "payer_city": "Salt Lake City",
+            "payer_state": "UT",
+            "payer_zip": "84131",
+            "payer_phone": "1-800-600-9007",
+            "notes": "Appeals Fax: (801) 994-1082",
+            "category": "mco"
+        },
+        # MyCare Ohio (Dual Eligible)
+        {
+            "payer_name": "Aetna Better Health (MyCare Ohio)",
+            "insurance_type": "Medicaid",
+            "payer_id": "50023",
+            "payer_address": "P.O. Box 982966",
+            "payer_city": "El Paso",
+            "payer_state": "TX",
+            "payer_zip": "79998-2966",
+            "payer_phone": "1-855-364-0974",
+            "notes": "Grievances: P.O. Box 818070, Cleveland, OH 44181",
+            "category": "mycare"
+        },
+        {
+            "payer_name": "Buckeye Community Health Plan (MyCare Ohio)",
+            "insurance_type": "Medicaid",
+            "payer_id": "BUCKEYE-MC",
+            "payer_address": "P.O. Box 6200",
+            "payer_city": "Farmington",
+            "payer_state": "MO",
+            "payer_zip": "63640",
+            "payer_phone": "1-866-246-4358",
+            "notes": "Same as Buckeye Health Plan",
+            "category": "mycare"
+        },
+        {
+            "payer_name": "CareSource (MyCare Ohio)",
+            "insurance_type": "Medicaid",
+            "payer_id": "31114-MC",
+            "payer_address": "P.O. Box 8738",
+            "payer_city": "Dayton",
+            "payer_state": "OH",
+            "payer_zip": "45401-8738",
+            "payer_phone": "1-855-475-3163",
+            "notes": "MyCare Ohio dual eligible program",
+            "category": "mycare"
+        },
+        {
+            "payer_name": "Molina Dual Options (MyCare Ohio)",
+            "insurance_type": "Medicaid",
+            "payer_id": "20149-MC",
+            "payer_address": "P.O. Box 22712",
+            "payer_city": "Long Beach",
+            "payer_state": "CA",
+            "payer_zip": "90801",
+            "payer_phone": "1-855-665-4623",
+            "notes": "Molina MyCare Ohio dual eligible",
+            "category": "mycare"
+        },
+        {
+            "payer_name": "UnitedHealthcare (MyCare Ohio)",
+            "insurance_type": "Medicaid",
+            "payer_id": "87726-MC",
+            "payer_address": "P.O. Box 31364",
+            "payer_city": "Salt Lake City",
+            "payer_state": "UT",
+            "payer_zip": "84131",
+            "payer_phone": "1-877-542-9236",
+            "notes": "UHC MyCare Ohio dual eligible",
+            "category": "mycare"
+        }
+    ]
+    
+    added_count = 0
+    skipped_count = 0
+    
+    for payer in ohio_payers:
+        # Check if payer already exists
+        existing = await db.insurance_contracts.find_one({
+            "organization_id": organization_id,
+            "payer_name": payer["payer_name"]
+        })
+        
+        if existing:
+            skipped_count += 1
+            continue
+        
+        # Create new contract
+        contract = {
+            "id": str(uuid.uuid4()),
+            "organization_id": organization_id,
+            "payer_name": payer["payer_name"],
+            "insurance_type": payer["insurance_type"],
+            "payer_id": payer["payer_id"],
+            "payer_address": payer["payer_address"],
+            "payer_city": payer["payer_city"],
+            "payer_state": payer["payer_state"],
+            "payer_zip": payer["payer_zip"],
+            "payer_phone": payer["payer_phone"],
+            "notes": payer["notes"],
+            "contract_number": "",
+            "start_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "end_date": "",
+            "contact_person": "",
+            "contact_phone": "",
+            "contact_email": "",
+            "is_active": True,
+            "billable_services": [],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.insurance_contracts.insert_one(contract)
+        added_count += 1
+    
+    logger.info(f"Seeded Ohio payers for org {organization_id}: {added_count} added, {skipped_count} skipped")
+    
+    return {
+        "message": f"Ohio payers seeded successfully",
+        "added": added_count,
+        "skipped": skipped_count,
+        "total_ohio_payers": len(ohio_payers)
+    }
+
+
 # Medicaid Claims Endpoints
 @api_router.post("/claims", response_model=MedicaidClaim)
 async def create_claim(claim: MedicaidClaim, organization_id: str = Depends(get_organization_id)):
