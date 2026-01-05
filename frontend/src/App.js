@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from "react-router-dom";
 import axios from "axios";
-import { Upload, FileText, CheckCircle, XCircle, Clock, Trash2, Users, Home as HomeIcon, UserCheck, Edit2, DollarSign, Menu, X, ClipboardCheck, Activity, Code, Download, LogOut, Settings as SettingsIcon } from "lucide-react";
+import { Upload, FileText, CheckCircle, XCircle, Clock, Trash2, Users, Home as HomeIcon, UserCheck, Edit2, DollarSign, Menu, X, ClipboardCheck, Activity, Code, Download, LogOut, Settings as SettingsIcon, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
