@@ -19,7 +19,8 @@ Build a comprehensive healthcare application for Ohio Medicaid providers featuri
 ```
 /app/
 ├── backend/
-│   ├── server.py             # Main FastAPI application
+│   ├── server.py             # Main FastAPI application (6,266 lines - reduced from 6,956)
+│   ├── models.py             # NEW: All Pydantic models (592 lines)
 │   ├── routes_admin.py       # Admin panel APIs
 │   ├── routes_notifications.py   # Notification system
 │   ├── routes_notifications_extended.py  # Extended notification features
@@ -43,7 +44,10 @@ Build a comprehensive healthcare application for Ohio Medicaid providers featuri
 │       └── contexts/
 │           └── NotificationContext.js
 └── tests/
-    └── test_admin_notifications_validation.py
+    ├── test_admin_notifications_validation.py  # Current API tests
+    └── backend/tests/
+        ├── test_critical_regression.py         # Time/date parsing tests
+        └── test_ocr_model_revert.py           # Can be archived
 ```
 
 ## Tech Stack
