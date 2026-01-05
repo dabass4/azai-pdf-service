@@ -558,6 +558,9 @@ class EmployeeProfileUpdate(BaseModel):
     # Employee Categories (REQUIRED for validation)
     categories: Optional[List[str]] = None  # Array of category codes: ["RN", "LPN", "HHA", "DSP"]
     
+    # Billing Codes - HCPCS codes this employee can bill
+    billing_codes: Optional[List[str]] = None  # Array of HCPCS codes: ["T1019", "G0156"]
+    
     sequence_id: Optional[str] = None
 
 
