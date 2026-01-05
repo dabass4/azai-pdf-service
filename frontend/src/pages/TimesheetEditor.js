@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Save, X, Plus, Trash2, AlertCircle, CheckCircle, Users, Link, Wand2 } from "lucide-react";
+import { Save, X, Plus, Trash2, AlertCircle, CheckCircle, Users, Link, Wand2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,19 @@ import { toast } from "sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Default billing codes if employee has none assigned
+const DEFAULT_BILLING_CODES = [
+  { code: "T1019", name: "Personal Care Aide" },
+  { code: "T1020", name: "Personal Care (per diem)" },
+  { code: "T1021", name: "Home Health Aide (per visit)" },
+  { code: "G0156", name: "Home Health Aide" },
+  { code: "G0299", name: "RN Direct Skilled Nursing" },
+  { code: "G0300", name: "LPN Direct Skilled Nursing" },
+  { code: "T1000", name: "Private Duty Nursing" },
+  { code: "T1001", name: "Nursing Assessment" },
+  { code: "S5125", name: "Attendant Care Services" },
+];
 
 const TimesheetEditor = () => {
   const { id } = useParams();
@@ -26,6 +39,10 @@ const TimesheetEditor = () => {
   // Name correction state
   const [showNameCorrection, setShowNameCorrection] = useState({});
   const [correctingName, setCorrectingName] = useState(null);
+  
+  // Employee billing codes state
+  const [employeeBillingCodes, setEmployeeBillingCodes] = useState({});
+  const [showCodeDropdown, setShowCodeDropdown] = useState({});
 
   useEffect(() => {
     fetchTimesheet();
