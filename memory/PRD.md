@@ -100,7 +100,8 @@ Build a comprehensive healthcare application for Ohio Medicaid providers featuri
 - **poppler-utils Instability**: PDF dependency workaround in place
 
 ### P2 - Medium
-- ~~**Timesheets API Corrupted Data**~~: ✅ FIXED - Data normalization added, 31 records repaired
+- ~~**Timesheets API Corrupted Data**~~: ✅ FIXED - Backend data normalization + 31 records repaired
+- ~~**Frontend NaN Error**~~: ✅ FIXED - Added NaN guards in units calculation (App.js)
 
 ### P3 - Low
 - Deploy external PDF service to Railway
