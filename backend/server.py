@@ -1968,15 +1968,6 @@ async def submit_timesheet_to_sandata(timesheet_id: str, organization_id: str = 
 
 # Bulk Operations Endpoints
 
-class BulkUpdateRequest(BaseModel):
-    """Request model for bulk updates"""
-    ids: List[str]
-    updates: Dict[str, Any]
-
-class BulkDeleteRequest(BaseModel):
-    """Request model for bulk deletes"""
-    ids: List[str]
-
 @api_router.post("/timesheets/export")
 async def export_timesheets(
     format: str = "csv",
