@@ -57,6 +57,7 @@ const Navigation = () => {
     { to: "/employees", icon: UserCheck, label: "Employees" },
     { to: "/payers", icon: DollarSign, label: "Payers" },
     { to: "/claims", icon: ClipboardCheck, label: "Claims" },
+    { to: "/claims/analytics", icon: TrendingUp, label: "Analytics" },
     { to: "/evv", icon: Activity, label: "EVV" },
     { to: "/service-codes", icon: Code, label: "Service Codes" },
     { to: "/settings", icon: SettingsIcon, label: "Settings" }
