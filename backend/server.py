@@ -4831,6 +4831,130 @@ async def initialize_ohio_service_codes():
         "codes_added": len(ohio_codes)
     }
 
+
+# =============================================================================
+# BILLING CODES CONFIGURATION (Toggle-based like RhinoBill)
+# =============================================================================
+
+class BillingCodeItem(BaseModel):
+    """Individual billing code with toggle state"""
+    code: str  # HCPCS code (e.g., G0151, T1019)
+    description: str  # Human-readable description
+    category: str  # Category for grouping
+    modifier: Optional[str] = None  # Optional modifier (LPN, RN, etc.)
+    enabled: bool = True  # Toggle state
+
+class BillingCodesConfig(BaseModel):
+    """Complete billing codes configuration"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: Optional[str] = None
+    codes: List[BillingCodeItem] = []
+    era_enabled: bool = True  # Enable ERAs via RhinoBill
+    using_other_service: bool = False  # Currently using another billing service
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+@api_router.get("/billing-codes/config")
+async def get_billing_codes_config(organization_id: str = Depends(get_organization_id)):
+    """Get the organization's billing codes configuration"""
+    config = await db.billing_codes_config.find_one(
+        {"organization_id": organization_id}, 
+        {"_id": 0}
+    )
+    
+    if not config:
+        # Return empty config if none exists
+        return {
+            "codes": [],
+            "era_enabled": True,
+            "using_other_service": False
+        }
+    
+    return config
+
+
+@api_router.post("/billing-codes/config")
+async def save_billing_codes_config(
+    config: BillingCodesConfig,
+    organization_id: str = Depends(get_organization_id)
+):
+    """Save the organization's billing codes configuration"""
+    config.organization_id = organization_id
+    config.updated_at = datetime.now(timezone.utc)
+    
+    # Convert to dict for MongoDB
+    doc = config.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    # Upsert - update if exists, insert if not
+    result = await db.billing_codes_config.update_one(
+        {"organization_id": organization_id},
+        {"$set": doc},
+        upsert=True
+    )
+    
+    logger.info(f"Billing codes config saved for org: {organization_id}, codes: {len(config.codes)}")
+    
+    return {
+        "success": True,
+        "message": "Billing codes configuration saved successfully",
+        "codes_count": len(config.codes),
+        "enabled_count": len([c for c in config.codes if c.enabled])
+    }
+
+
+@api_router.get("/billing-codes/enabled")
+async def get_enabled_billing_codes(organization_id: str = Depends(get_organization_id)):
+    """Get only the enabled billing codes for claims submission"""
+    config = await db.billing_codes_config.find_one(
+        {"organization_id": organization_id}, 
+        {"_id": 0}
+    )
+    
+    if not config or not config.get("codes"):
+        # Return default enabled codes if no config
+        return {
+            "enabled_codes": [
+                {"code": "T1019", "description": "Personal Care Aide"},
+                {"code": "T1020", "description": "Personal Care Services"},
+                {"code": "T1021", "description": "Home Health Aide per visit"},
+                {"code": "G0151", "description": "Physical Therapy"},
+                {"code": "G0152", "description": "Occupational Therapy"},
+                {"code": "G0153", "description": "Speech Therapy"},
+            ]
+        }
+    
+    enabled_codes = [
+        {"code": c["code"], "description": c["description"], "modifier": c.get("modifier")}
+        for c in config["codes"] 
+        if c.get("enabled", True)
+    ]
+    
+    return {"enabled_codes": enabled_codes}
+
+
+@api_router.post("/billing-codes/toggle/{code}")
+async def toggle_billing_code(
+    code: str,
+    enabled: bool,
+    organization_id: str = Depends(get_organization_id)
+):
+    """Quick toggle a single billing code on/off"""
+    result = await db.billing_codes_config.update_one(
+        {"organization_id": organization_id, "codes.code": code},
+        {"$set": {"codes.$.enabled": enabled, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Billing code not found in configuration")
+    
+    return {"success": True, "code": code, "enabled": enabled}
+
+
 # Payment & Subscription Endpoints
 
 class CheckoutRequest(BaseModel):
