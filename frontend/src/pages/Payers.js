@@ -480,6 +480,68 @@ const Payers = () => {
                 {/* Contract Information */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 text-gray-800">Contract Information</h3>
+                  
+                  {/* Quick Select Ohio Payer */}
+                  <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <Label className="text-blue-800 font-semibold mb-2 flex items-center gap-2">
+                      <Building2 size={18} />
+                      Quick Select: Ohio Payer
+                    </Label>
+                    <Select 
+                      onValueChange={(payerKey) => {
+                        if (payerKey && OHIO_PAYERS[payerKey]) {
+                          const payer = OHIO_PAYERS[payerKey];
+                          setFormData(prev => ({
+                            ...prev,
+                            payer_name: payer.name,
+                            insurance_type: payer.type === "State" ? "Medicaid" : "Medicaid",
+                            payer_address: payer.address,
+                            payer_city: payer.city,
+                            payer_state: payer.state,
+                            payer_zip: payer.zip,
+                            payer_phone: payer.phone,
+                            payer_id: payer.payerId,
+                            notes: payer.notes
+                          }));
+                          toast.success(`Loaded ${payer.name} with official address`);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="bg-white" data-testid="ohio-payer-select">
+                        <SelectValue placeholder="Select an Ohio payer to auto-fill address..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="header-state" disabled className="font-bold text-gray-500">— State Agencies —</SelectItem>
+                        {Object.entries(OHIO_PAYERS).filter(([_, p]) => p.category === "state").map(([key, payer]) => (
+                          <SelectItem key={key} value={key}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{payer.name}</span>
+                              <span className="text-xs text-gray-500">({payer.payerId})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="header-mco" disabled className="font-bold text-gray-500">— Managed Care —</SelectItem>
+                        {Object.entries(OHIO_PAYERS).filter(([_, p]) => p.category === "mco").map(([key, payer]) => (
+                          <SelectItem key={key} value={key}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{payer.name}</span>
+                              <span className="text-xs text-gray-500">({payer.payerId})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="header-mycare" disabled className="font-bold text-gray-500">— MyCare Ohio —</SelectItem>
+                        {Object.entries(OHIO_PAYERS).filter(([_, p]) => p.category === "mycare").map(([key, payer]) => (
+                          <SelectItem key={key} value={key}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{payer.name}</span>
+                              <span className="text-xs text-gray-500">({payer.payerId})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="payer_name">Payer Name *</Label>
@@ -507,6 +569,17 @@ const Payers = () => {
                       </Select>
                     </div>
                     <div>
+                      <Label htmlFor="payer_id">Payer ID / EDI ID</Label>
+                      <Input
+                        id="payer_id"
+                        name="payer_id"
+                        value={formData.payer_id || ""}
+                        onChange={handleInputChange}
+                        placeholder="e.g., 35374"
+                        data-testid="payer-id-input"
+                      />
+                    </div>
+                    <div>
                       <Label htmlFor="contract_number">Contract Number</Label>
                       <Input
                         id="contract_number"
@@ -517,15 +590,79 @@ const Payers = () => {
                         data-testid="contract-number-input"
                       />
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Label htmlFor="is_active">Contract Active</Label>
-                      <Switch
-                        id="is_active"
-                        checked={formData.is_active}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-                        data-testid="is-active-switch"
-                      />
+                  </div>
+                  
+                  {/* Payer Address */}
+                  <div className="mt-4 pt-4 border-t">
+                    <Label className="text-base font-semibold mb-3 flex items-center gap-2">
+                      <MapPin size={18} />
+                      Payer Address (Claims Submission)
+                    </Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <Label htmlFor="payer_address">Street Address / P.O. Box</Label>
+                        <Input
+                          id="payer_address"
+                          name="payer_address"
+                          value={formData.payer_address || ""}
+                          onChange={handleInputChange}
+                          placeholder="e.g., P.O. Box 182709"
+                          data-testid="payer-address-input"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="payer_city">City</Label>
+                        <Input
+                          id="payer_city"
+                          name="payer_city"
+                          value={formData.payer_city || ""}
+                          onChange={handleInputChange}
+                          placeholder="e.g., Columbus"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="payer_state">State</Label>
+                          <Input
+                            id="payer_state"
+                            name="payer_state"
+                            value={formData.payer_state || ""}
+                            onChange={handleInputChange}
+                            placeholder="OH"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="payer_zip">ZIP</Label>
+                          <Input
+                            id="payer_zip"
+                            name="payer_zip"
+                            value={formData.payer_zip || ""}
+                            onChange={handleInputChange}
+                            placeholder="43218"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="payer_phone">Phone</Label>
+                        <Input
+                          id="payer_phone"
+                          name="payer_phone"
+                          value={formData.payer_phone || ""}
+                          onChange={handleInputChange}
+                          placeholder="1-800-XXX-XXXX"
+                        />
+                      </div>
                     </div>
+                  </div>
+                  
+                  <div className="mt-4 flex items-center space-x-2">
+                    <Label htmlFor="is_active">Contract Active</Label>
+                    <Switch
+                      id="is_active"
+                      checked={formData.is_active}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                      data-testid="is-active-switch"
+                    />
                   </div>
                 </div>
 
