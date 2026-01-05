@@ -18,7 +18,7 @@ from auth import get_current_user, get_organization_from_token
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/notifications", tags=["notifications"])
+router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 # Database will be injected
 db = None

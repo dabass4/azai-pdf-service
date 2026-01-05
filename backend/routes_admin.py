@@ -150,17 +150,22 @@ async def get_organization_details(
     try:
         from server import db as database
         
-        # Get organization
+        # Get organization - try both 'id' and 'organization_id' fields for compatibility
         org = await database.organizations.find_one(
-            {"organization_id": organization_id}
+            {"$or": [{"id": organization_id}, {"organization_id": organization_id}]},
+            {"_id": 0}
         )
         
         if not org:
             raise HTTPException(status_code=404, detail="Organization not found")
         
+        # Get the actual org_id for user lookup
+        org_id = org.get("id") or org.get("organization_id") or organization_id
+        
         # Get users
         users = await database.users.find(
-            {"organization_id": organization_id}
+            {"organization_id": org_id},
+            {"_id": 0, "password": 0}
         ).to_list(length=100)
         
         # Get statistics
@@ -229,6 +234,8 @@ async def create_organization(
         }
         
         await database.organizations.insert_one(org_doc)
+        # Remove _id added by MongoDB before returning
+        org_doc.pop('_id', None)
         
         # Create admin user for organization
         user_id = str(uuid.uuid4())
@@ -247,8 +254,16 @@ async def create_organization(
         }
         
         await database.users.insert_one(user_doc)
+        # Remove _id added by MongoDB
+        user_doc.pop('_id', None)
         
         logger.info(f"Created organization {organization_id}: {org_data.name}")
+        
+        # Convert datetime to ISO strings for JSON serialization
+        if isinstance(org_doc.get('created_at'), datetime):
+            org_doc['created_at'] = org_doc['created_at'].isoformat()
+        if isinstance(org_doc.get('updated_at'), datetime):
+            org_doc['updated_at'] = org_doc['updated_at'].isoformat()
         
         return {
             "success": True,
@@ -286,8 +301,9 @@ async def update_organization(
         if update_data.plan is not None:
             update_doc["plan"] = update_data.plan
         
+        # Try both 'id' and 'organization_id' fields for compatibility
         result = await database.organizations.update_one(
-            {"organization_id": organization_id},
+            {"$or": [{"id": organization_id}, {"organization_id": organization_id}]},
             {"$set": update_doc}
         )
         
