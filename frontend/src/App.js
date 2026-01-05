@@ -890,7 +890,7 @@ function App() {
                   <Route path="/test-form" element={<TestForm />} />
                   <Route path="/employees" element={<Employees />} />
                   <Route path="/payers" element={<Payers />} />
-                  <Route path="/claims" element={<Claims />} />
+                  <Route path="/claims" element={<ClaimsDashboard />} />
                   <Route path="/evv" element={<EVVManagement />} />
                   <Route path="/service-codes" element={<ServiceCodes />} />
                   <Route path="/billing-codes" element={<BillingCodes />} />
