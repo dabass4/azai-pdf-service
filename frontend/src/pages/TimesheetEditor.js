@@ -529,15 +529,71 @@ const TimesheetEditor = () => {
                       </div>
                     )}
                   </div>
-                  <div>
+                  <div className="relative">
                     <Label htmlFor={`service_code_${empIndex}`}>Service Code</Label>
-                    <Input
-                      id={`service_code_${empIndex}`}
-                      value={employee.service_code || ""}
-                      onChange={(e) => handleEmployeeFieldChange(empIndex, "service_code", e.target.value)}
-                      placeholder="Enter code"
-                      data-testid={`service-code-${empIndex}`}
-                    />
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCodeDropdown(prev => ({ ...prev, [empIndex]: !prev[empIndex] }));
+                          // Fetch billing codes if not already fetched
+                          if (!employeeBillingCodes[empIndex]) {
+                            fetchEmployeeBillingCodes(empIndex, employee.employee_name);
+                          }
+                        }}
+                        className="w-full h-10 px-3 py-2 text-sm text-left border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between"
+                        data-testid={`service-code-${empIndex}`}
+                      >
+                        <span className={employee.service_code ? "text-gray-900" : "text-gray-400"}>
+                          {employee.service_code || "Select code..."}
+                        </span>
+                        <ChevronDown size={16} className="text-gray-400" />
+                      </button>
+                      
+                      {/* Dropdown */}
+                      {showCodeDropdown[empIndex] && (
+                        <div className="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          <div className="p-2 bg-blue-50 border-b text-xs text-blue-700 font-medium">
+                            {employeeBillingCodes[empIndex]?.employee_found 
+                              ? `Codes for ${employeeBillingCodes[empIndex]?.employee_name || 'employee'}`
+                              : "Default billing codes"
+                            }
+                          </div>
+                          {getAvailableBillingCodes(empIndex).map((bc) => (
+                            <div
+                              key={bc.code}
+                              className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center justify-between ${
+                                employee.service_code === bc.code ? 'bg-blue-100' : ''
+                              }`}
+                              onClick={() => {
+                                handleEmployeeFieldChange(empIndex, "service_code", bc.code);
+                                setShowCodeDropdown(prev => ({ ...prev, [empIndex]: false }));
+                              }}
+                            >
+                              <div>
+                                <span className="font-mono font-semibold text-blue-700">{bc.code}</span>
+                                <span className="text-sm text-gray-600 ml-2">{bc.name}</span>
+                              </div>
+                              {employee.service_code === bc.code && (
+                                <CheckCircle size={16} className="text-blue-600" />
+                              )}
+                            </div>
+                          ))}
+                          <div className="p-2 border-t">
+                            <Input
+                              placeholder="Or enter custom code..."
+                              className="text-sm"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.target.value) {
+                                  handleEmployeeFieldChange(empIndex, "service_code", e.target.value);
+                                  setShowCodeDropdown(prev => ({ ...prev, [empIndex]: false }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor={`signature_${empIndex}`}>Signature</Label>
