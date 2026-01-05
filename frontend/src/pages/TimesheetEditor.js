@@ -86,9 +86,10 @@ const TimesheetEditor = () => {
       };
     });
     
-    // If employee name changed, fetch similar employees
+    // If employee name changed, fetch similar employees and billing codes
     if (field === 'employee_name' && value && value.length >= 2) {
       fetchSimilarEmployees(empIndex, value);
+      fetchEmployeeBillingCodes(empIndex, value);
     }
   };
 
@@ -111,10 +112,40 @@ const TimesheetEditor = () => {
     }
   };
 
+  const fetchEmployeeBillingCodes = async (empIndex, name) => {
+    if (!name || name.length < 2) return;
+    
+    try {
+      const response = await axios.get(`${API}/employees/by-name/${encodeURIComponent(name)}/billing-codes`);
+      setEmployeeBillingCodes(prev => ({ ...prev, [empIndex]: response.data }));
+    } catch (e) {
+      console.error("Error fetching employee billing codes:", e);
+      // Use defaults on error
+      setEmployeeBillingCodes(prev => ({ 
+        ...prev, 
+        [empIndex]: { billing_codes: DEFAULT_BILLING_CODES.map(c => c.code), employee_found: false } 
+      }));
+    }
+  };
+
+  const getAvailableBillingCodes = (empIndex) => {
+    const empCodes = employeeBillingCodes[empIndex];
+    if (empCodes?.billing_codes?.length > 0) {
+      return empCodes.billing_codes.map(code => {
+        const defaultCode = DEFAULT_BILLING_CODES.find(c => c.code === code);
+        return { code, name: defaultCode?.name || code };
+      });
+    }
+    return DEFAULT_BILLING_CODES;
+  };
+
   const applySuggestedEmployee = (empIndex, employee) => {
     handleEmployeeFieldChange(empIndex, 'employee_name', employee.full_name);
     setShowSuggestions(prev => ({ ...prev, [empIndex]: false }));
+    // Fetch billing codes for the applied employee
+    fetchEmployeeBillingCodes(empIndex, employee.full_name);
     toast.success(`Applied: ${employee.full_name}`);
+  };
   };
 
   const applyNameCorrectionToAll = async (empIndex, incorrectName, correctName) => {
