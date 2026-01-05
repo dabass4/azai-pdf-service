@@ -12,33 +12,78 @@ import { toast } from "sonner";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Ohio Medicaid Billable Services
+// Ohio Medicaid Billable Services (Complete list from RhinoBill)
 const OHIO_MEDICAID_SERVICES = [
-  { code: "S5125", name: "Attendant Care Services", description: "Personal care services per 15 minutes" },
-  { code: "S5126", name: "Homemaker Services", description: "Per 15 minutes" },
-  { code: "T1019", name: "Personal Care Services", description: "Per 15 minutes" },
-  { code: "T1020", name: "Personal Care Services", description: "Per diem" },
-  { code: "G0156", name: "Home Health Aide Services", description: "Per visit" },
-  { code: "S9122", name: "Home Health Aide", description: "Per hour" },
-  { code: "T1000", name: "Private Duty Nursing", description: "Licensed practical nurse, per 15 minutes" },
-  { code: "T1001", name: "Nursing Assessment", description: "Per visit" },
-  { code: "T1002", name: "RN Services", description: "Per diem" },
-  { code: "T1003", name: "RN Services", description: "Per hour" },
-  { code: "T1004", name: "Behavioral Health Services", description: "Per 15 minutes" },
-  { code: "T1005", name: "Respite Care", description: "Per diem" },
-  { code: "T1502", name: "Home Management Training", description: "Per 15 minutes" },
-  { code: "T1999", name: "Miscellaneous Therapeutic Services", description: "Per 15 minutes" },
-  { code: "T2024", name: "Service Assessment", description: "Per 15 minutes" },
-  { code: "T2025", name: "Waiver Services", description: "Per 15 minutes" },
-  { code: "S5170", name: "Home Delivered Meals", description: "Per meal" },
-  { code: "A0130", name: "Non-Emergency Transportation", description: "Per trip" },
-  { code: "T2003", name: "Non-Emergency Transportation", description: "Encounter/trip" },
-  { code: "T2004", name: "Non-Emergency Transportation", description: "Per diem" },
-  { code: "S5150", name: "Adult Day Care", description: "Per half day" },
-  { code: "S5151", name: "Adult Day Care", description: "Per diem" },
-  { code: "T2031", name: "Assisted Living Services", description: "Per month" },
-  { code: "T2032", name: "Residential Care Services", description: "Per diem" },
-  { code: "T2033", name: "Community Transition Services", description: "Per service" },
+  // Therapy Services
+  { code: "G0151", name: "Physical Therapy", description: "Physical therapy services", category: "Therapy" },
+  { code: "G0152", name: "Occupational Therapy", description: "Occupational therapy services", category: "Therapy" },
+  { code: "G0153", name: "Speech Therapy", description: "Speech-language pathology services", category: "Therapy" },
+  
+  // Nursing Services
+  { code: "G0154", name: "LPN Services", description: "Direct skilled services of a licensed practical nurse", category: "Nursing", modifier: "LPN" },
+  { code: "G0154", name: "RN Services", description: "Direct skilled services of a registered nurse", category: "Nursing", modifier: "RN" },
+  { code: "G0156", name: "Home Health Aide", description: "Aide, Medicare Certified Agency", category: "Nursing" },
+  { code: "G0299", name: "RN Direct Skilled Nursing", description: "Direct skilled nursing services of a registered nurse", category: "Nursing" },
+  { code: "G0300", name: "LPN Direct Skilled Nursing", description: "Direct skilled nursing services of a licensed practical nurse", category: "Nursing" },
+  
+  // Waiver Nursing
+  { code: "G0493", name: "Waiver Nursing Delegation/Assessment (RN)", description: "Waiver Nursing Delegation/Assessment by a Registered Nurse", category: "Waiver Nursing", modifier: "Assessment" },
+  { code: "G0493", name: "Waiver Nursing Delegation/Consultation (RN)", description: "Waiver Nursing Delegation/Consultation by a Registered Nurse", category: "Waiver Nursing", modifier: "Consultation" },
+  { code: "G0494", name: "Waiver Nursing Delegation/Consultation (LPN)", description: "Waiver Nursing Delegation/Consultation by a Licensed Practical Nurse", category: "Waiver Nursing" },
+  
+  // Supplemental Services
+  { code: "S0215", name: "Supplemental Transportation", description: "Non-emergency transportation", category: "Supplemental" },
+  
+  // Day Care Services
+  { code: "S5101", name: "Day Care Services (½ day)", description: "Adult day care services per half day", category: "Day Care" },
+  { code: "S5102", name: "Day Care Services (full day)", description: "Adult day care services per full day", category: "Day Care" },
+  { code: "S5150", name: "Adult Day Care (half day)", description: "Adult day care per half day", category: "Day Care" },
+  { code: "S5151", name: "Adult Day Care (per diem)", description: "Adult day care per diem", category: "Day Care" },
+  
+  // Meal Services
+  { code: "S5170", name: "Delivered Meals (Therapeutic)", description: "Home delivered meals - therapeutic or kosher", category: "Meals", modifier: "Therapeutic" },
+  { code: "S5170", name: "Delivered Meals", description: "Home delivered meals", category: "Meals" },
+  
+  // PDN (Private Duty Nursing)
+  { code: "T1000", name: "PDN - LPN", description: "Private Duty Nursing - Licensed Practical Nurse per 15 minutes", category: "PDN", modifier: "LPN" },
+  { code: "T1000", name: "PDN - RN", description: "Private Duty Nursing - Registered Nurse per 15 minutes", category: "PDN", modifier: "RN" },
+  
+  // Assessment & Consultation
+  { code: "T1001", name: "RN Assessment", description: "Nursing assessment/evaluation per visit", category: "Assessment", modifier: "Assessment" },
+  { code: "T1001", name: "RN Consultation", description: "Nursing consultation per visit", category: "Assessment", modifier: "Consultation" },
+  
+  // Waiver Nursing T-Codes
+  { code: "T1002", name: "RN Waiver Nursing", description: "RN services per diem", category: "Waiver Nursing" },
+  { code: "T1003", name: "LPN/LVN Waiver Nursing", description: "LPN/LVN services", category: "Waiver Nursing", modifier: "LPN/LVN" },
+  { code: "T1003", name: "Waiver Nursing LPN", description: "LPN waiver nursing services", category: "Waiver Nursing", modifier: "LPN" },
+  { code: "T1004", name: "Behavioral Health Services", description: "Services of a qualified behavioral health aide per 15 minutes", category: "Behavioral Health" },
+  { code: "T1005", name: "Respite Care", description: "Respite care services per diem", category: "Respite" },
+  
+  // Personal Care
+  { code: "T1019", name: "Personal Care Aide", description: "Personal care services per 15 minutes", category: "Personal Care" },
+  { code: "T1020", name: "Personal Care Services (per diem)", description: "Personal care services per diem", category: "Personal Care" },
+  { code: "T1021", name: "Home Health Aide (per visit)", description: "Home health aide services per visit", category: "Personal Care" },
+  
+  // Attendant Care
+  { code: "S5125", name: "Attendant Care Services", description: "Attendant care services", category: "Personal Care" },
+  { code: "S5126", name: "Attendant Care (per 15 min)", description: "Attendant care services per 15 minutes", category: "Personal Care" },
+  
+  // Homemaker
+  { code: "S5130", name: "Homemaker Services", description: "Homemaker services", category: "Personal Care" },
+  { code: "S5131", name: "Homemaker (per 15 min)", description: "Homemaker services per 15 minutes", category: "Personal Care" },
+  
+  // Other Services
+  { code: "T1502", name: "Home Management Training", description: "Administration of oral, intramuscular and/or subcutaneous medication per 15 minutes", category: "Training" },
+  { code: "T1999", name: "Miscellaneous Therapeutic", description: "Miscellaneous therapeutic items and supplies per 15 minutes", category: "Other" },
+  { code: "T2003", name: "Non-Emergency Transportation (encounter)", description: "Non-emergency transportation encounter/trip", category: "Transportation" },
+  { code: "T2004", name: "Non-Emergency Transportation (per diem)", description: "Non-emergency transportation per diem", category: "Transportation" },
+  { code: "T2024", name: "Service Assessment", description: "Service assessment/plan of care development per 15 minutes", category: "Assessment" },
+  { code: "T2025", name: "Waiver Services", description: "Waiver services per 15 minutes", category: "Waiver" },
+  { code: "T2031", name: "Assisted Living (monthly)", description: "Assisted living services per month", category: "Residential" },
+  { code: "T2032", name: "Residential Care (per diem)", description: "Residential care services per diem", category: "Residential" },
+  { code: "T2033", name: "Community Transition", description: "Community transition services per service", category: "Transition" },
+  { code: "A0130", name: "Non-Emergency Transport (wheelchair)", description: "Non-emergency transportation: wheelchair van", category: "Transportation" },
+  { code: "S9122", name: "Home Health Aide (hourly)", description: "Home health aide services per hour", category: "Personal Care" },
 ];
 
 const INSURANCE_TYPES = [
