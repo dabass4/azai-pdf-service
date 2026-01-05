@@ -170,18 +170,23 @@ const Payers = () => {
   const handleContractSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payerIdToExpand = contractPayerId; // Save before clearing
+      
       if (editingContract) {
         await axios.put(`${API}/payers/${contractPayerId}/contracts/${editingContract.id}`, contractFormData);
         toast.success("Contract updated");
       } else {
         await axios.post(`${API}/payers/${contractPayerId}/contracts`, contractFormData);
-        toast.success("Contract created");
+        toast.success("Contract created successfully!");
       }
       setShowContractForm(false);
       setEditingContract(null);
       setContractPayerId(null);
       resetContractForm();
-      fetchPayers();
+      
+      // Refresh payers and auto-expand the payer to show the new contract
+      await fetchPayers();
+      setExpandedPayers(prev => ({ ...prev, [payerIdToExpand]: true }));
     } catch (e) {
       console.error("Error saving contract:", e);
       toast.error("Failed to save contract");
