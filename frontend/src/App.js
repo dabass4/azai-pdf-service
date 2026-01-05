@@ -892,6 +892,7 @@ function App() {
                   <Route path="/employees" element={<Employees />} />
                   <Route path="/payers" element={<Payers />} />
                   <Route path="/claims" element={<ClaimsDashboard />} />
+                  <Route path="/claims/analytics" element={<ClaimsAnalytics />} />
                   <Route path="/evv" element={<EVVManagement />} />
                   <Route path="/service-codes" element={<ServiceCodes />} />
                   <Route path="/billing-codes" element={<BillingCodes />} />
