@@ -629,7 +629,7 @@ const ClaimsDashboard = () => {
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     <UserCheck className="mx-auto h-12 w-12 mb-4 text-gray-300" />
-                    <p>Enter patient information and click "Check Eligibility"</p>
+                    <p>Enter patient information and click &quot;Check Eligibility&quot;</p>
                   </div>
                 )}
               </CardContent>
