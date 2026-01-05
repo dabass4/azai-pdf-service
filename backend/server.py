@@ -714,11 +714,20 @@ class InsuranceContract(BaseModel):
     payer_name: str  # e.g., Ohio Department of Medicaid
     insurance_type: str  # Medicaid, Medicare, Private, etc.
     contract_number: Optional[str] = None
+    
+    # Payer Contact & Address (for claims submission)
+    payer_id: Optional[str] = None  # EDI Payer ID
+    payer_address: Optional[str] = None  # P.O. Box or Street Address
+    payer_city: Optional[str] = None
+    payer_state: Optional[str] = None
+    payer_zip: Optional[str] = None
+    payer_phone: Optional[str] = None  # Provider hotline
+    
     start_date: str  # YYYY-MM-DD
     end_date: Optional[str] = None  # YYYY-MM-DD or None for active
-    contact_person: Optional[str] = None
-    contact_phone: Optional[str] = None
-    contact_email: Optional[str] = None
+    contact_person: Optional[str] = None  # Your internal contact
+    contact_phone: Optional[str] = None  # Your internal phone
+    contact_email: Optional[str] = None  # Your internal email
     notes: Optional[str] = None
     billable_services: List[BillableService] = []  # Services under this contract
     is_active: bool = True
