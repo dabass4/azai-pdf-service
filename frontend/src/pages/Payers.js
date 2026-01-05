@@ -521,7 +521,10 @@ const Payers = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                        <span className="text-sm text-gray-500 mr-2">{payer.contracts?.length || 0} contract(s)</span>
+                        <Button size="sm" onClick={() => handleAddContract(payer.id)} className="bg-green-600 hover:bg-green-700 text-white">
+                          <Plus size={14} className="mr-1" /> Add Contract
+                        </Button>
+                        <span className="text-sm text-gray-500 mx-2">{payer.contracts?.length || 0} contract(s)</span>
                         <Button size="sm" variant="ghost" onClick={() => handleEditPayer(payer)}><Edit size={16} /></Button>
                         <Button size="sm" variant="ghost" onClick={() => handleDeletePayer(payer.id)}><Trash2 size={16} className="text-red-500" /></Button>
                       </div>
