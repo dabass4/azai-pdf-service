@@ -162,19 +162,17 @@ class TestNotificationSystem:
         assert "preferences" in data, "Response should contain preferences"
     
     def test_notification_route_bug_documented(self, authenticated_client):
-        """Document the double /api prefix bug in notification routes"""
-        # Test that the WRONG path returns 404
-        response_wrong = authenticated_client.get(f"{BASE_URL}/api/notifications/list")
+        """Test that notification routes now work correctly at /api/notifications/*
         
-        # Test that the CORRECT (buggy) path works
+        BUG FIX: Double /api prefix has been fixed. Routes now work at correct path.
+        """
+        # Test that the correct path works
         response_correct = authenticated_client.get(f"{BASE_URL}/api/notifications/list")
         
-        print(f"Wrong path (/api/notifications/list): {response_wrong.status_code}")
         print(f"Correct path (/api/notifications/list): {response_correct.status_code}")
         
-        # Document the bug
-        assert response_wrong.status_code == 404, "Expected 404 for /api/notifications/list (bug)"
-        assert response_correct.status_code == 200, "Expected 200 for /api/notifications/list"
+        # Bug has been fixed - /api/notifications/list should now work
+        assert response_correct.status_code == 200, "Expected 200 for /api/notifications/list (bug fixed)"
 
 
 # ==================== ADMIN PANEL ORGANIZATIONS TESTS ====================
