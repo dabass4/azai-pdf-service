@@ -7,7 +7,7 @@ Test Credentials:
 - Super Admin: admin@medicaidservices.com / Admin2024!
 
 KNOWN BUGS FOUND:
-1. Notification routes have double /api prefix - actual path is /api/api/notifications/...
+1. Notification routes have double /api prefix - actual path is /api/notifications/...
 2. Admin organization details endpoint queries by "organization_id" but DB has "id" field
 """
 
@@ -71,17 +71,17 @@ def authenticated_client(api_client, admin_auth):
 
 
 # ==================== NOTIFICATION SYSTEM TESTS ====================
-# NOTE: Notification routes have double /api prefix bug - using /api/api/notifications/...
+# NOTE: Notification routes have double /api prefix bug - using /api/notifications/...
 
 class TestNotificationSystem:
     """Test notification system endpoints - requires admin privileges
     
     BUG: routes_notifications.py has prefix="/api/notifications" but is included
-    in api_router which has prefix="/api", resulting in /api/api/notifications/...
+    in api_router which has prefix="/api", resulting in /api/notifications/...
     """
     
     def test_send_notification_as_admin(self, authenticated_client, admin_auth):
-        """Test POST /api/api/notifications/send - Admin can send notifications"""
+        """Test POST /api/notifications/send - Admin can send notifications"""
         notification_data = {
             "type": "system_alert",
             "category": "info",
@@ -96,7 +96,7 @@ class TestNotificationSystem:
         
         # Using double /api prefix due to bug
         response = authenticated_client.post(
-            f"{BASE_URL}/api/api/notifications/send",
+            f"{BASE_URL}/api/notifications/send",
             json=notification_data
         )
         
@@ -116,9 +116,9 @@ class TestNotificationSystem:
         return data["notification"]["id"]
     
     def test_list_notifications(self, authenticated_client, admin_auth):
-        """Test GET /api/api/notifications/list - List notifications for organization"""
+        """Test GET /api/notifications/list - List notifications for organization"""
         # Using double /api prefix due to bug
-        response = authenticated_client.get(f"{BASE_URL}/api/api/notifications/list")
+        response = authenticated_client.get(f"{BASE_URL}/api/notifications/list")
         
         print(f"List notifications response: {response.status_code} - {response.text[:500]}")
         
@@ -137,10 +137,10 @@ class TestNotificationSystem:
             assert "type" in notif, "Notification should have type"
     
     def test_list_notifications_with_filters(self, authenticated_client):
-        """Test GET /api/api/notifications/list with query filters"""
+        """Test GET /api/notifications/list with query filters"""
         # Using double /api prefix due to bug
         response = authenticated_client.get(
-            f"{BASE_URL}/api/api/notifications/list",
+            f"{BASE_URL}/api/notifications/list",
             params={"type": "system_alert", "limit": 10}
         )
         
@@ -149,9 +149,9 @@ class TestNotificationSystem:
         assert data.get("status") == "success"
     
     def test_get_notification_preferences(self, authenticated_client):
-        """Test GET /api/api/notifications/preferences/me - Get user preferences"""
+        """Test GET /api/notifications/preferences/me - Get user preferences"""
         # Using double /api prefix due to bug
-        response = authenticated_client.get(f"{BASE_URL}/api/api/notifications/preferences/me")
+        response = authenticated_client.get(f"{BASE_URL}/api/notifications/preferences/me")
         
         print(f"Get preferences response: {response.status_code} - {response.text[:500]}")
         
@@ -167,14 +167,14 @@ class TestNotificationSystem:
         response_wrong = authenticated_client.get(f"{BASE_URL}/api/notifications/list")
         
         # Test that the CORRECT (buggy) path works
-        response_correct = authenticated_client.get(f"{BASE_URL}/api/api/notifications/list")
+        response_correct = authenticated_client.get(f"{BASE_URL}/api/notifications/list")
         
         print(f"Wrong path (/api/notifications/list): {response_wrong.status_code}")
-        print(f"Correct path (/api/api/notifications/list): {response_correct.status_code}")
+        print(f"Correct path (/api/notifications/list): {response_correct.status_code}")
         
         # Document the bug
         assert response_wrong.status_code == 404, "Expected 404 for /api/notifications/list (bug)"
-        assert response_correct.status_code == 200, "Expected 200 for /api/api/notifications/list"
+        assert response_correct.status_code == 200, "Expected 200 for /api/notifications/list"
 
 
 # ==================== ADMIN PANEL ORGANIZATIONS TESTS ====================
