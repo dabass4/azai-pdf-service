@@ -5160,6 +5160,212 @@ async def export_visits():
         logger.error(f"Error exporting visits: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# =============================================================================
+# EVV JSON FILE DOWNLOAD ENDPOINTS (For Manual Sandata Submission)
+# =============================================================================
+# Use these endpoints when API transmission fails - download JSON file and
+# manually upload to Sandata portal at https://ohevv.sandata.com
+
+@api_router.get("/evv/download/individuals")
+async def download_individuals_json():
+    """
+    Download Individual (Patient) records as a JSON file for manual Sandata submission.
+    Use this when API transmission fails.
+    
+    File format: Ohio Alternate EVV Technical Specifications v4.1 (July 2024)
+    Sandata endpoint: https://api.sandata.com/interfaces/intake/individual/v2
+    """
+    try:
+        from fastapi.responses import Response
+        
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        patients = await db.patients.find({}, {"_id": 0}).to_list(1000)
+        
+        exporter = EVVExportOrchestrator()
+        json_export = exporter.export_individuals(
+            patients,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        filename = f"EVV_Individuals_{entity['business_entity_id']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        return Response(
+            content=json_export,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "X-Record-Count": str(len(patients)),
+                "X-Business-Entity": entity['business_entity_id']
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error downloading individuals JSON: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/evv/download/direct-care-workers")
+async def download_dcw_json():
+    """
+    Download Direct Care Worker (Employee) records as a JSON file for manual Sandata submission.
+    Use this when API transmission fails.
+    
+    File format: Ohio Alternate EVV Technical Specifications v4.1 (July 2024)
+    Sandata endpoint: https://api.sandata.com/interfaces/intake/staff/v2
+    """
+    try:
+        from fastapi.responses import Response
+        
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        employees = await db.employees.find({}, {"_id": 0}).to_list(1000)
+        
+        exporter = EVVExportOrchestrator()
+        json_export = exporter.export_direct_care_workers(
+            employees,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        filename = f"EVV_DirectCareWorkers_{entity['business_entity_id']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        return Response(
+            content=json_export,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "X-Record-Count": str(len(employees)),
+                "X-Business-Entity": entity['business_entity_id']
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error downloading DCW JSON: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/evv/download/visits")
+async def download_visits_json(status: str = "ready"):
+    """
+    Download Visit records as a JSON file for manual Sandata submission.
+    Use this when API transmission fails.
+    
+    File format: Ohio Alternate EVV Technical Specifications v4.1 (July 2024)
+    Sandata endpoint: https://api.sandata.com/interfaces/intake/visit/v2
+    
+    Query params:
+        status: Filter by EVV status (draft, ready, submitted) - default "ready"
+    """
+    try:
+        from fastapi.responses import Response
+        
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        # Get visits by status
+        query = {}
+        if status != "all":
+            query["evv_status"] = status
+        
+        visits = await db.evv_visits.find(query, {"_id": 0}).to_list(1000)
+        
+        exporter = EVVExportOrchestrator()
+        json_export = exporter.export_visits(
+            visits,
+            entity['business_entity_id'],
+            entity['business_entity_medicaid_id']
+        )
+        
+        filename = f"EVV_Visits_{entity['business_entity_id']}_{status}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        return Response(
+            content=json_export,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "X-Record-Count": str(len(visits)),
+                "X-Business-Entity": entity['business_entity_id'],
+                "X-Visit-Status": status
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error downloading visits JSON: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/evv/download/all")
+async def download_all_evv_data():
+    """
+    Download ALL EVV data (Individuals, DCWs, Visits) as a single JSON file.
+    Use for complete data backup or bulk manual submission.
+    
+    File format: Combined Ohio Alternate EVV format
+    """
+    try:
+        from fastapi.responses import Response
+        
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        if not entity:
+            raise HTTPException(status_code=404, detail="No active business entity configured")
+        
+        patients = await db.patients.find({}, {"_id": 0}).to_list(1000)
+        employees = await db.employees.find({}, {"_id": 0}).to_list(1000)
+        visits = await db.evv_visits.find({"evv_status": {"$in": ["draft", "ready"]}}, {"_id": 0}).to_list(1000)
+        
+        exporter = EVVExportOrchestrator()
+        
+        combined_export = {
+            "metadata": {
+                "export_date": datetime.now(timezone.utc).isoformat(),
+                "business_entity_id": entity['business_entity_id'],
+                "business_entity_medicaid_id": entity['business_entity_medicaid_id'],
+                "format_version": "Ohio Alt-EVV v4.1 (July 2024)",
+                "sandata_endpoints": {
+                    "individuals": "https://api.sandata.com/interfaces/intake/individual/v2",
+                    "staff": "https://api.sandata.com/interfaces/intake/staff/v2",
+                    "visits": "https://api.sandata.com/interfaces/intake/visit/v2"
+                }
+            },
+            "individuals": json.loads(exporter.export_individuals(patients, entity['business_entity_id'], entity['business_entity_medicaid_id'])),
+            "direct_care_workers": json.loads(exporter.export_direct_care_workers(employees, entity['business_entity_id'], entity['business_entity_medicaid_id'])),
+            "visits": json.loads(exporter.export_visits(visits, entity['business_entity_id'], entity['business_entity_medicaid_id'])),
+            "record_counts": {
+                "individuals": len(patients),
+                "direct_care_workers": len(employees),
+                "visits": len(visits)
+            }
+        }
+        
+        filename = f"EVV_Complete_Export_{entity['business_entity_id']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        return Response(
+            content=json.dumps(combined_export, indent=2),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "X-Total-Records": str(len(patients) + len(employees) + len(visits)),
+                "X-Business-Entity": entity['business_entity_id']
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error downloading complete EVV data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # EVV Submission Endpoints
 @api_router.post("/evv/submit/individuals")
 async def submit_individuals(current_user: Dict = Depends(get_current_user)):
