@@ -295,10 +295,10 @@ class TestAdminOrganizations:
         if not org_id and organizations:
             for org in organizations:
                 if org.get("name", "").startswith("TEST_"):
-                    org_id = org.get("id")
+                    org_id = org.get("id") or org.get("organization_id")
                     break
             if not org_id:
-                org_id = organizations[0].get("id")
+                org_id = organizations[0].get("id") or organizations[0].get("organization_id")
         
         if not org_id:
             pytest.skip("No organization found to update")
@@ -315,11 +315,7 @@ class TestAdminOrganizations:
         
         print(f"Update organization response: {response.status_code} - {response.text[:500]}")
         
-        # This may also fail due to similar bug
-        if response.status_code == 404:
-            print("BUG: update_organization may have same issue as get_organization_details")
-            pytest.xfail("Known bug: endpoint may query by wrong field")
-        
+        # Bug has been fixed
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
 
 
