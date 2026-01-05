@@ -4052,6 +4052,416 @@ async def delete_contract(contract_id: str):
     return {"message": "Contract deleted successfully"}
 
 
+# =============================================================================
+# PAYERS & CONTRACTS (New Structure)
+# Payers are permanent entities, Contracts are time-bound agreements
+# =============================================================================
+
+@api_router.get("/payers")
+async def get_payers(organization_id: str = Depends(get_organization_id)):
+    """Get all payers with their contracts"""
+    payers = await db.payers.find({"organization_id": organization_id}, {"_id": 0}).sort("name", 1).to_list(1000)
+    
+    # Get contracts for each payer
+    for payer in payers:
+        contracts = await db.payer_contracts.find(
+            {"organization_id": organization_id, "payer_id": payer["id"]}, 
+            {"_id": 0}
+        ).sort("start_date", -1).to_list(100)
+        payer["contracts"] = contracts
+    
+    return payers
+
+
+@api_router.post("/payers")
+async def create_payer(payer: Payer, organization_id: str = Depends(get_organization_id)):
+    """Create a new payer"""
+    payer.organization_id = organization_id
+    payer.created_at = datetime.now(timezone.utc)
+    payer.updated_at = datetime.now(timezone.utc)
+    
+    doc = payer.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    await db.payers.insert_one(doc)
+    logger.info(f"Created payer: {payer.name}")
+    
+    return payer
+
+
+@api_router.get("/payers/{payer_id}")
+async def get_payer(payer_id: str, organization_id: str = Depends(get_organization_id)):
+    """Get a specific payer with its contracts"""
+    payer = await db.payers.find_one(
+        {"id": payer_id, "organization_id": organization_id}, 
+        {"_id": 0}
+    )
+    
+    if not payer:
+        raise HTTPException(status_code=404, detail="Payer not found")
+    
+    # Get contracts for this payer
+    contracts = await db.payer_contracts.find(
+        {"organization_id": organization_id, "payer_id": payer_id}, 
+        {"_id": 0}
+    ).sort("start_date", -1).to_list(100)
+    payer["contracts"] = contracts
+    
+    return payer
+
+
+@api_router.put("/payers/{payer_id}")
+async def update_payer(payer_id: str, payer_update: Payer, organization_id: str = Depends(get_organization_id)):
+    """Update a payer"""
+    payer_update.id = payer_id
+    payer_update.organization_id = organization_id
+    payer_update.updated_at = datetime.now(timezone.utc)
+    
+    doc = payer_update.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat() if isinstance(doc['created_at'], datetime) else doc['created_at']
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    result = await db.payers.update_one(
+        {"id": payer_id, "organization_id": organization_id},
+        {"$set": doc}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Payer not found")
+    
+    return payer_update
+
+
+@api_router.delete("/payers/{payer_id}")
+async def delete_payer(payer_id: str, organization_id: str = Depends(get_organization_id)):
+    """Delete a payer and all its contracts"""
+    # Delete all contracts for this payer
+    await db.payer_contracts.delete_many({"payer_id": payer_id, "organization_id": organization_id})
+    
+    # Delete the payer
+    result = await db.payers.delete_one({"id": payer_id, "organization_id": organization_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Payer not found")
+    
+    return {"message": "Payer and all contracts deleted"}
+
+
+# Payer Contracts Endpoints
+@api_router.post("/payers/{payer_id}/contracts")
+async def create_payer_contract(payer_id: str, contract: PayerContract, organization_id: str = Depends(get_organization_id)):
+    """Create a new contract for a payer"""
+    # Verify payer exists
+    payer = await db.payers.find_one({"id": payer_id, "organization_id": organization_id})
+    if not payer:
+        raise HTTPException(status_code=404, detail="Payer not found")
+    
+    contract.payer_id = payer_id
+    contract.organization_id = organization_id
+    contract.created_at = datetime.now(timezone.utc)
+    contract.updated_at = datetime.now(timezone.utc)
+    
+    doc = contract.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    await db.payer_contracts.insert_one(doc)
+    logger.info(f"Created contract for payer {payer_id}: {contract.contract_name or contract.contract_number}")
+    
+    return contract
+
+
+@api_router.get("/payers/{payer_id}/contracts")
+async def get_payer_contracts(payer_id: str, organization_id: str = Depends(get_organization_id)):
+    """Get all contracts for a specific payer"""
+    contracts = await db.payer_contracts.find(
+        {"payer_id": payer_id, "organization_id": organization_id}, 
+        {"_id": 0}
+    ).sort("start_date", -1).to_list(100)
+    
+    return contracts
+
+
+@api_router.put("/payers/{payer_id}/contracts/{contract_id}")
+async def update_payer_contract(payer_id: str, contract_id: str, contract_update: PayerContract, organization_id: str = Depends(get_organization_id)):
+    """Update a payer contract"""
+    contract_update.id = contract_id
+    contract_update.payer_id = payer_id
+    contract_update.organization_id = organization_id
+    contract_update.updated_at = datetime.now(timezone.utc)
+    
+    doc = contract_update.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat() if isinstance(doc['created_at'], datetime) else doc['created_at']
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    result = await db.payer_contracts.update_one(
+        {"id": contract_id, "payer_id": payer_id, "organization_id": organization_id},
+        {"$set": doc}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    return contract_update
+
+
+@api_router.delete("/payers/{payer_id}/contracts/{contract_id}")
+async def delete_payer_contract(payer_id: str, contract_id: str, organization_id: str = Depends(get_organization_id)):
+    """Delete a payer contract"""
+    result = await db.payer_contracts.delete_one(
+        {"id": contract_id, "payer_id": payer_id, "organization_id": organization_id}
+    )
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    return {"message": "Contract deleted"}
+
+
+@api_router.post("/payers/seed-ohio")
+async def seed_ohio_payers_new(organization_id: str = Depends(get_organization_id)):
+    """Seed all Ohio Medicaid payers (new structure)"""
+    
+    ohio_payers = [
+        # State Agencies
+        {
+            "name": "Ohio Department of Medicaid",
+            "short_name": "ODM",
+            "payer_type": "State",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "OHMED",
+            "address": "P.O. Box 182709",
+            "city": "Columbus",
+            "state": "OH",
+            "zip_code": "43218-2709",
+            "phone": "1-800-686-1516",
+            "website": "medicaid.ohio.gov",
+            "notes": "Provider Hotline: 1-800-686-1516, Consumer: 1-800-324-8680"
+        },
+        {
+            "name": "Ohio Department of Developmental Disabilities",
+            "short_name": "DODD",
+            "payer_type": "State",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "DODD",
+            "address": "30 E Broad St, 13th Floor",
+            "city": "Columbus",
+            "state": "OH",
+            "zip_code": "43215",
+            "phone": "1-800-617-6733",
+            "website": "dodd.ohio.gov",
+            "notes": "Electronic claims only via PAWS system"
+        },
+        # Managed Care Organizations
+        {
+            "name": "AmeriHealth Caritas Ohio",
+            "short_name": "AmeriHealth",
+            "payer_type": "Managed Care",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "35374",
+            "address": "P.O. Box 7346",
+            "city": "London",
+            "state": "KY",
+            "zip_code": "40742",
+            "phone": "1-800-575-4114",
+            "website": "amerihealthcaritasoh.com",
+            "notes": "Claims Disputes: P.O. Box 7126, London, KY 40742"
+        },
+        {
+            "name": "Anthem Blue Cross Blue Shield",
+            "short_name": "Anthem",
+            "payer_type": "Managed Care",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "OHBCBS",
+            "address": "P.O. Box 105187",
+            "city": "Atlanta",
+            "state": "GA",
+            "zip_code": "30348-5187",
+            "phone": "1-855-223-0747",
+            "website": "anthem.com",
+            "notes": "Electronic claims preferred via EDI"
+        },
+        {
+            "name": "Buckeye Health Plan",
+            "short_name": "Buckeye",
+            "payer_type": "Managed Care",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "BUCKEYE",
+            "address": "P.O. Box 6200",
+            "city": "Farmington",
+            "state": "MO",
+            "zip_code": "63640",
+            "phone": "1-866-246-4358",
+            "website": "buckeyehealthplan.com",
+            "notes": "Main office: 4349 Easton Way, Columbus, OH 43219"
+        },
+        {
+            "name": "CareSource",
+            "short_name": "CareSource",
+            "payer_type": "Managed Care",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "31114",
+            "address": "P.O. Box 8738",
+            "city": "Dayton",
+            "state": "OH",
+            "zip_code": "45401-8738",
+            "phone": "1-800-488-0134",
+            "website": "caresource.com",
+            "notes": "Electronic claims via Provider Portal preferred"
+        },
+        {
+            "name": "Humana Healthy Horizons",
+            "short_name": "Humana",
+            "payer_type": "Managed Care",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "HUMANA",
+            "address": "P.O. Box 14601",
+            "city": "Lexington",
+            "state": "KY",
+            "zip_code": "40512-4601",
+            "phone": "1-800-282-4548",
+            "website": "humana.com",
+            "notes": "Provider Relations: OHMedicaidProviderRelations@humana.com"
+        },
+        {
+            "name": "Molina Healthcare of Ohio",
+            "short_name": "Molina",
+            "payer_type": "Managed Care",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "20149",
+            "address": "P.O. Box 22712",
+            "city": "Long Beach",
+            "state": "CA",
+            "zip_code": "90801",
+            "phone": "1-800-578-0775",
+            "website": "molinahealthcare.com",
+            "notes": "Disputes: P.O. Box 349020, Columbus, OH 43234-9020"
+        },
+        {
+            "name": "UnitedHealthcare Community Plan",
+            "short_name": "UHC",
+            "payer_type": "Managed Care",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "87726",
+            "address": "P.O. Box 31364",
+            "city": "Salt Lake City",
+            "state": "UT",
+            "zip_code": "84131",
+            "phone": "1-800-600-9007",
+            "website": "uhccommunityplan.com",
+            "notes": "Appeals Fax: (801) 994-1082"
+        },
+        # MyCare Ohio (Dual Eligible)
+        {
+            "name": "Aetna Better Health (MyCare Ohio)",
+            "short_name": "Aetna MyCare",
+            "payer_type": "MyCare Ohio",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "50023",
+            "address": "P.O. Box 982966",
+            "city": "El Paso",
+            "state": "TX",
+            "zip_code": "79998-2966",
+            "phone": "1-855-364-0974",
+            "website": "aetnabetterhealth.com/ohio",
+            "notes": "Grievances: P.O. Box 818070, Cleveland, OH 44181"
+        },
+        {
+            "name": "Buckeye Community Health Plan (MyCare Ohio)",
+            "short_name": "Buckeye MyCare",
+            "payer_type": "MyCare Ohio",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "BUCKEYE-MC",
+            "address": "P.O. Box 6200",
+            "city": "Farmington",
+            "state": "MO",
+            "zip_code": "63640",
+            "phone": "1-866-246-4358",
+            "website": "buckeyehealthplan.com",
+            "notes": "Same as Buckeye Health Plan"
+        },
+        {
+            "name": "CareSource (MyCare Ohio)",
+            "short_name": "CareSource MyCare",
+            "payer_type": "MyCare Ohio",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "31114-MC",
+            "address": "P.O. Box 8738",
+            "city": "Dayton",
+            "state": "OH",
+            "zip_code": "45401-8738",
+            "phone": "1-855-475-3163",
+            "website": "caresource.com",
+            "notes": "MyCare Ohio dual eligible program"
+        },
+        {
+            "name": "Molina Dual Options (MyCare Ohio)",
+            "short_name": "Molina MyCare",
+            "payer_type": "MyCare Ohio",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "20149-MC",
+            "address": "P.O. Box 22712",
+            "city": "Long Beach",
+            "state": "CA",
+            "zip_code": "90801",
+            "phone": "1-855-665-4623",
+            "website": "molinahealthcare.com",
+            "notes": "Molina MyCare Ohio dual eligible"
+        },
+        {
+            "name": "UnitedHealthcare (MyCare Ohio)",
+            "short_name": "UHC MyCare",
+            "payer_type": "MyCare Ohio",
+            "insurance_type": "Medicaid",
+            "edi_payer_id": "87726-MC",
+            "address": "P.O. Box 31364",
+            "city": "Salt Lake City",
+            "state": "UT",
+            "zip_code": "84131",
+            "phone": "1-877-542-9236",
+            "website": "uhccommunityplan.com",
+            "notes": "UHC MyCare Ohio dual eligible"
+        }
+    ]
+    
+    added_count = 0
+    skipped_count = 0
+    
+    for payer_data in ohio_payers:
+        # Check if payer already exists
+        existing = await db.payers.find_one({
+            "organization_id": organization_id,
+            "name": payer_data["name"]
+        })
+        
+        if existing:
+            skipped_count += 1
+            continue
+        
+        # Create new payer
+        payer = {
+            "id": str(uuid.uuid4()),
+            "organization_id": organization_id,
+            **payer_data,
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.payers.insert_one(payer)
+        added_count += 1
+    
+    logger.info(f"Seeded Ohio payers for org {organization_id}: {added_count} added, {skipped_count} skipped")
+    
+    return {
+        "message": f"Ohio payers seeded successfully",
+        "added": added_count,
+        "skipped": skipped_count,
+        "total_ohio_payers": len(ohio_payers)
+    }
+
+
 @api_router.post("/insurance-contracts/seed-ohio-payers")
 async def seed_ohio_payers(organization_id: str = Depends(get_organization_id)):
     """Seed all Ohio Medicaid payers with official addresses"""
