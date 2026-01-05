@@ -519,7 +519,7 @@ const TimesheetEditor = () => {
                           </button>
                         </div>
                         <p className="text-xs text-gray-600 mb-2">
-                          Type the correct name below. This will update ALL timesheets with "{employee.employee_name || 'this name'}".
+                          Type the correct name below. This will update ALL timesheets with this name.
                         </p>
                         <div className="space-y-2">
                           <div>
