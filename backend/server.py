@@ -4594,10 +4594,10 @@ async def export_visits(organization_id: str = Depends(get_organization_id)):
 # manually upload to Sandata portal at https://ohevv.sandata.com
 
 @api_router.get("/evv/download/individuals")
-async def download_individuals_json():
+async def download_individuals_json(organization_id: str = Depends(get_organization_id)):
     """
     Download Individual (Patient) records as a JSON file for manual Sandata submission.
-    Use this when API transmission fails.
+    Use this when API transmission fails. HIPAA compliant - org isolated.
     
     File format: Ohio Alternate EVV Technical Specifications v4.1 (July 2024)
     Sandata endpoint: https://api.sandata.com/interfaces/intake/individual/v2
@@ -4605,11 +4605,15 @@ async def download_individuals_json():
     try:
         from fastapi.responses import Response
         
-        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        # HIPAA: Get business entity for this organization
+        entity = await db.business_entities.find_one({"is_active": True, "organization_id": organization_id}, {"_id": 0})
+        if not entity:
+            entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
         if not entity:
             raise HTTPException(status_code=404, detail="No active business entity configured")
         
-        patients = await db.patients.find({}, {"_id": 0}).to_list(1000)
+        # HIPAA: Only get patients for this organization
+        patients = await db.patients.find({"organization_id": organization_id}, {"_id": 0}).to_list(1000)
         
         exporter = EVVExportOrchestrator()
         json_export = exporter.export_individuals(
@@ -4637,10 +4641,10 @@ async def download_individuals_json():
 
 
 @api_router.get("/evv/download/direct-care-workers")
-async def download_dcw_json():
+async def download_dcw_json(organization_id: str = Depends(get_organization_id)):
     """
     Download Direct Care Worker (Employee) records as a JSON file for manual Sandata submission.
-    Use this when API transmission fails.
+    Use this when API transmission fails. HIPAA compliant - org isolated.
     
     File format: Ohio Alternate EVV Technical Specifications v4.1 (July 2024)
     Sandata endpoint: https://api.sandata.com/interfaces/intake/staff/v2
@@ -4648,11 +4652,15 @@ async def download_dcw_json():
     try:
         from fastapi.responses import Response
         
-        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        # HIPAA: Get business entity for this organization
+        entity = await db.business_entities.find_one({"is_active": True, "organization_id": organization_id}, {"_id": 0})
+        if not entity:
+            entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
         if not entity:
             raise HTTPException(status_code=404, detail="No active business entity configured")
         
-        employees = await db.employees.find({}, {"_id": 0}).to_list(1000)
+        # HIPAA: Only get employees for this organization
+        employees = await db.employees.find({"organization_id": organization_id}, {"_id": 0}).to_list(1000)
         
         exporter = EVVExportOrchestrator()
         json_export = exporter.export_direct_care_workers(
