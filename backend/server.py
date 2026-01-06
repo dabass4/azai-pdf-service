@@ -2098,42 +2098,6 @@ async def bulk_update_patients(request: BulkUpdateRequest, organization_id: str 
         logger.error(f"Bulk update error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.post("/employees/bulk-update")
-async def bulk_update_employees(request: BulkUpdateRequest, organization_id: str = Depends(get_organization_id)):
-    """Bulk update multiple employee profiles
-    
-    Common use case: Mark multiple profiles as complete
-    """
-    try:
-        # Validate IDs exist within organization
-        count = await db.employees.count_documents({"id": {"$in": request.ids}, "organization_id": organization_id})
-        
-        if count == 0:
-            raise HTTPException(status_code=404, detail="No employees found with provided IDs")
-        
-        # Add updated_at timestamp
-        updates = request.updates.copy()
-        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
-        
-        # Perform bulk update within organization
-        result = await db.employees.update_many(
-            {"id": {"$in": request.ids}, "organization_id": organization_id},
-            {"$set": updates}
-        )
-        
-        logger.info(f"Bulk updated {result.modified_count} employees")
-        
-        return {
-            "status": "success",
-            "modified_count": result.modified_count,
-            "matched_count": result.matched_count
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Bulk update error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @api_router.post("/patients/bulk-delete")
 async def bulk_delete_patients(request: BulkDeleteRequest, organization_id: str = Depends(get_organization_id)):
     """Bulk delete multiple patient profiles"""
@@ -2141,22 +2105,6 @@ async def bulk_delete_patients(request: BulkDeleteRequest, organization_id: str 
         result = await db.patients.delete_many({"id": {"$in": request.ids}, "organization_id": organization_id})
         
         logger.info(f"Bulk deleted {result.deleted_count} patients")
-        
-        return {
-            "status": "success",
-            "deleted_count": result.deleted_count
-        }
-    except Exception as e:
-        logger.error(f"Bulk delete error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.post("/employees/bulk-delete")
-async def bulk_delete_employees(request: BulkDeleteRequest, organization_id: str = Depends(get_organization_id)):
-    """Bulk delete multiple employee profiles"""
-    try:
-        result = await db.employees.delete_many({"id": {"$in": request.ids}, "organization_id": organization_id})
-        
-        logger.info(f"Bulk deleted {result.deleted_count} employees")
         
         return {
             "status": "success",
