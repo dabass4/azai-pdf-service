@@ -200,6 +200,10 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Import and configure modular routers
+from routes.employees import employees_router, set_database as set_employees_db
+set_employees_db(db)  # Pass database connection to employees router
+
 # Import WebSocket manager and Socket.IO
 from websocket_manager import sio, ws_manager
 import socketio
