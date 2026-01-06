@@ -6295,6 +6295,9 @@ api_router.include_router(npi_router)
 from routes_mock_odm import router as mock_odm_router
 api_router.include_router(mock_odm_router)
 
+# Import and include Employees router (refactored from server.py)
+api_router.include_router(employees_router)
+
 # Include the router in the main app
 app.include_router(api_router)
 
