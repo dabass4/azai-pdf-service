@@ -909,52 +909,53 @@ const Home = () => {
 
                           return allEntries.length > 0 && (
                             <div data-testid={`chronological-entries-${timesheet.id}`}>
-                              <h3 className="text-sm font-semibold text-gray-700 uppercase flex items-center gap-2 mb-3">
-                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                                  {allEntries.length} Total Time Entr{allEntries.length === 1 ? 'y' : 'ies'}
+                              <div className="flex items-center gap-3 mb-3">
+                                <span className="px-3 py-1 rounded-full text-xs bg-teal-500/20 text-teal-400 border border-teal-500/30">
+                                  {allEntries.length} Time Entr{allEntries.length === 1 ? 'y' : 'ies'}
                                 </span>
-                                <span className="text-gray-500 text-xs">
+                                <span className="text-xs text-gray-500">
                                   • {timesheet.extracted_data.employee_entries.length} Employee{timesheet.extracted_data.employee_entries.length !== 1 ? 's' : ''}
                                 </span>
-                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">
-                                  {isNaN(totalUnits) ? 0 : totalUnits} Total Units
+                                <span className="px-3 py-1 rounded-full text-xs bg-purple-500/20 text-purple-400 border border-purple-500/30 font-semibold">
+                                  {isNaN(totalUnits) ? 0 : totalUnits} Units
                                 </span>
-                              </h3>
+                              </div>
                               
-                              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                <table className="w-full">
-                                  <thead className="bg-blue-50">
+                              <div className="overflow-x-auto rounded-lg border border-white/10">
+                                <table className="modern-table">
+                                  <thead>
                                     <tr>
-                                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
-                                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Employee</th>
-                                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Service Code</th>
-                                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Time In</th>
-                                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Time Out</th>
-                                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Hours</th>
-                                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Units</th>
-                                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Signed</th>
+                                      <th>Date</th>
+                                      <th>Employee</th>
+                                      <th>Code</th>
+                                      <th>Time In</th>
+                                      <th>Time Out</th>
+                                      <th>Hours</th>
+                                      <th>Units</th>
+                                      <th>Signed</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="bg-white divide-y divide-gray-200">
+                                  <tbody>
                                     {allEntries.map((entry, index) => (
-                                      <tr key={index} className="hover:bg-gray-50" data-testid={`chronological-entry-${timesheet.id}-${index}`}>
-                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{formatDateForDisplay(entry.date)}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-900">{entry.employee_name || "N/A"}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-700">{entry.service_code || "N/A"}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-900">{entry.time_in || "N/A"}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-900">{entry.time_out || "N/A"}</td>
-                                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">{entry.formatted_hours || entry.hours_worked || "N/A"}</td>
-                                        <td className="px-4 py-3 text-sm font-bold text-blue-900">{entry.units}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-700">
-                                          {entry.signature === "Yes" ? "✓" : "✗"}
+                                      <tr key={index} data-testid={`chronological-entry-${timesheet.id}-${index}`}>
+                                        <td className="text-white font-medium">{formatDateForDisplay(entry.date)}</td>
+                                        <td className="text-gray-300">{entry.employee_name || "N/A"}</td>
+                                        <td className="text-gray-400">{entry.service_code || "N/A"}</td>
+                                        <td className="text-teal-400 font-medium">{entry.time_in || "N/A"}</td>
+                                        <td className="text-teal-400 font-medium">{entry.time_out || "N/A"}</td>
+                                        <td className="text-white font-semibold">{entry.formatted_hours || entry.hours_worked || "N/A"}</td>
+                                        <td className="text-purple-400 font-bold">{entry.units}</td>
+                                        <td>
+                                          {entry.signature === "Yes" ? (
+                                            <CheckCircle className="w-4 h-4 text-green-400" />
+                                          ) : (
+                                            <XCircle className="w-4 h-4 text-gray-600" />
+                                          )}
                                         </td>
                                       </tr>
                                     ))}
                                   </tbody>
                                 </table>
-                                <div className="bg-gray-50 px-4 py-2 text-xs text-gray-600 border-t border-gray-200">
-                                  <span className="font-semibold">Note:</span> Entries shown in scan order (as they appear in document). 1 unit = 15 minutes. Times ≥ 35 minutes round to 3 units.
-                                </div>
                               </div>
                             </div>
                           );
@@ -962,32 +963,33 @@ const Home = () => {
                       </div>
                       
                       {timesheet.sandata_status === "submitted" && (
-                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg" data-testid={`sandata-success-${timesheet.id}`}>
-                          <p className="text-sm text-green-700 font-medium">
-                            ✓ Successfully submitted timesheet with {timesheet.extracted_data.employee_entries?.length || 0} employee{timesheet.extracted_data.employee_entries?.length === 1 ? '' : 's'} to Sandata API
+                        <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg" data-testid={`sandata-success-${timesheet.id}`}>
+                          <p className="text-sm text-green-400 font-medium flex items-center gap-2">
+                            <CheckCircle size={16} />
+                            Successfully submitted to Sandata API
                           </p>
                         </div>
                       )}
-                    </CardContent>
+                    </div>
                   )}
                   
                   {timesheet.error_message && (
-                    <CardContent>
+                    <div className="mt-4">
                       <div className={`p-3 rounded-lg ${
                         timesheet.sandata_status === "blocked" 
-                          ? "bg-amber-50 border border-amber-200" 
-                          : "bg-red-50 border border-red-200"
+                          ? "bg-amber-500/10 border border-amber-500/30" 
+                          : "bg-red-500/10 border border-red-500/30"
                       }`} data-testid={`error-message-${timesheet.id}`}>
                         <p className={`text-sm ${
                           timesheet.sandata_status === "blocked" 
-                            ? "text-amber-700" 
-                            : "text-red-700"
+                            ? "text-amber-400" 
+                            : "text-red-400"
                         }`}>{timesheet.error_message}</p>
                       </div>
-                    </CardContent>
+                    </div>
                   )}
-                </Card>
-              ))}
+                  </div>
+                ))}
               </div>
             </>
           )}
