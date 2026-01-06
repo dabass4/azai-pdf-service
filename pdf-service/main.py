@@ -18,7 +18,7 @@ app = FastAPI(
 # CORS middleware - configure with your actual domain in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to your domain: ["https://timesheet-fixer-1.preview.emergentagent.com"]
+    allow_origins=["*"],  # Change to your domain: ["https://healthdb-pro-1.preview.emergentagent.com"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

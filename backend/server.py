@@ -4649,7 +4649,7 @@ async def create_checkout(
         
         # Create checkout session
         # Get app URL from environment (for payment redirects)
-        app_url = os.environ.get("APP_URL", "https://timesheet-fixer-1.preview.emergentagent.com")
+        app_url = os.environ.get("APP_URL", "https://healthdb-pro-1.preview.emergentagent.com")
         
         session = create_checkout_session(
             organization_id=organization_id,
@@ -4681,7 +4681,7 @@ async def create_portal(current_user: Dict = Depends(get_current_user)):
             raise HTTPException(status_code=400, detail="No active subscription")
         
         # Get app URL from environment (for billing portal return)
-        app_url = os.environ.get("APP_URL", "https://timesheet-fixer-1.preview.emergentagent.com")
+        app_url = os.environ.get("APP_URL", "https://healthdb-pro-1.preview.emergentagent.com")
         
         # Create billing portal session
         session = create_billing_portal_session(
