@@ -1871,11 +1871,11 @@ async def reinstall_pdf_dependencies():
 
 
 @api_router.post("/timesheets/{timesheet_id}/resubmit")
-async def resubmit_timesheet(timesheet_id: str):
-    """Manually resubmit timesheet to Sandata with validation"""
+async def resubmit_timesheet(timesheet_id: str, organization_id: str = Depends(get_organization_id)):
+    """Manually resubmit timesheet to Sandata with validation - HIPAA compliant"""
     try:
-        # Get the timesheet
-        timesheet_doc = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+        # HIPAA: Only access timesheets belonging to user's organization
+        timesheet_doc = await db.timesheets.find_one({"id": timesheet_id, "organization_id": organization_id}, {"_id": 0})
         
         if not timesheet_doc:
             raise HTTPException(status_code=404, detail="Timesheet not found")
@@ -1904,13 +1904,13 @@ async def resubmit_timesheet(timesheet_id: str):
         
         timesheet.updated_at = datetime.now(timezone.utc)
         
-        # Update database
+        # Update database - HIPAA: only update if org matches
         update_doc = timesheet.model_dump()
         update_doc['created_at'] = update_doc['created_at'].isoformat()
         update_doc['updated_at'] = update_doc['updated_at'].isoformat()
         
         await db.timesheets.update_one(
-            {"id": timesheet_id},
+            {"id": timesheet_id, "organization_id": organization_id},
             {"$set": update_doc}
         )
         
