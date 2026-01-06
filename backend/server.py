@@ -4688,10 +4688,10 @@ async def download_dcw_json(organization_id: str = Depends(get_organization_id))
 
 
 @api_router.get("/evv/download/visits")
-async def download_visits_json(status: str = "ready"):
+async def download_visits_json(status: str = "ready", organization_id: str = Depends(get_organization_id)):
     """
     Download Visit records as a JSON file for manual Sandata submission.
-    Use this when API transmission fails.
+    Use this when API transmission fails. HIPAA compliant - org isolated.
     
     File format: Ohio Alternate EVV Technical Specifications v4.1 (July 2024)
     Sandata endpoint: https://api.sandata.com/interfaces/intake/visit/v2
@@ -4702,12 +4702,15 @@ async def download_visits_json(status: str = "ready"):
     try:
         from fastapi.responses import Response
         
-        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        # HIPAA: Get business entity for this organization
+        entity = await db.business_entities.find_one({"is_active": True, "organization_id": organization_id}, {"_id": 0})
+        if not entity:
+            entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
         if not entity:
             raise HTTPException(status_code=404, detail="No active business entity configured")
         
-        # Get visits by status
-        query = {}
+        # HIPAA: Only get visits for this organization
+        query = {"organization_id": organization_id}
         if status != "all":
             query["evv_status"] = status
         
