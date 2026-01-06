@@ -433,91 +433,100 @@ const Patients = () => {
         )}
 
         {/* Patients List */}
-        <div>
+        <div className="glass-card rounded-2xl p-6 animate-slide-up">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="icon-container-sm">
+                <Users className="w-5 h-5 text-teal-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Patient Records</h2>
+            </div>
+            <span className="text-sm text-gray-400">{patients.length} total</span>
+          </div>
+          
           {patients.length === 0 ? (
-            <Card className="bg-white/70 backdrop-blur-sm shadow-lg">
-              <CardContent className="py-12 text-center">
-                <Users className="mx-auto text-gray-400 mb-4" size={64} />
-                <p className="text-gray-500 text-lg">No patients added yet</p>
-                <p className="text-gray-400 text-sm mt-2">Create your first patient profile to get started</p>
-              </CardContent>
-            </Card>
+            <div className="py-16 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white/5 flex items-center justify-center">
+                <Users className="w-10 h-10 text-gray-600" />
+              </div>
+              <p className="text-gray-400 text-lg mb-2">No patients added yet</p>
+              <p className="text-gray-500 text-sm">Create your first patient profile to get started</p>
+            </div>
           ) : (
             <>
               {/* Select All Checkbox */}
-              <div className="mb-3 flex items-center gap-2 px-2">
+              <div className="mb-4 flex items-center gap-3 px-2">
                 <Checkbox
                   checked={selectedPatients.length === patients.length && patients.length > 0}
                   onCheckedChange={handleSelectAll}
                   id="select-all"
+                  className="border-gray-600"
                 />
-                <label htmlFor="select-all" className="text-sm font-medium text-gray-700 cursor-pointer">
+                <label htmlFor="select-all" className="text-sm font-medium text-gray-400 cursor-pointer">
                   Select All ({patients.length})
                 </label>
               </div>
               
-              <div className="grid gap-4" data-testid="patients-list">
-                {patients.map((patient) => (
-                  <Card key={patient.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all cursor-pointer" data-testid={`patient-${patient.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        {/* Selection Checkbox */}
-                        <div className="pt-1" onClick={(e) => e.stopPropagation()}>
-                          <Checkbox
-                            checked={selectedPatients.includes(patient.id)}
-                            onCheckedChange={(checked) => handleSelectPatient(patient.id, checked)}
-                          />
-                        </div>
-                        
-                        <div className="flex-1 flex justify-between items-start" onClick={() => handleViewDetails(patient.id)}>
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                            {patient.first_name} {patient.last_name}
-                            {patient.is_complete === false && (
-                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
-                                INCOMPLETE
-                              </span>
-                            )}
-                            {patient.auto_created_from_timesheet && (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
-                                AUTO-CREATED
-                              </span>
-                            )}
-                          </h3>
-                          <div className="space-y-1 text-sm">
-                            <p className="text-gray-600"><span className="font-semibold">DOB:</span> {patient.date_of_birth}</p>
-                            <p className="text-gray-600"><span className="font-semibold">Sex:</span> {patient.sex}</p>
-                            <p className="text-gray-600"><span className="font-semibold">Medicaid:</span> <span className="font-mono">{patient.medicaid_number}</span></p>
+              <div className="space-y-3" data-testid="patients-list">
+                {patients.map((patient, index) => (
+                  <div 
+                    key={patient.id} 
+                    className="glass-card-hover rounded-xl p-5 cursor-pointer animate-slide-up"
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                    data-testid={`patient-${patient.id}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Selection Checkbox */}
+                      <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedPatients.includes(patient.id)}
+                          onCheckedChange={(checked) => handleSelectPatient(patient.id, checked)}
+                          className="border-gray-600"
+                        />
+                      </div>
+                      
+                      <div className="flex-1" onClick={() => handleViewDetails(patient.id)}>
+                        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                          {/* Patient Name & Basic Info */}
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2 flex-wrap">
+                              {patient.first_name} {patient.last_name}
+                              {patient.is_complete === false && (
+                                <span className="status-badge status-pending">INCOMPLETE</span>
+                              )}
+                              {patient.auto_created_from_timesheet && (
+                                <span className="status-badge status-processing">AUTO-CREATED</span>
+                              )}
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <p className="text-gray-400"><span className="text-gray-300 font-medium">DOB:</span> {patient.date_of_birth}</p>
+                                <p className="text-gray-400"><span className="text-gray-300 font-medium">Sex:</span> {patient.sex}</p>
+                                <p className="text-gray-400"><span className="text-gray-300 font-medium">Medicaid:</span> <span className="font-mono text-teal-400">{patient.medicaid_number}</span></p>
+                              </div>
+                              
+                              <div>
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Address</p>
+                                <p className="text-gray-400">{patient.address_street}</p>
+                                <p className="text-gray-400">{patient.address_city}, {patient.address_state} {patient.address_zip}</p>
+                                <p className="text-gray-400 mt-2"><span className="text-gray-300 font-medium">Prior Auth:</span> {patient.prior_auth_number}</p>
+                              </div>
+                              
+                              <div>
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Medical Info</p>
+                                <p className="flex items-center gap-1 text-gray-400">
+                                  <span className="text-gray-300 font-medium">ICD-10:</span> 
+                                  <ICD10Badge code={patient.icd10_code} description={patient.icd10_description} />
+                                </p>
+                                {patient.icd10_description && <p className="text-gray-500 text-xs italic">{patient.icd10_description}</p>}
+                                <p className="text-gray-400 pt-2"><span className="text-gray-300 font-medium">Physician:</span> {patient.physician_name}</p>
+                                <p className="flex items-center gap-1 text-gray-400">
+                                  <span className="text-gray-300 font-medium">NPI:</span> 
+                                  <PhysicianBadge npi={patient.physician_npi} name={patient.physician_name} />
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div>
-                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Address</h4>
-                          <div className="space-y-1 text-sm text-gray-700">
-                            <p>{patient.address_street}</p>
-                            <p>{patient.address_city}, {patient.address_state} {patient.address_zip}</p>
-                          </div>
-                          <div className="mt-3">
-                            <p className="text-sm text-gray-600"><span className="font-semibold">Prior Auth:</span> {patient.prior_auth_number}</p>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Medical Info</h4>
-                          <div className="space-y-1 text-sm text-gray-700">
-                            <p className="flex items-center gap-1">
-                              <span className="font-semibold">ICD-10:</span> 
-                              <ICD10Badge code={patient.icd10_code} description={patient.icd10_description} />
-                            </p>
-                            {patient.icd10_description && <p className="text-gray-600 text-xs italic">{patient.icd10_description}</p>}
-                            <p className="pt-2"><span className="font-semibold">Physician:</span> {patient.physician_name}</p>
-                            <p className="flex items-center gap-1">
-                              <span className="font-semibold">NPI:</span> 
-                              <PhysicianBadge npi={patient.physician_npi} name={patient.physician_name} />
-                            </p>
-                          </div>
-                        </div>
                           </div>
                           
                           <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
