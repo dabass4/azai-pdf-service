@@ -314,7 +314,8 @@ class TestCrossOrganizationAccess:
             json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
         )
         assert response.status_code == 200
-        return response.json()["token"]
+        data = response.json()
+        return data.get("access_token") or data.get("token")
     
     def test_update_timesheet_from_different_org_fails(self, admin_token):
         """
