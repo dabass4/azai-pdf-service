@@ -832,32 +832,32 @@ const Home = () => {
                       </div>
                     </div>
                   
-                  {timesheet.extracted_data && timesheet.status === "completed" && (
-                    <div className="mt-4 pt-4 border-t border-white/5">
-                      {/* Client Information */}
-                      <div className="glass-card rounded-lg p-4 mb-4">
-                        <p className="text-xs text-teal-400 uppercase font-semibold mb-1 flex items-center gap-2">
-                          <Heart size={12} />
-                          Patient/Client
-                        </p>
-                        <p className="text-lg font-bold text-white">{timesheet.extracted_data.client_name || "N/A"}</p>
-                      </div>
+                    {timesheet.extracted_data && timesheet.status === "completed" && (
+                      <div className="mt-4 pt-4 border-t border-white/5">
+                        {/* Client Information */}
+                        <div className="glass-card rounded-lg p-4 mb-4">
+                          <p className="text-xs text-teal-400 uppercase font-semibold mb-1 flex items-center gap-2">
+                            <Heart size={12} />
+                            Patient/Client
+                          </p>
+                          <p className="text-lg font-bold text-white">{timesheet.extracted_data.client_name || "N/A"}</p>
+                        </div>
 
-                      {/* Chronological Time Entries */}
-                      {timesheet.extracted_data.employee_entries && timesheet.extracted_data.employee_entries.length > 0 && (() => {
-                        // Flatten all time entries from all employees and add employee info
-                        const allEntries = [];
-                        let totalUnits = 0;
-                        
-                        // Helper function to calculate units from time in and time out
-                        const calculateUnits = (timeIn, timeOut, date) => {
-                          try {
-                            if (!timeIn || !timeOut) return 0;
-                            
-                            // Parse time strings (e.g., "08:00 AM")
-                            const dateStr = date || '2025-01-01';
-                            const timeInDate = new Date(`${dateStr} ${timeIn}`);
-                            const timeOutDate = new Date(`${dateStr} ${timeOut}`);
+                        {/* Chronological Time Entries */}
+                        {timesheet.extracted_data.employee_entries && timesheet.extracted_data.employee_entries.length > 0 && (() => {
+                          // Flatten all time entries from all employees and add employee info
+                          const allEntries = [];
+                          let totalUnits = 0;
+                          
+                          // Helper function to calculate units from time in and time out
+                          const calculateUnits = (timeIn, timeOut, date) => {
+                            try {
+                              if (!timeIn || !timeOut) return 0;
+                              
+                              // Parse time strings (e.g., "08:00 AM")
+                              const dateStr = date || '2025-01-01';
+                              const timeInDate = new Date(`${dateStr} ${timeIn}`);
+                              const timeOutDate = new Date(`${dateStr} ${timeOut}`);
                             
                             if (isNaN(timeInDate.getTime()) || isNaN(timeOutDate.getTime())) {
                               return 0;
