@@ -52,101 +52,140 @@ const Navigation = () => {
   const { user, organization, logout, isAuthenticated } = useAuth();
   
   const navLinks = [
-    { to: "/", icon: HomeIcon, label: "Timesheets" },
+    { to: "/", icon: LayoutDashboard, label: "Timesheets" },
     { to: "/patients", icon: Users, label: "Patients" },
     { to: "/employees", icon: UserCheck, label: "Employees" },
     { to: "/payers", icon: DollarSign, label: "Payers" },
     { to: "/claims", icon: ClipboardCheck, label: "Claims" },
     { to: "/claims/analytics", icon: TrendingUp, label: "Analytics" },
     { to: "/evv", icon: Activity, label: "EVV" },
-    { to: "/service-codes", icon: Code, label: "Service Codes" },
+    { to: "/service-codes", icon: Code, label: "Codes" },
     { to: "/settings", icon: SettingsIcon, label: "Settings" }
   ];
   
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
+    <nav className="nav-glass sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
+          {/* Logo & Brand */}
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-xl gradient-teal flex items-center justify-center shadow-lg glow-teal">
+                <Heart className="w-5 h-5 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full pulse-dot"></div>
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-bold gradient-text">AZAI Health</h1>
+              <p className="text-xs text-gray-500">Healthcare Management</p>
+            </div>
+          </div>
+
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
+          <div className="hidden lg:flex items-center space-x-1">
             {navLinks.map(({ to, icon: Icon, label }) => (
               <Link
                 key={to}
                 to={to}
-                className={`inline-flex items-center px-3 py-2 border-b-2 text-sm font-medium ${
-                  location.pathname === to 
-                    ? "border-blue-500 text-blue-600" 
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                className={`nav-link flex items-center gap-2 ${
+                  location.pathname === to ? "active" : ""
                 }`}
                 data-testid={`nav-${label.toLowerCase()}`}
               >
-                <Icon className="mr-2" size={18} />
-                {label}
+                <Icon size={16} />
+                <span>{label}</span>
               </Link>
             ))}
           </div>
 
-          {/* User Info & Logout */}
+          {/* User Info & Actions */}
           {isAuthenticated && (
-            <div className="hidden md:flex items-center gap-4 ml-auto">
+            <div className="hidden md:flex items-center gap-4">
               <NotificationBell />
-              <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">{user?.first_name} {user?.last_name}</p>
-                <p className="text-xs text-gray-600">{organization?.name}</p>
+              
+              <div className="flex items-center gap-3 glass-card px-4 py-2 rounded-xl">
+                <div className="w-9 h-9 rounded-lg gradient-purple flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-white">{user?.first_name} {user?.last_name}</p>
+                  <p className="text-xs text-gray-400">{organization?.name}</p>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
+              
+              <button
                 onClick={() => {
                   logout();
                   toast.success('Logged out successfully');
                 }}
-                className="flex items-center gap-2"
+                className="p-2.5 rounded-xl glass-card hover:bg-red-500/20 transition-all duration-300 group"
+                title="Logout"
               >
-                <LogOut size={16} />
-                Logout
-              </Button>
+                <LogOut size={18} className="text-gray-400 group-hover:text-red-400 transition-colors" />
+              </button>
             </div>
           )}
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="lg:hidden flex items-center gap-3">
+            {isAuthenticated && <NotificationBell />}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none"
+              className="p-2 rounded-xl glass-card text-gray-400 hover:text-white transition-colors"
               data-testid="mobile-menu-button"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
-
-          {/* App Title for Mobile */}
-          <div className="md:hidden flex items-center">
-            <h1 className="text-lg font-bold text-gray-900">AZAI</h1>
-          </div>
         </div>
 
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden pb-3 pt-2 border-t border-gray-200">
-            <div className="space-y-1">
+          <div className="lg:hidden py-4 border-t border-white/5 animate-slide-up">
+            <div className="space-y-1 stagger-children">
               {navLinks.map(({ to, icon: Icon, label }) => (
                 <Link
                   key={to}
                   to={to}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center px-3 py-3 text-base font-medium rounded-md ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                     location.pathname === to
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-teal-500/20 text-teal-400"
+                      : "text-gray-400 hover:bg-white/5 hover:text-white"
                   }`}
                   data-testid={`mobile-nav-${label.toLowerCase()}`}
                 >
-                  <Icon className="mr-3" size={20} />
-                  {label}
+                  <Icon size={20} />
+                  <span className="font-medium">{label}</span>
+                  <ChevronRight size={16} className="ml-auto opacity-50" />
                 </Link>
               ))}
             </div>
+            
+            {isAuthenticated && (
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <div className="flex items-center gap-3 px-4 py-3 glass-card rounded-xl mb-3">
+                  <div className="w-10 h-10 rounded-lg gradient-purple flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{user?.first_name} {user?.last_name}</p>
+                    <p className="text-xs text-gray-400">{organization?.name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                    toast.success('Logged out successfully');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
+                >
+                  <LogOut size={18} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -160,10 +199,18 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center healthcare-pattern">
+        <div className="text-center glass-card p-8 rounded-2xl animate-fade-in">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-teal flex items-center justify-center glow-teal">
+            <Heart className="w-8 h-8 text-white animate-pulse" />
+          </div>
+          <div className="w-12 h-12 mx-auto mb-4">
+            <svg className="animate-spin" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+          <p className="text-gray-400">Loading your healthcare dashboard...</p>
         </div>
       </div>
     );
