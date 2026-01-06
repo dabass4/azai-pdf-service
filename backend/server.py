@@ -2183,8 +2183,8 @@ async def bulk_delete_timesheets(request: BulkDeleteRequest, organization_id: st
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/timesheets/bulk-submit-sandata")
-async def bulk_submit_sandata(request: BulkDeleteRequest):
-    """Bulk submit multiple timesheets to Sandata"""
+async def bulk_submit_sandata(request: BulkDeleteRequest, organization_id: str = Depends(get_organization_id)):
+    """Bulk submit multiple timesheets to Sandata - HIPAA compliant with org isolation"""
     try:
         results = {
             "success": [],
@@ -2193,8 +2193,8 @@ async def bulk_submit_sandata(request: BulkDeleteRequest):
         
         for timesheet_id in request.ids:
             try:
-                # Get the timesheet
-                timesheet_doc = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+                # HIPAA: Only access timesheets belonging to user's organization
+                timesheet_doc = await db.timesheets.find_one({"id": timesheet_id, "organization_id": organization_id}, {"_id": 0})
                 
                 if not timesheet_doc:
                     results["failed"].append({
