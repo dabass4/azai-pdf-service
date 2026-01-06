@@ -159,6 +159,7 @@ Build a comprehensive healthcare application for Ohio Medicaid providers featuri
 - ~~**Frontend NaN Error**~~: ✅ FIXED - Added NaN guards in units calculation (App.js)
 - ~~**TimesheetEditor Blank Page**~~: ✅ RESOLVED (Jan 6, 2026) - Not a code bug. Root cause: test timesheet ID belonged to different organization. Editor works correctly for timesheets matching user's org.
 - ~~**Time In/Out Not Showing**~~: ✅ VERIFIED WORKING (Jan 6, 2026) - Time format conversion (12h→24h) in TimesheetEditor.js working correctly. Fields display 09:00 AM / 05:00 PM properly.
+- ~~**HIPAA Organization Isolation**~~: ✅ IMPLEMENTED (Jan 6, 2026) - All API endpoints now filter by organization_id. 15/15 tests passing.
 
 ### P3 - Low
 - Deploy external PDF service to Railway
