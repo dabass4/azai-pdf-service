@@ -62,6 +62,30 @@ Build a comprehensive healthcare application for Ohio Medicaid providers featuri
 
 ## What's Been Implemented
 
+### January 6, 2026 - HIPAA Organization Isolation (CRITICAL)
+**Implemented multi-tenant data isolation across all API endpoints:**
+- **Timesheets**: All CRUD operations filtered by organization_id from JWT token
+- **EVV Visits**: Create, Read, Update, Delete operations respect org boundaries
+- **EVV Exports**: Export endpoints (individuals, DCWs, visits) only include org's data
+- **Bulk Operations**: bulk-delete, bulk-submit-sandata respect org isolation
+- **Business Entities**: EVV business entity config associated with organizations
+
+**15 HIPAA isolation tests pass 100%:**
+- Timesheets list returns 610 for super_admin (not 1259 total) ✅
+- Cross-org timesheet access returns 404 ✅
+- Bulk delete only affects own org (deleted_count=0 for cross-org) ✅
+- EVV visits filtered by organization_id ✅
+- Patients filtered: 49 of 255 for super_admin ✅
+- Employees filtered: 243 of 1129 for super_admin ✅
+
+**Test file**: `/app/tests/test_hipaa_org_isolation.py`
+
+### January 6, 2026 - TimesheetEditor Resolution
+**Verified TimesheetEditor is working correctly:**
+- Previous "blank page" was due to org ID mismatch (test ID from different org)
+- Time In/Out fields display correctly with 12h→24h conversion
+- Editor loads for timesheets belonging to user's organization
+
 ### January 5, 2026 - Claims Analytics Page
 **NEW: Claims Analytics Dashboard (`ClaimsAnalytics.js`)**
 - **KPI Cards**: Total Claims (with trend), Payment Rate, Denial Rate, Total Revenue
