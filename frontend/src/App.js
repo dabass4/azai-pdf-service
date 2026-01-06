@@ -845,53 +845,33 @@ const Home = () => {
 
                         {/* Chronological Time Entries */}
                         {timesheet.extracted_data.employee_entries && timesheet.extracted_data.employee_entries.length > 0 && (() => {
-                          // Flatten all time entries from all employees and add employee info
                           const allEntries = [];
                           let totalUnits = 0;
                           
-                          // Helper function to calculate units from time in and time out
                           const calculateUnits = (timeIn, timeOut, date) => {
                             try {
                               if (!timeIn || !timeOut) return 0;
-                              
-                              // Parse time strings (e.g., "08:00 AM")
                               const dateStr = date || '2025-01-01';
                               const timeInDate = new Date(`${dateStr} ${timeIn}`);
                               const timeOutDate = new Date(`${dateStr} ${timeOut}`);
-                            
-                            if (isNaN(timeInDate.getTime()) || isNaN(timeOutDate.getTime())) {
+                              if (isNaN(timeInDate.getTime()) || isNaN(timeOutDate.getTime())) return 0;
+                              let diffMinutes = (timeOutDate - timeInDate) / (1000 * 60);
+                              if (diffMinutes < 0) diffMinutes += 24 * 60;
+                              if (isNaN(diffMinutes) || !isFinite(diffMinutes)) return 0;
+                              if (diffMinutes > 35 && diffMinutes < 45) return 3;
+                              const units = Math.round(diffMinutes / 15);
+                              return isNaN(units) ? 0 : units;
+                            } catch (e) {
                               return 0;
                             }
-                            
-                            let diffMinutes = (timeOutDate - timeInDate) / (1000 * 60);
-                            
-                            if (diffMinutes < 0) {
-                              diffMinutes += 24 * 60;
-                            }
-                            
-                            if (isNaN(diffMinutes) || !isFinite(diffMinutes)) {
-                              return 0;
-                            }
-                            
-                            if (diffMinutes > 35 && diffMinutes < 45) {
-                              return 3;
-                            }
-                            
-                            const units = Math.round(diffMinutes / 15);
-                            return isNaN(units) ? 0 : units;
-                          } catch (e) {
-                            console.error('Error calculating units:', e);
-                            return 0;
-                          }
-                        };
-                        
+                          };
+                          
                           let entryIndex = 0;
                           timesheet.extracted_data.employee_entries.forEach(employee => {
                             if (employee.time_entries) {
                               employee.time_entries.forEach(entry => {
                                 const units = entry.units || calculateUnits(entry.time_in, entry.time_out, entry.date);
                                 totalUnits += (isNaN(units) ? 0 : units);
-                                
                                 allEntries.push({
                                   ...entry,
                                   employee_name: employee.employee_name,
@@ -933,8 +913,8 @@ const Home = () => {
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {allEntries.map((entry, index) => (
-                                      <tr key={index} data-testid={`chronological-entry-${timesheet.id}-${index}`}>
+                                    {allEntries.map((entry, idx) => (
+                                      <tr key={idx} data-testid={`chronological-entry-${timesheet.id}-${idx}`}>
                                         <td className="text-white font-medium">{formatDateForDisplay(entry.date)}</td>
                                         <td className="text-gray-300">{entry.employee_name || "N/A"}</td>
                                         <td className="text-gray-400">{entry.service_code || "N/A"}</td>
@@ -942,13 +922,7 @@ const Home = () => {
                                         <td className="text-teal-400 font-medium">{entry.time_out || "N/A"}</td>
                                         <td className="text-white font-semibold">{entry.formatted_hours || entry.hours_worked || "N/A"}</td>
                                         <td className="text-purple-400 font-bold">{entry.units}</td>
-                                        <td>
-                                          {entry.signature === "Yes" ? (
-                                            <CheckCircle className="w-4 h-4 text-green-400" />
-                                          ) : (
-                                            <XCircle className="w-4 h-4 text-gray-600" />
-                                          )}
-                                        </td>
+                                        <td>{entry.signature === "Yes" ? <CheckCircle className="w-4 h-4 text-green-400" /> : <XCircle className="w-4 h-4 text-gray-600" />}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -957,34 +931,23 @@ const Home = () => {
                             </div>
                           );
                         })()}
+                        
+                        {timesheet.sandata_status === "submitted" && (
+                          <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg" data-testid={`sandata-success-${timesheet.id}`}>
+                            <p className="text-sm text-green-400 font-medium flex items-center gap-2">
+                              <CheckCircle size={16} />
+                              Successfully submitted to Sandata API
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      
-                      {timesheet.sandata_status === "submitted" && (
-                        <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg" data-testid={`sandata-success-${timesheet.id}`}>
-                          <p className="text-sm text-green-400 font-medium flex items-center gap-2">
-                            <CheckCircle size={16} />
-                            Successfully submitted to Sandata API
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {timesheet.error_message && (
-                    <div className="mt-4">
-                      <div className={`p-3 rounded-lg ${
-                        timesheet.sandata_status === "blocked" 
-                          ? "bg-amber-500/10 border border-amber-500/30" 
-                          : "bg-red-500/10 border border-red-500/30"
-                      }`} data-testid={`error-message-${timesheet.id}`}>
-                        <p className={`text-sm ${
-                          timesheet.sandata_status === "blocked" 
-                            ? "text-amber-400" 
-                            : "text-red-400"
-                        }`}>{timesheet.error_message}</p>
+                    )}
+                    
+                    {timesheet.error_message && (
+                      <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30" data-testid={`error-message-${timesheet.id}`}>
+                        <p className="text-sm text-red-400">{timesheet.error_message}</p>
                       </div>
-                    </div>
-                  )}
+                    )}
                   </div>
                 ))}
               </div>
