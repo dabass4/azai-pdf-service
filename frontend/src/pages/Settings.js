@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { CreditCard, Zap, Users, FileText, Shield, ArrowRight, Check } from 'lucide-react';
+import { CreditCard, Users, FileText, Shield, ArrowRight, Check, Settings as SettingsIcon, Building2, Sparkles } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -38,8 +36,6 @@ const Settings = () => {
       const response = await axios.post(`${API}/payments/create-checkout`, {
         plan: planId
       });
-
-      // Redirect to Stripe checkout
       window.location.href = response.data.url;
     } catch (error) {
       console.error('Checkout error:', error);
@@ -67,10 +63,10 @@ const Settings = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      trial: { text: 'Free Trial', color: 'bg-blue-100 text-blue-800' },
-      active: { text: 'Active', color: 'bg-green-100 text-green-800' },
-      suspended: { text: 'Suspended', color: 'bg-yellow-100 text-yellow-800' },
-      cancelled: { text: 'Cancelled', color: 'bg-red-100 text-red-800' }
+      trial: { text: 'Free Trial', class: 'status-badge status-processing' },
+      active: { text: 'Active', class: 'status-badge status-completed' },
+      suspended: { text: 'Suspended', class: 'status-badge status-pending' },
+      cancelled: { text: 'Cancelled', class: 'status-badge status-error' }
     };
     return badges[status] || badges.trial;
   };
@@ -78,46 +74,61 @@ const Settings = () => {
   const statusBadge = getStatusBadge(subscriptionStatus);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen healthcare-pattern" data-testid="settings-page">
+      <div className="animated-bg"></div>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Account Settings
-          </h1>
-          <p className="text-gray-600 mt-2">Manage your subscription and billing</p>
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center gap-4">
+            <div className="icon-container">
+              <SettingsIcon className="w-6 h-6 text-teal-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Account Settings
+              </h1>
+              <p className="text-gray-400">Manage your subscription and billing</p>
+            </div>
+          </div>
         </div>
 
         {/* Current Plan Card */}
-        <Card className="mb-8 border-2 border-blue-200 shadow-xl">
-          <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-            <CardTitle className="text-2xl">Current Plan</CardTitle>
-            <CardDescription className="text-blue-100">Your active subscription details</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Organization</p>
-                <p className="text-xl font-semibold text-gray-900">{organization?.name}</p>
+        <div className="glass-card rounded-2xl overflow-hidden mb-8 animate-slide-up">
+          <div className="p-6 border-b border-white/10 bg-gradient-to-r from-teal-500/20 to-purple-500/20">
+            <div className="flex items-center gap-3">
+              <div className="icon-container">
+                <Sparkles className="w-6 h-6 text-teal-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Plan</p>
+                <h2 className="text-2xl font-bold text-white">Current Plan</h2>
+                <p className="text-gray-400">Your active subscription details</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Organization</p>
+                <p className="text-xl font-semibold text-white">{organization?.name}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Plan</p>
                 <div className="flex items-center gap-3">
-                  <p className="text-xl font-semibold text-gray-900 capitalize">{currentPlan}</p>
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusBadge.color}`}>
+                  <p className="text-xl font-semibold text-white capitalize">{currentPlan}</p>
+                  <span className={statusBadge.class}>
                     {statusBadge.text}
                   </span>
                 </div>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Timesheets Limit</p>
-                <p className="text-xl font-semibold text-gray-900">
+                <p className="text-sm text-gray-500 mb-1">Timesheets Limit</p>
+                <p className="text-xl font-semibold text-white">
                   {organization?.max_timesheets === -1 ? 'Unlimited' : `${organization?.max_timesheets} per month`}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Employees Limit</p>
-                <p className="text-xl font-semibold text-gray-900">
+                <p className="text-sm text-gray-500 mb-1">Employees Limit</p>
+                <p className="text-xl font-semibold text-white">
                   {organization?.max_employees === -1 ? 'Unlimited' : organization?.max_employees}
                 </p>
               </div>
@@ -125,11 +136,11 @@ const Settings = () => {
 
             {/* Features */}
             <div className="mt-6">
-              <p className="text-sm text-gray-600 mb-3">Active Features:</p>
+              <p className="text-sm text-gray-500 mb-3">Active Features:</p>
               <div className="flex flex-wrap gap-2">
                 {organization?.features?.map((feature, index) => (
-                  <span key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    <Check size={16} />
+                  <span key={index} className="status-badge status-completed flex items-center gap-1">
+                    <Check size={14} />
                     {feature.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </span>
                 ))}
@@ -138,72 +149,71 @@ const Settings = () => {
 
             {/* Billing Management */}
             {organization?.stripe_customer_id && (
-              <div className="mt-6 pt-6 border-t">
-                <Button
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <button
                   onClick={handleManageBilling}
                   disabled={loading}
-                  variant="outline"
-                  className="flex items-center gap-2"
+                  className="btn-secondary flex items-center gap-2"
                 >
                   <CreditCard size={18} />
                   Manage Billing & Payment Methods
-                </Button>
+                </button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Available Plans */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Available Plans</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <h2 className="text-2xl font-bold text-white mb-6">Available Plans</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-children">
             {plans.map((plan) => {
               const isCurrentPlan = plan.id === currentPlan;
               const isUpgrade = (plan.id === 'professional' && currentPlan === 'basic') || 
                                (plan.id === 'enterprise' && (currentPlan === 'basic' || currentPlan === 'professional'));
               
               return (
-                <Card 
+                <div 
                   key={plan.id}
-                  className={`relative ${isCurrentPlan ? 'border-4 border-blue-500' : 'border-2 border-gray-200'}`}
+                  className={`glass-card rounded-2xl overflow-hidden relative card-lift ${isCurrentPlan ? 'border-2 border-teal-500 glow-teal' : ''}`}
                 >
                   {isCurrentPlan && (
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                      <span className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                      <span className="gradient-teal text-white px-4 py-1 rounded-full text-sm font-semibold">
                         Current Plan
                       </span>
                     </div>
                   )}
                   
-                  <CardHeader className="text-center pt-8">
-                    <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
+                  <div className="p-6 text-center pt-8">
+                    <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
                     <div className="mt-4">
                       {typeof plan.price === 'number' ? (
                         <>
-                          <span className="text-4xl font-bold">${plan.price}</span>
-                          <span className="text-gray-600">/month</span>
+                          <span className="text-4xl font-bold gradient-text">${plan.price}</span>
+                          <span className="text-gray-400">/month</span>
                         </>
                       ) : (
-                        <span className="text-4xl font-bold">{plan.price}</span>
+                        <span className="text-4xl font-bold gradient-text">{plan.price}</span>
                       )}
                     </div>
-                  </CardHeader>
+                  </div>
 
-                  <CardContent>
+                  <div className="p-6 pt-0">
                     <div className="space-y-3 mb-6">
-                      <div className="text-sm text-gray-600">
-                        <p className="font-semibold mb-2">Features:</p>
+                      <div className="text-sm text-gray-400">
+                        <p className="font-semibold text-gray-300 mb-2">Features:</p>
                         <ul className="space-y-1">
                           {plan.features.map((feature, index) => (
                             <li key={index} className="flex items-center gap-2">
-                              <Check className="text-green-500" size={16} />
+                              <Check className="text-teal-400" size={16} />
                               <span>{feature.replace(/_/g, ' ')}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
-                      <div className="text-sm text-gray-600">
-                        <p className="font-semibold mb-1">Limits:</p>
+                      <div className="text-sm text-gray-400">
+                        <p className="font-semibold text-gray-300 mb-1">Limits:</p>
                         <p>Timesheets: {plan.limits.max_timesheets === -1 ? 'Unlimited' : plan.limits.max_timesheets}</p>
                         <p>Employees: {plan.limits.max_employees === -1 ? 'Unlimited' : plan.limits.max_employees}</p>
                         <p>Patients: {plan.limits.max_patients === -1 ? 'Unlimited' : plan.limits.max_patients}</p>
@@ -211,56 +221,54 @@ const Settings = () => {
                     </div>
 
                     {!isCurrentPlan && isUpgrade && (
-                      <Button
+                      <button
                         onClick={() => handleUpgrade(plan.id)}
                         disabled={loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        className="w-full btn-primary flex items-center justify-center gap-2"
                       >
                         {loading ? 'Loading...' : `Upgrade to ${plan.name}`}
-                        <ArrowRight size={16} className="ml-2" />
-                      </Button>
+                        <ArrowRight size={16} />
+                      </button>
                     )}
 
                     {isCurrentPlan && (
-                      <Button
+                      <button
                         disabled
-                        variant="outline"
-                        className="w-full"
+                        className="w-full btn-secondary opacity-50 cursor-not-allowed"
                       >
                         Current Plan
-                      </Button>
+                      </button>
                     )}
 
                     {plan.id === 'enterprise' && !isCurrentPlan && (
-                      <Button
+                      <button
                         onClick={() => handleUpgrade(plan.id)}
-                        variant="outline"
-                        className="w-full"
+                        className="w-full btn-secondary"
                       >
                         Contact Sales
-                      </Button>
+                      </button>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               );
             })}
           </div>
         </div>
 
         {/* Test Mode Notice */}
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <Shield className="text-yellow-600 flex-shrink-0 mt-1" size={24} />
-              <div>
-                <p className="font-semibold text-yellow-900">Test Mode Active</p>
-                <p className="text-sm text-yellow-800 mt-1">
-                  Payments are in test mode. Use test card: <code className="bg-yellow-100 px-2 py-1 rounded">4242 4242 4242 4242</code>
-                </p>
-              </div>
+        <div className="glass-card rounded-2xl p-6 border border-amber-500/30 bg-amber-500/5">
+          <div className="flex items-start gap-3">
+            <div className="icon-container-sm" style={{ background: 'rgba(251, 191, 36, 0.2)' }}>
+              <Shield className="text-amber-400" size={20} />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="font-semibold text-amber-400">Test Mode Active</p>
+              <p className="text-sm text-amber-300/80 mt-1">
+                Payments are in test mode. Use test card: <code className="bg-amber-500/20 px-2 py-1 rounded text-amber-300">4242 4242 4242 4242</code>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
