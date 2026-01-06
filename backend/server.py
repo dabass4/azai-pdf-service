@@ -4414,9 +4414,11 @@ async def create_evv_visit(visit: EVVVisit, organization_id: str = Depends(get_o
         doc = visit.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
         doc['updated_at'] = doc['updated_at'].isoformat()
+        # HIPAA: Associate visit with organization
+        doc['organization_id'] = organization_id
         
         await db.evv_visits.insert_one(doc)
-        logger.info(f"EVV visit created: {visit.id}")
+        logger.info(f"EVV visit created: {visit.id} for org {organization_id}")
         
         return visit
     except HTTPException:
