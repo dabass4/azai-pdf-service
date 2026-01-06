@@ -4481,16 +4481,19 @@ async def delete_evv_visit(visit_id: str):
 
 # EVV Export Endpoints
 @api_router.get("/evv/export/individuals")
-async def export_individuals():
-    """Export patients as EVV Individual records"""
+async def export_individuals(organization_id: str = Depends(get_organization_id)):
+    """Export patients as EVV Individual records - HIPAA compliant"""
     try:
-        # Get active business entity
-        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        # HIPAA: Get active business entity for this organization
+        entity = await db.business_entities.find_one({"is_active": True, "organization_id": organization_id}, {"_id": 0})
+        if not entity:
+            # Fallback to any active entity for backwards compatibility
+            entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
         if not entity:
             raise HTTPException(status_code=404, detail="No active business entity configured")
         
-        # Get all patients
-        patients = await db.patients.find({}, {"_id": 0}).to_list(1000)
+        # HIPAA: Only get patients belonging to this organization
+        patients = await db.patients.find({"organization_id": organization_id}, {"_id": 0}).to_list(1000)
         
         # Export to EVV format
         exporter = EVVExportOrchestrator()
@@ -4513,16 +4516,18 @@ async def export_individuals():
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/evv/export/direct-care-workers")
-async def export_direct_care_workers():
-    """Export employees as EVV DirectCareWorker records"""
+async def export_direct_care_workers(organization_id: str = Depends(get_organization_id)):
+    """Export employees as EVV DirectCareWorker records - HIPAA compliant"""
     try:
-        # Get active business entity
-        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        # HIPAA: Get active business entity for this organization
+        entity = await db.business_entities.find_one({"is_active": True, "organization_id": organization_id}, {"_id": 0})
+        if not entity:
+            entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
         if not entity:
             raise HTTPException(status_code=404, detail="No active business entity configured")
         
-        # Get all employees
-        employees = await db.employees.find({}, {"_id": 0}).to_list(1000)
+        # HIPAA: Only get employees belonging to this organization
+        employees = await db.employees.find({"organization_id": organization_id}, {"_id": 0}).to_list(1000)
         
         # Export to EVV format
         exporter = EVVExportOrchestrator()
