@@ -295,33 +295,83 @@ const Patients = () => {
   const formSteps = useMemo(() => getPatientFormSteps(), []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen healthcare-pattern">
+      <div className="animated-bg"></div>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Patient Profiles
-            </h1>
-            <p className="text-gray-600">Manage patient information and records</p>
+        <div className="flex justify-between items-center mb-8 animate-fade-in">
+          <div className="flex items-center gap-4">
+            <div className="icon-container">
+              <Users className="w-6 h-6 text-teal-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Patient Profiles
+              </h1>
+              <p className="text-gray-400">Manage patient information and records</p>
+            </div>
           </div>
-          <Button
+          <button
             onClick={() => {
               resetForm();
               setEditingPatient(null);
               setShowForm(true);
             }}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="btn-primary flex items-center gap-2"
             data-testid="add-patient-btn"
           >
-            <Plus className="mr-2" size={18} />
+            <Plus size={18} />
             Add Patient
-          </Button>
+          </button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 stagger-children">
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <Users className="w-5 h-5 text-teal-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase">Total</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{patients.length}</p>
+            <p className="text-sm text-gray-400">Patients</p>
+          </div>
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase">Complete</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{patients.filter(p => p.is_complete).length}</p>
+            <p className="text-sm text-gray-400">Profiles</p>
+          </div>
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <AlertCircle className="w-5 h-5 text-amber-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase">Incomplete</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{patients.filter(p => !p.is_complete).length}</p>
+            <p className="text-sm text-gray-400">Need Attention</p>
+          </div>
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <Heart className="w-5 h-5 text-pink-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase">Selected</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{selectedPatients.length}</p>
+            <p className="text-sm text-gray-400">For Actions</p>
+          </div>
         </div>
 
         {/* Patient Form Modal */}
         {showForm && (
-          <div className="mb-8" data-testid="patient-form">
+          <div className="mb-8 glass-card rounded-2xl p-6 animate-slide-up" data-testid="patient-form">
             <MultiStepForm
               steps={formSteps}
               formData={formData}
