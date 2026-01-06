@@ -527,95 +527,101 @@ const Patients = () => {
                               </div>
                             </div>
                           </div>
-                          </div>
                           
-                          <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(patient)} data-testid={`edit-patient-${patient.id}`}>
-                              <Edit className="text-blue-600" size={18} />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(patient.id)} data-testid={`delete-patient-${patient.id}`}>
-                              <Trash2 className="text-red-500" size={18} />
-                            </Button>
+                          {/* Actions */}
+                          <div className="flex gap-2 mt-4 lg:mt-0" onClick={(e) => e.stopPropagation()}>
+                            <button 
+                              onClick={() => handleEdit(patient)} 
+                              className="p-2 rounded-lg bg-white/5 hover:bg-teal-500/20 text-gray-400 hover:text-teal-400 transition-all"
+                              data-testid={`edit-patient-${patient.id}`}
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(patient.id)} 
+                              className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all"
+                              data-testid={`delete-patient-${patient.id}`}
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
         {/* Patient Details Modal */}
         {showDetailsModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowDetailsModal(false)}>
-            <div className="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDetailsModal(false)}>
+            <div className="glass-card rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto animate-slide-up" onClick={(e) => e.stopPropagation()}>
               {loadingDetails ? (
                 <div className="p-12 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Loading patient details...</p>
+                  <div className="w-12 h-12 border-2 border-teal-400/30 border-t-teal-400 rounded-full animate-spin mx-auto"></div>
+                  <p className="mt-4 text-gray-400">Loading patient details...</p>
                 </div>
               ) : selectedPatientDetails ? (
                 <>
                   {/* Modal Header */}
-                  <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <User size={28} className="text-blue-600" />
-                        {selectedPatientDetails.first_name} {selectedPatientDetails.last_name}
-                      </h2>
-                      <p className="text-gray-600 mt-1">Patient Details & Timesheet History</p>
+                  <div className="sticky top-0 glass-card border-b border-white/10 p-6 flex justify-between items-center rounded-t-2xl">
+                    <div className="flex items-center gap-4">
+                      <div className="icon-container">
+                        <User className="w-6 h-6 text-teal-400" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-white">
+                          {selectedPatientDetails.first_name} {selectedPatientDetails.last_name}
+                        </h2>
+                        <p className="text-gray-400">Patient Details & Timesheet History</p>
+                      </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => setShowDetailsModal(false)}>
+                    <button 
+                      onClick={() => setShowDetailsModal(false)}
+                      className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+                    >
                       <X size={24} />
-                    </Button>
+                    </button>
                   </div>
 
                   {/* Modal Content */}
                   <div className="p-6">
                     {/* Patient Information Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                       {/* Basic Info */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-sm font-semibold text-gray-500 uppercase">Basic Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
-                          <div><span className="font-semibold">Name:</span> {selectedPatientDetails.first_name} {selectedPatientDetails.last_name}</div>
-                          <div><span className="font-semibold">DOB:</span> {selectedPatientDetails.date_of_birth}</div>
-                          <div><span className="font-semibold">Sex:</span> {selectedPatientDetails.sex}</div>
-                          <div><span className="font-semibold">Medicaid:</span> <span className="font-mono">{selectedPatientDetails.medicaid_number}</span></div>
+                      <div className="glass-card rounded-xl p-4">
+                        <h3 className="text-xs font-semibold text-teal-400 uppercase mb-3">Basic Information</h3>
+                        <div className="space-y-2 text-sm">
+                          <div className="text-gray-300"><span className="text-gray-500">Name:</span> {selectedPatientDetails.first_name} {selectedPatientDetails.last_name}</div>
+                          <div className="text-gray-300"><span className="text-gray-500">DOB:</span> {selectedPatientDetails.date_of_birth}</div>
+                          <div className="text-gray-300"><span className="text-gray-500">Sex:</span> {selectedPatientDetails.sex}</div>
+                          <div className="text-gray-300"><span className="text-gray-500">Medicaid:</span> <span className="font-mono text-teal-400">{selectedPatientDetails.medicaid_number}</span></div>
                           {selectedPatientDetails.is_complete === false && (
                             <div className="pt-2">
-                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
-                                INCOMPLETE PROFILE
-                              </span>
+                              <span className="status-badge status-pending">INCOMPLETE PROFILE</span>
                             </div>
                           )}
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </div>
 
                       {/* Address Info */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-sm font-semibold text-gray-500 uppercase">Address</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-1 text-sm">
+                      <div className="glass-card rounded-xl p-4">
+                        <h3 className="text-xs font-semibold text-teal-400 uppercase mb-3">Address</h3>
+                        <div className="space-y-1 text-sm text-gray-300">
                           <div>{selectedPatientDetails.address_street || "N/A"}</div>
                           <div>{selectedPatientDetails.address_city}, {selectedPatientDetails.address_state} {selectedPatientDetails.address_zip}</div>
-                          <div className="pt-2"><span className="font-semibold">Prior Auth:</span> {selectedPatientDetails.prior_auth_number || "N/A"}</div>
-                        </CardContent>
-                      </Card>
+                          <div className="pt-2"><span className="text-gray-500">Prior Auth:</span> {selectedPatientDetails.prior_auth_number || "N/A"}</div>
+                        </div>
+                      </div>
 
                       {/* Medical Info */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-sm font-semibold text-gray-500 uppercase">Medical Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
+                      <div className="glass-card rounded-xl p-4">
+                        <h3 className="text-xs font-semibold text-teal-400 uppercase mb-3">Medical Information</h3>
+                        <div className="space-y-2 text-sm text-gray-300">
                           <div className="flex items-center gap-1">
-                            <span className="font-semibold">ICD-10:</span> 
+                            <span className="text-gray-500">ICD-10:</span> 
                             <ICD10Badge 
                               code={selectedPatientDetails.icd10_code} 
                               description={selectedPatientDetails.icd10_description} 
