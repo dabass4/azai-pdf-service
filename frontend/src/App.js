@@ -885,27 +885,24 @@ const Home = () => {
                           }
                         };
                         
-                        let entryIndex = 0;
-                        timesheet.extracted_data.employee_entries.forEach(employee => {
-                          if (employee.time_entries) {
-                            employee.time_entries.forEach(entry => {
-                              const units = entry.units || calculateUnits(entry.time_in, entry.time_out, entry.date);
-                              totalUnits += (isNaN(units) ? 0 : units);
-                              
-                              allEntries.push({
-                                ...entry,
-                                employee_name: employee.employee_name,
-                                service_code: employee.service_code,
-                                signature: employee.signature,
-                                units: isNaN(units) ? 0 : units,
-                                scan_order: entryIndex++
+                          let entryIndex = 0;
+                          timesheet.extracted_data.employee_entries.forEach(employee => {
+                            if (employee.time_entries) {
+                              employee.time_entries.forEach(entry => {
+                                const units = entry.units || calculateUnits(entry.time_in, entry.time_out, entry.date);
+                                totalUnits += (isNaN(units) ? 0 : units);
+                                
+                                allEntries.push({
+                                  ...entry,
+                                  employee_name: employee.employee_name,
+                                  service_code: employee.service_code,
+                                  signature: employee.signature,
+                                  units: isNaN(units) ? 0 : units,
+                                  scan_order: entryIndex++
+                                });
                               });
-                            });
-                          }
-                        });
-                          
-                          // DO NOT SORT - maintain scan order from document
-                          // Entries are already in the order they were extracted
+                            }
+                          });
 
                           return allEntries.length > 0 && (
                             <div data-testid={`chronological-entries-${timesheet.id}`}>
