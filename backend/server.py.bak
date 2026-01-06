@@ -2650,6 +2650,730 @@ async def get_patient_details(patient_id: str, organization_id: str = Depends(ge
     }
 
 
+# Employee Profile Endpoints
+@api_router.post("/employees", response_model=EmployeeProfile)
+async def create_employee(employee: EmployeeProfile, organization_id: str = Depends(get_organization_id)):
+    """Create a new employee profile"""
+    try:
+        # Ensure organization_id is set
+        employee.organization_id = organization_id
+        
+        doc = employee.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        
+        await db.employees.insert_one(doc)
+        logger.info(f"Employee created: {employee.id} for org: {organization_id}")
+        
+        return employee
+    except Exception as e:
+        logger.error(f"Error creating employee: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/employees", response_model=List[EmployeeProfile])
+async def get_employees(
+    search: Optional[str] = None,
+    is_complete: Optional[bool] = None,
+    limit: int = 1000,
+    skip: int = 0,
+    organization_id: str = Depends(get_organization_id)
+):
+    """Get all employee profiles with optional search and filters
+    
+    Args:
+        search: Search by first name, last name, or employee ID
+        is_complete: Filter by completion status (True/False)
+        limit: Maximum number of results to return
+        skip: Number of results to skip (for pagination)
+    """
+    query = {"organization_id": organization_id}
+    
+    # Add search filter
+    if search:
+        query["$or"] = [
+            {"first_name": {"$regex": search, "$options": "i"}},
+            {"last_name": {"$regex": search, "$options": "i"}},
+            {"employee_id": {"$regex": search, "$options": "i"}}
+        ]
+    
+    # Add completion status filter
+    if is_complete is not None:
+        query["is_complete"] = is_complete
+    
+    employees = await db.employees.find(query, {"_id": 0}).sort("last_name", 1).skip(skip).limit(limit).to_list(limit)
+    
+    # Convert ISO string timestamps
+    for employee in employees:
+        if isinstance(employee.get('created_at'), str):
+            employee['created_at'] = datetime.fromisoformat(employee['created_at'])
+        if isinstance(employee.get('updated_at'), str):
+            employee['updated_at'] = datetime.fromisoformat(employee['updated_at'])
+    
+    return employees
+
+
+@api_router.get("/employees/similar/{name}")
+async def get_similar_employees(name: str, organization_id: str = Depends(get_organization_id)):
+    """
+    Find employees with names similar to the given name.
+    Useful for suggesting existing employees when scanning timesheets.
+    
+    Args:
+        name: The name to search for (from timesheet scan)
+    
+    Returns:
+        List of similar employees with similarity scores
+    """
+    similar = await find_similar_employees(name, organization_id, threshold=0.5)
+    
+    return {
+        "search_name": name,
+        "similar_employees": similar,
+        "total_found": len(similar),
+        "has_exact_match": any(e['similarity_score'] >= 0.95 for e in similar),
+        "has_close_match": any(e['similarity_score'] >= 0.85 for e in similar)
+    }
+
+
+@api_router.post("/employees/link-to-existing")
+async def link_scanned_employee_to_existing(
+    scanned_employee_id: str,
+    existing_employee_id: str,
+    organization_id: str = Depends(get_organization_id)
+):
+    """
+    Link a scanned/auto-created employee to an existing employee.
+    This is used when a timesheet scan creates a new employee but
+    there's actually an existing employee with a similar name.
+    
+    - Transfers any timesheet references from scanned to existing
+    - Deletes the scanned (duplicate) employee
+    
+    Args:
+        scanned_employee_id: ID of the auto-created employee to remove
+        existing_employee_id: ID of the existing employee to link to
+    """
+    # Verify both employees exist
+    scanned_emp = await db.employees.find_one(
+        {"id": scanned_employee_id, "organization_id": organization_id},
+        {"_id": 0}
+    )
+    if not scanned_emp:
+        raise HTTPException(status_code=404, detail="Scanned employee not found")
+    
+    existing_emp = await db.employees.find_one(
+        {"id": existing_employee_id, "organization_id": organization_id},
+        {"_id": 0}
+    )
+    if not existing_emp:
+        raise HTTPException(status_code=404, detail="Existing employee not found")
+    
+    # Update any timesheets that reference the scanned employee
+    scanned_name = f"{scanned_emp.get('first_name', '')} {scanned_emp.get('last_name', '')}".strip()
+    existing_name = f"{existing_emp.get('first_name', '')} {existing_emp.get('last_name', '')}".strip()
+    
+    # Find timesheets with the scanned employee in registration_results
+    timesheets_updated = 0
+    timesheets = await db.timesheets.find({
+        "organization_id": organization_id,
+        "registration_results.employees.id": scanned_employee_id
+    }, {"_id": 0}).to_list(10000)
+    
+    for ts in timesheets:
+        updated = False
+        reg_results = ts.get('registration_results', {})
+        
+        # Update employee references
+        if 'employees' in reg_results:
+            for emp in reg_results['employees']:
+                if emp.get('id') == scanned_employee_id:
+                    emp['id'] = existing_employee_id
+                    emp['first_name'] = existing_emp.get('first_name')
+                    emp['last_name'] = existing_emp.get('last_name')
+                    emp['linked_from'] = scanned_name
+                    updated = True
+        
+        # Update extracted_data employee names
+        if ts.get('extracted_data') and isinstance(ts['extracted_data'], dict):
+            for entry in ts['extracted_data'].get('employee_entries', []):
+                if isinstance(entry, dict):
+                    emp_name = entry.get('employee_name', '').lower()
+                    if scanned_name.lower() in emp_name or emp_name in scanned_name.lower():
+                        entry['employee_name'] = existing_name
+                        entry['linked_from_scanned'] = scanned_name
+                        updated = True
+        
+        if updated:
+            await db.timesheets.update_one(
+                {"id": ts['id']},
+                {"$set": {
+                    "registration_results": reg_results,
+                    "extracted_data": ts.get('extracted_data'),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            timesheets_updated += 1
+    
+    # Delete the scanned (duplicate) employee
+    await db.employees.delete_one({"id": scanned_employee_id, "organization_id": organization_id})
+    
+    logger.info(f"Linked scanned employee '{scanned_name}' to existing '{existing_name}', updated {timesheets_updated} timesheets")
+    
+    return {
+        "status": "success",
+        "message": f"Linked '{scanned_name}' to existing employee '{existing_name}'",
+        "scanned_employee_deleted": scanned_name,
+        "linked_to": {
+            "id": existing_employee_id,
+            "name": existing_name
+        },
+        "timesheets_updated": timesheets_updated
+    }
+
+
+@api_router.post("/employees/name-corrections")
+async def create_name_correction(
+    incorrect_name: str,
+    correct_name: str,
+    apply_to_all: bool = True,
+    organization_id: str = Depends(get_organization_id)
+):
+    """
+    Create a name correction mapping and optionally apply it to all timesheets.
+    
+    This is useful when:
+    - OCR consistently misreads a name
+    - Names are written differently on various timesheets
+    - You want to standardize name spelling across all records
+    
+    Args:
+        incorrect_name: The misspelled/incorrect name to find
+        correct_name: The correct name to replace it with
+        apply_to_all: If True, immediately apply to all existing timesheets
+    
+    Returns:
+        Summary of corrections applied
+    """
+    if not incorrect_name or not correct_name:
+        raise HTTPException(status_code=400, detail="Both incorrect_name and correct_name are required")
+    
+    incorrect_name = incorrect_name.strip()
+    correct_name = correct_name.strip()
+    
+    if incorrect_name.lower() == correct_name.lower():
+        raise HTTPException(status_code=400, detail="Incorrect and correct names cannot be the same")
+    
+    # Store the correction mapping for future use
+    correction_doc = {
+        "id": str(uuid.uuid4()),
+        "organization_id": organization_id,
+        "incorrect_name": incorrect_name,
+        "correct_name": correct_name,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "times_applied": 0
+    }
+    
+    # Check if this correction already exists
+    existing = await db.name_corrections.find_one({
+        "organization_id": organization_id,
+        "incorrect_name": {"$regex": f"^{incorrect_name}$", "$options": "i"}
+    })
+    
+    if existing:
+        # Update existing correction
+        await db.name_corrections.update_one(
+            {"id": existing["id"]},
+            {"$set": {"correct_name": correct_name, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        correction_id = existing["id"]
+    else:
+        await db.name_corrections.insert_one(correction_doc)
+        correction_id = correction_doc["id"]
+    
+    timesheets_updated = 0
+    entries_corrected = 0
+    
+    if apply_to_all:
+        # Apply correction to all timesheets
+        timesheets_updated, entries_corrected = await apply_name_correction_to_timesheets(
+            incorrect_name, correct_name, organization_id
+        )
+    
+    logger.info(f"Name correction created: '{incorrect_name}' → '{correct_name}', applied to {timesheets_updated} timesheets")
+    
+    return {
+        "status": "success",
+        "correction_id": correction_id,
+        "incorrect_name": incorrect_name,
+        "correct_name": correct_name,
+        "applied_to_all": apply_to_all,
+        "timesheets_updated": timesheets_updated,
+        "entries_corrected": entries_corrected,
+        "message": f"Name correction saved. Updated {entries_corrected} entries across {timesheets_updated} timesheets."
+    }
+
+
+async def apply_name_correction_to_timesheets(
+    incorrect_name: str, 
+    correct_name: str, 
+    organization_id: str
+) -> Tuple[int, int]:
+    """
+    Apply a name correction to all timesheets in an organization.
+    
+    Returns:
+        Tuple of (timesheets_updated, entries_corrected)
+    """
+    timesheets_updated = 0
+    entries_corrected = 0
+    
+    # Find all timesheets for this organization
+    timesheets = await db.timesheets.find(
+        {"organization_id": organization_id},
+        {"_id": 0}
+    ).to_list(10000)
+    
+    incorrect_lower = incorrect_name.lower()
+    
+    for ts in timesheets:
+        updated = False
+        extracted = ts.get('extracted_data', {})
+        
+        if not isinstance(extracted, dict):
+            continue
+        
+        # Check and update employee entries
+        employee_entries = extracted.get('employee_entries', [])
+        for emp in employee_entries:
+            if isinstance(emp, dict):
+                emp_name = emp.get('employee_name', '')
+                if emp_name and emp_name.lower() == incorrect_lower:
+                    emp['employee_name'] = correct_name
+                    emp['name_corrected_from'] = emp_name
+                    emp['name_corrected_at'] = datetime.now(timezone.utc).isoformat()
+                    entries_corrected += 1
+                    updated = True
+        
+        # Also check registration_results
+        reg_results = ts.get('registration_results', {})
+        if isinstance(reg_results, dict):
+            for emp in reg_results.get('employees', []):
+                if isinstance(emp, dict):
+                    emp_first = emp.get('first_name', '')
+                    emp_last = emp.get('last_name', '')
+                    full_name = f"{emp_first} {emp_last}".strip()
+                    if full_name.lower() == incorrect_lower:
+                        # Parse correct name
+                        parts = correct_name.split()
+                        if len(parts) >= 2:
+                            emp['first_name'] = parts[0]
+                            emp['last_name'] = ' '.join(parts[1:])
+                        else:
+                            emp['last_name'] = correct_name
+                        emp['name_corrected_from'] = full_name
+                        updated = True
+        
+        if updated:
+            await db.timesheets.update_one(
+                {"id": ts['id']},
+                {"$set": {
+                    "extracted_data": extracted,
+                    "registration_results": reg_results,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            timesheets_updated += 1
+    
+    # Update the correction count
+    await db.name_corrections.update_one(
+        {"organization_id": organization_id, "incorrect_name": {"$regex": f"^{incorrect_name}$", "$options": "i"}},
+        {"$inc": {"times_applied": entries_corrected}}
+    )
+    
+    return timesheets_updated, entries_corrected
+
+
+@api_router.get("/employees/name-corrections")
+async def get_name_corrections(organization_id: str = Depends(get_organization_id)):
+    """
+    Get all saved name corrections for the organization.
+    """
+    corrections = await db.name_corrections.find(
+        {"organization_id": organization_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    
+    return {
+        "corrections": corrections,
+        "total": len(corrections)
+    }
+
+
+@api_router.post("/employees/name-corrections/apply-all")
+async def apply_all_name_corrections(organization_id: str = Depends(get_organization_id)):
+    """
+    Apply all saved name corrections to all timesheets.
+    Useful after bulk imports or when corrections were saved but not applied.
+    """
+    corrections = await db.name_corrections.find(
+        {"organization_id": organization_id},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    if not corrections:
+        return {
+            "status": "no_corrections",
+            "message": "No name corrections found"
+        }
+    
+    total_timesheets = 0
+    total_entries = 0
+    
+    for corr in corrections:
+        ts_updated, entries_corrected = await apply_name_correction_to_timesheets(
+            corr['incorrect_name'],
+            corr['correct_name'],
+            organization_id
+        )
+        total_timesheets += ts_updated
+        total_entries += entries_corrected
+    
+    return {
+        "status": "success",
+        "corrections_applied": len(corrections),
+        "timesheets_updated": total_timesheets,
+        "entries_corrected": total_entries,
+        "message": f"Applied {len(corrections)} corrections to {total_entries} entries across {total_timesheets} timesheets"
+    }
+
+
+@api_router.delete("/employees/name-corrections/{correction_id}")
+async def delete_name_correction(correction_id: str, organization_id: str = Depends(get_organization_id)):
+    """Delete a name correction mapping"""
+    result = await db.name_corrections.delete_one({
+        "id": correction_id,
+        "organization_id": organization_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Name correction not found")
+    
+    return {"message": "Name correction deleted"}
+
+
+@api_router.get("/employees/{employee_id}/billing-codes")
+async def get_employee_billing_codes(employee_id: str, organization_id: str = Depends(get_organization_id)):
+    """Get the billing codes assigned to an employee"""
+    employee = await db.employees.find_one(
+        {"id": employee_id, "organization_id": organization_id},
+        {"_id": 0, "id": 1, "first_name": 1, "last_name": 1, "billing_codes": 1, "categories": 1}
+    )
+    
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    return {
+        "employee_id": employee["id"],
+        "employee_name": f"{employee.get('first_name', '')} {employee.get('last_name', '')}",
+        "billing_codes": employee.get("billing_codes", []),
+        "categories": employee.get("categories", [])
+    }
+
+
+@api_router.get("/employees/by-name/{name}/billing-codes")
+async def get_employee_billing_codes_by_name(name: str, organization_id: str = Depends(get_organization_id)):
+    """Get billing codes for an employee by name (for timesheet editing)"""
+    # Normalize search name
+    search_name = name.strip().lower()
+    
+    # Try to find exact match first
+    employees = await db.employees.find(
+        {"organization_id": organization_id},
+        {"_id": 0, "id": 1, "first_name": 1, "last_name": 1, "billing_codes": 1, "categories": 1}
+    ).to_list(10000)
+    
+    # Look for best match
+    best_match = None
+    best_score = 0.0
+    
+    for emp in employees:
+        full_name = f"{emp.get('first_name', '')} {emp.get('last_name', '')}".strip().lower()
+        
+        # Exact match
+        if full_name == search_name:
+            best_match = emp
+            break
+        
+        # Calculate similarity
+        similarity = calculate_name_similarity(search_name, full_name)
+        if similarity > best_score and similarity >= 0.8:
+            best_score = similarity
+            best_match = emp
+    
+    if not best_match:
+        # Return default codes if no employee found
+        return {
+            "employee_found": False,
+            "billing_codes": ["T1019", "T1020", "T1021", "G0156"],  # Default common codes
+            "message": "No matching employee found, showing default codes"
+        }
+    
+    return {
+        "employee_found": True,
+        "employee_id": best_match["id"],
+        "employee_name": f"{best_match.get('first_name', '')} {best_match.get('last_name', '')}",
+        "billing_codes": best_match.get("billing_codes", []),
+        "categories": best_match.get("categories", [])
+    }
+
+
+@api_router.get("/employees/duplicates/find")
+async def find_duplicate_employees(organization_id: str = Depends(get_organization_id)):
+    """
+    Find employees with similar/duplicate names.
+    Returns groups of potential duplicates with suggestions on which to keep.
+    Suggests keeping the most recently updated record.
+    """
+    # Get all employees for this organization
+    employees = await db.employees.find(
+        {"organization_id": organization_id}, 
+        {"_id": 0}
+    ).to_list(10000)
+    
+    # Normalize name for comparison (lowercase, strip whitespace)
+    def normalize_name(first_name, last_name):
+        first = (first_name or "").strip().lower()
+        last = (last_name or "").strip().lower()
+        return f"{first} {last}"
+    
+    # Group employees by normalized name
+    name_groups = {}
+    for emp in employees:
+        normalized = normalize_name(emp.get('first_name'), emp.get('last_name'))
+        if normalized not in name_groups:
+            name_groups[normalized] = []
+        name_groups[normalized].append(emp)
+    
+    # Find groups with duplicates (more than one employee with same name)
+    duplicate_groups = []
+    for normalized_name, group in name_groups.items():
+        if len(group) > 1:
+            # Sort by updated_at descending (most recent first)
+            sorted_group = sorted(
+                group, 
+                key=lambda x: x.get('updated_at', '1900-01-01') if isinstance(x.get('updated_at'), str) else x.get('updated_at', datetime.min).isoformat(),
+                reverse=True
+            )
+            
+            # The first one (most recently updated) is suggested to keep
+            suggested_keep = sorted_group[0]
+            suggested_delete = sorted_group[1:]
+            
+            duplicate_groups.append({
+                "normalized_name": normalized_name,
+                "display_name": f"{sorted_group[0].get('first_name', '')} {sorted_group[0].get('last_name', '')}",
+                "total_duplicates": len(group),
+                "suggested_keep": {
+                    "id": suggested_keep.get('id'),
+                    "first_name": suggested_keep.get('first_name'),
+                    "last_name": suggested_keep.get('last_name'),
+                    "email": suggested_keep.get('email'),
+                    "phone": suggested_keep.get('phone'),
+                    "categories": suggested_keep.get('categories', []),
+                    "is_complete": suggested_keep.get('is_complete', False),
+                    "updated_at": suggested_keep.get('updated_at'),
+                    "reason": "Most recently updated"
+                },
+                "suggested_delete": [
+                    {
+                        "id": emp.get('id'),
+                        "first_name": emp.get('first_name'),
+                        "last_name": emp.get('last_name'),
+                        "email": emp.get('email'),
+                        "phone": emp.get('phone'),
+                        "categories": emp.get('categories', []),
+                        "is_complete": emp.get('is_complete', False),
+                        "updated_at": emp.get('updated_at'),
+                        "reason": "Older record"
+                    }
+                    for emp in suggested_delete
+                ]
+            })
+    
+    # Sort by number of duplicates (most duplicates first)
+    duplicate_groups.sort(key=lambda x: x['total_duplicates'], reverse=True)
+    
+    return {
+        "total_duplicate_groups": len(duplicate_groups),
+        "total_duplicate_records": sum(g['total_duplicates'] - 1 for g in duplicate_groups),
+        "duplicate_groups": duplicate_groups
+    }
+
+
+@api_router.post("/employees/duplicates/resolve")
+async def resolve_duplicate_employees(
+    keep_id: str,
+    delete_ids: List[str],
+    organization_id: str = Depends(get_organization_id)
+):
+    """
+    Resolve duplicate employees by keeping one and deleting others.
+    
+    Args:
+        keep_id: ID of the employee to keep
+        delete_ids: List of employee IDs to delete
+    """
+    # Verify the employee to keep exists
+    keep_employee = await db.employees.find_one(
+        {"id": keep_id, "organization_id": organization_id},
+        {"_id": 0}
+    )
+    if not keep_employee:
+        raise HTTPException(status_code=404, detail="Employee to keep not found")
+    
+    # Verify all employees to delete exist and belong to organization
+    deleted_count = 0
+    deleted_names = []
+    
+    for delete_id in delete_ids:
+        employee = await db.employees.find_one(
+            {"id": delete_id, "organization_id": organization_id},
+            {"_id": 0}
+        )
+        if employee:
+            # Delete the duplicate
+            result = await db.employees.delete_one(
+                {"id": delete_id, "organization_id": organization_id}
+            )
+            if result.deleted_count > 0:
+                deleted_count += 1
+                deleted_names.append(f"{employee.get('first_name', '')} {employee.get('last_name', '')}")
+                logger.info(f"Deleted duplicate employee: {delete_id} ({employee.get('first_name')} {employee.get('last_name')})")
+    
+    return {
+        "status": "success",
+        "kept_employee": {
+            "id": keep_employee.get('id'),
+            "name": f"{keep_employee.get('first_name', '')} {keep_employee.get('last_name', '')}"
+        },
+        "deleted_count": deleted_count,
+        "deleted_names": deleted_names,
+        "message": f"Kept 1 employee, deleted {deleted_count} duplicate(s)"
+    }
+
+
+@api_router.get("/employees/{employee_id}", response_model=EmployeeProfile)
+async def get_employee(employee_id: str, organization_id: str = Depends(get_organization_id)):
+    """Get specific employee by ID"""
+    employee = await db.employees.find_one({"id": employee_id, "organization_id": organization_id}, {"_id": 0})
+    
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Convert ISO string timestamps
+    if isinstance(employee.get('created_at'), str):
+        employee['created_at'] = datetime.fromisoformat(employee['created_at'])
+    if isinstance(employee.get('updated_at'), str):
+        employee['updated_at'] = datetime.fromisoformat(employee['updated_at'])
+    
+    return employee
+
+@api_router.put("/employees/{employee_id}", response_model=EmployeeProfile)
+async def update_employee(employee_id: str, employee_update: EmployeeProfileUpdate, organization_id: str = Depends(get_organization_id)):
+    """Update employee profile and auto-sync with all related timesheets"""
+    from validation_utils import validate_employee_required_fields
+    
+    # Get existing employee
+    existing = await db.employees.find_one({"id": employee_id, "organization_id": organization_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Only update fields that are provided
+    update_data = employee_update.model_dump(exclude_unset=True)
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    # Merge with existing data for validation
+    merged_data = {**existing, **update_data}
+    
+    # Validate if is_complete is being set to True
+    if update_data.get('is_complete') == True:
+        is_valid, errors = validate_employee_required_fields(merged_data)
+        if not is_valid:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "Cannot mark profile complete. Required fields marked with (*) are missing.",
+                    "missing_fields": errors,
+                    "required_by": "Ohio Medicaid (ODM) and Electronic Visit Verification (EVV)"
+                }
+            )
+    
+    # Update in database
+    result = await db.employees.update_one(
+        {"id": employee_id, "organization_id": organization_id},
+        {"$set": update_data}
+    )
+    
+    # Get updated employee
+    updated_employee = await db.employees.find_one({"id": employee_id, "organization_id": organization_id}, {"_id": 0})
+    
+    # AUTO-SYNC: Update all timesheets that reference this employee
+    if update_data.get('first_name') or update_data.get('last_name'):
+        full_name = f"{updated_employee.get('first_name', '')} {updated_employee.get('last_name', '')}".strip()
+        
+        # Find all timesheets with this employee in extracted_data
+        timesheets_to_update = await db.timesheets.find({
+            "organization_id": organization_id,
+            "registration_results.employees.id": employee_id
+        }, {"_id": 0}).to_list(1000)
+        
+        # Update each timesheet's extracted_data with corrected employee name
+        for timesheet in timesheets_to_update:
+            if timesheet.get('extracted_data') and isinstance(timesheet['extracted_data'], dict):
+                employee_entries = timesheet['extracted_data'].get('employee_entries', [])
+                for entry in employee_entries:
+                    # Match by employee ID stored in registration results
+                    if isinstance(entry, dict):
+                        entry['employee_name'] = full_name
+                        # Mark as auto-corrected
+                        entry['auto_corrected'] = True
+                        entry['corrected_at'] = datetime.now(timezone.utc).isoformat()
+                
+                # Update the timesheet
+                await db.timesheets.update_one(
+                    {"id": timesheet['id']},
+                    {"$set": {
+                        "extracted_data": timesheet['extracted_data'],
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+        
+        logger.info(f"Auto-synced {len(timesheets_to_update)} timesheets with updated employee name: {full_name}")
+    
+    return EmployeeProfile(**updated_employee)
+
+@api_router.get("/employees/{employee_id}/completion-status")
+async def get_employee_completion_status(employee_id: str, organization_id: str = Depends(get_organization_id)):
+    """Get profile completion status for employee"""
+    from validation_utils import get_profile_completion_status
+    
+    employee = await db.employees.find_one({"id": employee_id, "organization_id": organization_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    status = get_profile_completion_status('employee', employee)
+    return status
+
+@api_router.delete("/employees/{employee_id}")
+async def delete_employee(employee_id: str, organization_id: str = Depends(get_organization_id)):
+    """Delete an employee profile"""
+    result = await db.employees.delete_one({"id": employee_id, "organization_id": organization_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    return {"message": "Employee deleted successfully"}
+
 # Get incomplete profiles endpoint
 @api_router.get("/profiles/incomplete")
 async def get_incomplete_profiles():
