@@ -512,11 +512,11 @@ const Home = () => {
   };
 
   const getStatusIcon = (status, sandataStatus) => {
-    if (status === "failed") return <XCircle className="text-red-500" size={20} />;
-    if (status === "processing") return <Clock className="text-blue-500 animate-pulse" size={20} />;
-    if (sandataStatus === "submitted") return <CheckCircle className="text-green-500" size={20} />;
-    if (sandataStatus === "blocked") return <XCircle className="text-amber-500" size={20} />;
-    return <CheckCircle className="text-yellow-500" size={20} />;
+    if (status === "failed") return <XCircle className="text-red-400" size={18} />;
+    if (status === "processing") return <Clock className="text-blue-400 animate-pulse" size={18} />;
+    if (sandataStatus === "submitted") return <CheckCircle className="text-green-400" size={18} />;
+    if (sandataStatus === "blocked") return <XCircle className="text-amber-400" size={18} />;
+    return <CheckCircle className="text-teal-400" size={18} />;
   };
 
   const getStatusText = (status, sandataStatus) => {
@@ -527,63 +527,146 @@ const Home = () => {
     return "Extracted";
   };
 
+  const getStatusBadgeClass = (status, sandataStatus) => {
+    if (status === "failed") return "status-error";
+    if (status === "processing") return "status-processing";
+    if (sandataStatus === "submitted") return "status-completed";
+    if (sandataStatus === "blocked") return "status-pending";
+    return "status-completed";
+  };
+
+  // Calculate stats
+  const stats = {
+    total: timesheets.length,
+    completed: timesheets.filter(t => t.status === 'completed').length,
+    processing: timesheets.filter(t => t.status === 'processing').length,
+    submitted: timesheets.filter(t => t.sandata_status === 'submitted').length,
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            AZAI
-          </h1>
-          <p className="text-lg text-gray-600">Healthcare Timesheet Management Made Simple</p>
+    <div className="min-h-screen healthcare-pattern">
+      {/* Animated background */}
+      <div className="animated-bg"></div>
+      
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header Section */}
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="icon-container">
+              <Stethoscope className="w-6 h-6 text-teal-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Timesheet Dashboard
+              </h1>
+              <p className="text-gray-400">Manage and track your healthcare timesheets</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 stagger-children">
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <FileText className="w-5 h-5 text-teal-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase tracking-wide">Total</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{stats.total}</p>
+            <p className="text-sm text-gray-400">Timesheets</p>
+          </div>
+          
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase tracking-wide">Completed</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{stats.completed}</p>
+            <p className="text-sm text-gray-400">Processed</p>
+          </div>
+          
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <Clock className="w-5 h-5 text-blue-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase tracking-wide">In Progress</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{stats.processing}</p>
+            <p className="text-sm text-gray-400">Processing</p>
+          </div>
+          
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <Shield className="w-5 h-5 text-purple-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase tracking-wide">Submitted</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{stats.submitted}</p>
+            <p className="text-sm text-gray-400">To Sandata</p>
+          </div>
         </div>
 
         {/* Upload Section */}
-        <Card className="mb-12 border-2 border-dashed border-blue-200 bg-white/70 backdrop-blur-sm shadow-lg" data-testid="upload-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="text-blue-600" />
-              Upload Timesheet
-            </CardTitle>
-            <CardDescription>Drag and drop or click to upload PDF or image files</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              data-testid="upload-dropzone"
-              className={`relative border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all ${
-                dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => document.getElementById("file-input").click()}
-            >
-              <input
-                id="file-input"
-                data-testid="file-input"
-                type="file"
-                className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
-                disabled={uploading}
-              />
-              {uploading ? (
-                <div className="flex flex-col items-center gap-3">
-                  <Clock className="text-blue-600 animate-spin" size={48} />
-                  <p className="text-lg font-medium text-gray-700">Uploading and processing...</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-3">
-                  <FileText className="text-blue-600" size={48} />
-                  <p className="text-lg font-medium text-gray-700">Drop your timesheet here</p>
-                  <p className="text-sm text-gray-500">or click to browse</p>
-                  <p className="text-xs text-gray-400 mt-2">Supports PDF, JPG, PNG</p>
-                </div>
-              )}
+        <div className="glass-card rounded-2xl p-6 mb-8 animate-slide-up" data-testid="upload-card">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="icon-container">
+              <Upload className="w-6 h-6 text-teal-400" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Upload Timesheet</h2>
+              <p className="text-sm text-gray-400">Drag and drop or click to upload PDF or image files</p>
+            </div>
+          </div>
+          
+          <div
+            data-testid="upload-dropzone"
+            className={`upload-zone ${dragActive ? "dragging" : ""}`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => document.getElementById("file-input").click()}
+          >
+            <input
+              id="file-input"
+              data-testid="file-input"
+              type="file"
+              className="hidden"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
+              disabled={uploading}
+            />
+            {uploading ? (
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl gradient-teal flex items-center justify-center glow-teal">
+                  <Clock className="w-8 h-8 text-white animate-spin" />
+                </div>
+                <p className="text-lg font-medium text-white">Uploading and processing...</p>
+                <div className="w-48 progress-bar">
+                  <div className="progress-bar-fill" style={{width: '60%'}}></div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl gradient-border flex items-center justify-center healthcare-float">
+                  <FileText className="w-8 h-8 text-teal-400" />
+                </div>
+                <p className="text-lg font-medium text-white">Drop your timesheet here</p>
+                <p className="text-sm text-gray-400">or click to browse</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="px-3 py-1 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">PDF</span>
+                  <span className="px-3 py-1 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">JPG</span>
+                  <span className="px-3 py-1 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">PNG</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Search and Filters */}
         <div className="mb-6">
