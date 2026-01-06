@@ -4418,9 +4418,10 @@ async def create_evv_visit(visit: EVVVisit):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/evv/visits", response_model=List[EVVVisit])
-async def get_evv_visits():
-    """Get all EVV visit records"""
-    visits = await db.evv_visits.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+async def get_evv_visits(organization_id: str = Depends(get_organization_id)):
+    """Get all EVV visit records - HIPAA compliant"""
+    # HIPAA: Only get visits belonging to this organization
+    visits = await db.evv_visits.find({"organization_id": organization_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
     for visit in visits:
         if isinstance(visit.get('created_at'), str):
@@ -4431,9 +4432,10 @@ async def get_evv_visits():
     return visits
 
 @api_router.get("/evv/visits/{visit_id}", response_model=EVVVisit)
-async def get_evv_visit(visit_id: str):
-    """Get specific EVV visit by ID"""
-    visit = await db.evv_visits.find_one({"id": visit_id}, {"_id": 0})
+async def get_evv_visit(visit_id: str, organization_id: str = Depends(get_organization_id)):
+    """Get specific EVV visit by ID - HIPAA compliant"""
+    # HIPAA: Only access visits belonging to this organization
+    visit = await db.evv_visits.find_one({"id": visit_id, "organization_id": organization_id}, {"_id": 0})
     
     if not visit:
         raise HTTPException(status_code=404, detail="EVV visit not found")
@@ -4446,8 +4448,8 @@ async def get_evv_visit(visit_id: str):
     return visit
 
 @api_router.put("/evv/visits/{visit_id}", response_model=EVVVisit)
-async def update_evv_visit(visit_id: str, visit_update: EVVVisit):
-    """Update EVV visit record"""
+async def update_evv_visit(visit_id: str, visit_update: EVVVisit, organization_id: str = Depends(get_organization_id)):
+    """Update EVV visit record - HIPAA compliant"""
     # Increment sequence ID for update
     if visit_update.sequence_id:
         visit_update.sequence_id = SequenceManager.generate_sequence_id()
@@ -4459,8 +4461,9 @@ async def update_evv_visit(visit_id: str, visit_update: EVVVisit):
     doc['created_at'] = doc['created_at'].isoformat() if isinstance(doc['created_at'], datetime) else doc['created_at']
     doc['updated_at'] = doc['updated_at'].isoformat()
     
+    # HIPAA: Only update visits belonging to this organization
     result = await db.evv_visits.update_one(
-        {"id": visit_id},
+        {"id": visit_id, "organization_id": organization_id},
         {"$set": doc}
     )
     
@@ -4470,9 +4473,10 @@ async def update_evv_visit(visit_id: str, visit_update: EVVVisit):
     return visit_update
 
 @api_router.delete("/evv/visits/{visit_id}")
-async def delete_evv_visit(visit_id: str):
-    """Delete an EVV visit"""
-    result = await db.evv_visits.delete_one({"id": visit_id})
+async def delete_evv_visit(visit_id: str, organization_id: str = Depends(get_organization_id)):
+    """Delete an EVV visit - HIPAA compliant"""
+    # HIPAA: Only delete visits belonging to this organization
+    result = await db.evv_visits.delete_one({"id": visit_id, "organization_id": organization_id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="EVV visit not found")
