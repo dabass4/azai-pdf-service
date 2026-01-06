@@ -4550,17 +4550,19 @@ async def export_direct_care_workers(organization_id: str = Depends(get_organiza
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/evv/export/visits")
-async def export_visits():
-    """Export EVV visit records"""
+async def export_visits(organization_id: str = Depends(get_organization_id)):
+    """Export EVV visit records - HIPAA compliant"""
     try:
-        # Get active business entity
-        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        # HIPAA: Get active business entity for this organization
+        entity = await db.business_entities.find_one({"is_active": True, "organization_id": organization_id}, {"_id": 0})
+        if not entity:
+            entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
         if not entity:
             raise HTTPException(status_code=404, detail="No active business entity configured")
         
-        # Get all ready/draft visits
+        # HIPAA: Only get visits belonging to this organization
         visits = await db.evv_visits.find(
-            {"evv_status": {"$in": ["draft", "ready"]}},
+            {"evv_status": {"$in": ["draft", "ready"]}, "organization_id": organization_id},
             {"_id": 0}
         ).to_list(1000)
         
