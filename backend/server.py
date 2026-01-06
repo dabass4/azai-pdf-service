@@ -4743,23 +4743,27 @@ async def download_visits_json(status: str = "ready", organization_id: str = Dep
 
 
 @api_router.get("/evv/download/all")
-async def download_all_evv_data():
+async def download_all_evv_data(organization_id: str = Depends(get_organization_id)):
     """
     Download ALL EVV data (Individuals, DCWs, Visits) as a single JSON file.
-    Use for complete data backup or bulk manual submission.
+    Use for complete data backup or bulk manual submission. HIPAA compliant - org isolated.
     
     File format: Combined Ohio Alternate EVV format
     """
     try:
         from fastapi.responses import Response
         
-        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+        # HIPAA: Get business entity for this organization
+        entity = await db.business_entities.find_one({"is_active": True, "organization_id": organization_id}, {"_id": 0})
+        if not entity:
+            entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
         if not entity:
             raise HTTPException(status_code=404, detail="No active business entity configured")
         
-        patients = await db.patients.find({}, {"_id": 0}).to_list(1000)
-        employees = await db.employees.find({}, {"_id": 0}).to_list(1000)
-        visits = await db.evv_visits.find({"evv_status": {"$in": ["draft", "ready"]}}, {"_id": 0}).to_list(1000)
+        # HIPAA: Only get data for this organization
+        patients = await db.patients.find({"organization_id": organization_id}, {"_id": 0}).to_list(1000)
+        employees = await db.employees.find({"organization_id": organization_id}, {"_id": 0}).to_list(1000)
+        visits = await db.evv_visits.find({"evv_status": {"$in": ["draft", "ready"]}, "organization_id": organization_id}, {"_id": 0}).to_list(1000)
         
         exporter = EVVExportOrchestrator()
         
