@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { UserCheck, Plus, Edit, Trash2, X, Shield, CheckCircle, BadgeCheck, Users, AlertTriangle, Check } from "lucide-react";
+import { UserCheck, Plus, Edit, Trash2, X, Shield, CheckCircle, Users, AlertTriangle, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,15 +21,13 @@ const US_STATES = [
   "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
 ];
 
-// Employee categories for healthcare workers
 const EMPLOYEE_CATEGORIES = [
-  { code: "RN", label: "Registered Nurse", color: "bg-blue-100 text-blue-800" },
-  { code: "LPN", label: "Licensed Practical Nurse", color: "bg-green-100 text-green-800" },
-  { code: "HHA", label: "Home Health Aide", color: "bg-purple-100 text-purple-800" },
-  { code: "DSP", label: "Direct Support Professional", color: "bg-orange-100 text-orange-800" }
+  { code: "RN", label: "Registered Nurse", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  { code: "LPN", label: "Licensed Practical Nurse", color: "bg-green-500/20 text-green-400 border-green-500/30" },
+  { code: "HHA", label: "Home Health Aide", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+  { code: "DSP", label: "Direct Support Professional", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" }
 ];
 
-// Common billing codes for quick selection
 const COMMON_BILLING_CODES = [
   { code: "T1019", name: "Personal Care Aide", category: "Personal Care" },
   { code: "T1020", name: "Personal Care (per diem)", category: "Personal Care" },
@@ -56,7 +53,6 @@ const Employees = () => {
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [searchFilters, setSearchFilters] = useState({});
   
-  // Duplicate management state
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [duplicateData, setDuplicateData] = useState(null);
   const [loadingDuplicates, setLoadingDuplicates] = useState(false);
@@ -76,8 +72,8 @@ const Employees = () => {
     address_state: "",
     address_zip: "",
     employee_id: "",
-    categories: [],  // Array of category codes: RN, LPN, HHA, DSP (REQUIRED)
-    billing_codes: []  // Array of HCPCS billing codes employee can bill
+    categories: [],
+    billing_codes: []
   });
 
   useEffect(() => {
@@ -92,7 +88,7 @@ const Employees = () => {
       
       const response = await axios.get(`${API}/employees?${params.toString()}`);
       setEmployees(response.data);
-      setSelectedEmployees([]); // Clear selection when data refreshes
+      setSelectedEmployees([]);
     } catch (e) {
       console.error("Error fetching employees:", e);
       toast.error("Failed to load employees");
@@ -153,7 +149,6 @@ const Employees = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // Format SSN with dashes
     if (name === "ssn") {
       const cleaned = value.replace(/\D/g, "");
       let formatted = cleaned;
@@ -164,7 +159,6 @@ const Employees = () => {
       }
       setFormData(prev => ({ ...prev, [name]: formatted }));
     } else if (name === "phone") {
-      // Format phone with dashes
       const cleaned = value.replace(/\D/g, "");
       let formatted = cleaned;
       if (cleaned.length > 3 && cleaned.length <= 6) {
@@ -185,28 +179,24 @@ const Employees = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate SSN (9 digits)
     const ssnDigits = formData.ssn.replace(/\D/g, "");
     if (ssnDigits.length !== 9) {
       toast.error("SSN must be exactly 9 digits");
       return;
     }
 
-    // Validate Phone (10 digits)
     const phoneDigits = formData.phone.replace(/\D/g, "");
     if (phoneDigits.length !== 10) {
       toast.error("Phone number must be exactly 10 digits");
       return;
     }
 
-    // Validate at least one category is selected
     if (!formData.categories || formData.categories.length === 0) {
       toast.error("Please select at least one employee category (RN, LPN, HHA, or DSP)");
       return;
     }
 
     try {
-      // Mark as complete when manually saving
       const submitData = {
         ...formData,
         is_complete: true,
@@ -246,12 +236,10 @@ const Employees = () => {
     setFormData(prev => {
       const currentCategories = prev.categories || [];
       if (checked) {
-        // Add category if not already present
         if (!currentCategories.includes(categoryCode)) {
           return { ...prev, categories: [...currentCategories, categoryCode] };
         }
       } else {
-        // Remove category
         return { ...prev, categories: currentCategories.filter(c => c !== categoryCode) };
       }
       return prev;
@@ -331,7 +319,6 @@ const Employees = () => {
     return ssn;
   };
 
-  // Duplicate Management Functions
   const findDuplicates = async () => {
     setLoadingDuplicates(true);
     try {
@@ -358,10 +345,7 @@ const Employees = () => {
         params: { keep_id: keepId, delete_ids: deleteIds }
       });
       toast.success(response.data.message);
-      
-      // Refresh duplicates list
       await findDuplicates();
-      // Refresh employees list
       await fetchEmployees();
     } catch (e) {
       console.error("Error resolving duplicate:", e);
@@ -382,175 +366,214 @@ const Employees = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen healthcare-pattern" data-testid="employees-page">
+      <div className="animated-bg"></div>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Employee Profiles
-            </h1>
-            <p className="text-gray-600">Manage employee information and records</p>
+        <div className="flex justify-between items-center mb-8 animate-fade-in">
+          <div className="flex items-center gap-4">
+            <div className="icon-container">
+              <UserCheck className="w-6 h-6 text-teal-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Employee Profiles
+              </h1>
+              <p className="text-gray-400">Manage employee information and records</p>
+            </div>
           </div>
           <div className="flex gap-3">
-            <Button
+            <button
               onClick={findDuplicates}
-              variant="outline"
               disabled={loadingDuplicates}
-              className="border-amber-500 text-amber-700 hover:bg-amber-50"
+              className="btn-secondary flex items-center gap-2"
               data-testid="find-duplicates-btn"
             >
-              <Users className="mr-2" size={18} />
+              <Users size={18} />
               {loadingDuplicates ? "Searching..." : "Find Duplicates"}
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={() => {
                 resetForm();
                 setEditingEmployee(null);
                 setShowForm(true);
               }}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="btn-primary flex items-center gap-2"
               data-testid="add-employee-btn"
             >
-              <Plus className="mr-2" size={18} />
+              <Plus size={18} />
               Add Employee
-            </Button>
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 stagger-children">
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <UserCheck className="w-5 h-5 text-teal-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase">Total</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{employees.length}</p>
+            <p className="text-sm text-gray-400">Employees</p>
+          </div>
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase">Complete</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{employees.filter(e => e.is_complete).length}</p>
+            <p className="text-sm text-gray-400">Profiles</p>
+          </div>
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <AlertCircle className="w-5 h-5 text-amber-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase">Incomplete</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{employees.filter(e => !e.is_complete).length}</p>
+            <p className="text-sm text-gray-400">Need Attention</p>
+          </div>
+          <div className="stat-card card-lift">
+            <div className="flex items-center justify-between mb-3">
+              <div className="icon-container-sm">
+                <Shield className="w-5 h-5 text-purple-400" />
+              </div>
+              <span className="text-xs text-gray-500 uppercase">Selected</span>
+            </div>
+            <p className="text-3xl font-bold text-white">{selectedEmployees.length}</p>
+            <p className="text-sm text-gray-400">For Actions</p>
           </div>
         </div>
 
         {/* Duplicate Management Panel */}
         {showDuplicates && duplicateData && (
-          <Card className="mb-8 border-2 border-amber-200 shadow-lg">
-            <CardHeader className="bg-amber-50">
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center gap-2 text-amber-800">
-                  <AlertTriangle className="text-amber-600" size={20} />
-                  Duplicate Employee Detection
-                </CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => setShowDuplicates(false)}>
-                  <X size={20} />
-                </Button>
-              </div>
-              <CardDescription className="text-amber-700">
-                Found {duplicateData.total_duplicate_groups} group(s) with {duplicateData.total_duplicate_records} potential duplicate(s)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              {duplicateData.duplicate_groups.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <CheckCircle className="mx-auto mb-4 text-green-500" size={48} />
-                  <p className="text-lg font-medium text-green-700">No duplicates found!</p>
-                  <p className="text-sm">All employee records have unique names.</p>
+          <div className="mb-8 glass-card rounded-2xl p-6 border border-amber-500/30 animate-slide-up">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <div className="icon-container-sm" style={{ background: 'rgba(251, 191, 36, 0.2)' }}>
+                  <AlertTriangle className="w-5 h-5 text-amber-400" />
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {duplicateData.duplicate_groups.map((group, idx) => (
-                    <div key={idx} className="border rounded-lg p-4 bg-white">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-lg text-gray-800">
-                          "{group.display_name}" <span className="text-sm font-normal text-gray-500">({group.total_duplicates} records)</span>
-                        </h4>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Duplicate Employee Detection</h3>
+                  <p className="text-sm text-gray-400">
+                    Found {duplicateData.total_duplicate_groups} group(s) with {duplicateData.total_duplicate_records} potential duplicate(s)
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowDuplicates(false)} className="p-2 rounded-lg hover:bg-white/10 text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+            
+            {duplicateData.duplicate_groups.length === 0 ? (
+              <div className="text-center py-8">
+                <CheckCircle className="mx-auto mb-4 text-green-400" size={48} />
+                <p className="text-lg font-medium text-green-400">No duplicates found!</p>
+                <p className="text-sm text-gray-500">All employee records have unique names.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {duplicateData.duplicate_groups.map((group, idx) => (
+                  <div key={idx} className="glass-card rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-lg text-white">
+                        "{group.display_name}" <span className="text-sm font-normal text-gray-500">({group.total_duplicates} records)</span>
+                      </h4>
+                    </div>
+                    
+                    {/* Suggested to KEEP */}
+                    <div className="mb-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Check className="text-green-400" size={16} />
+                        <span className="text-sm font-semibold text-green-400">Suggested to KEEP</span>
+                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">{group.suggested_keep.reason}</span>
                       </div>
-                      
-                      {/* Suggested to KEEP */}
-                      <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Check className="text-green-600" size={16} />
-                          <span className="text-sm font-semibold text-green-800">Suggested to KEEP</span>
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">{group.suggested_keep.reason}</span>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                          <div><span className="text-gray-500">Name:</span> {group.suggested_keep.first_name} {group.suggested_keep.last_name}</div>
-                          <div><span className="text-gray-500">Email:</span> {group.suggested_keep.email || "N/A"}</div>
-                          <div><span className="text-gray-500">Phone:</span> {group.suggested_keep.phone || "N/A"}</div>
-                          <div><span className="text-gray-500">Categories:</span> {group.suggested_keep.categories?.join(", ") || "None"}</div>
-                          <div><span className="text-gray-500">Complete:</span> {group.suggested_keep.is_complete ? "Yes" : "No"}</div>
-                          <div className="md:col-span-3"><span className="text-gray-500">Updated:</span> {formatDate(group.suggested_keep.updated_at)}</div>
-                        </div>
-                      </div>
-                      
-                      {/* Suggested to DELETE */}
-                      {group.suggested_delete.map((emp, empIdx) => (
-                        <div key={empIdx} className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Trash2 className="text-red-600" size={16} />
-                              <span className="text-sm font-semibold text-red-800">Suggested to DELETE</span>
-                              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">{emp.reason}</span>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                            <div><span className="text-gray-500">Name:</span> {emp.first_name} {emp.last_name}</div>
-                            <div><span className="text-gray-500">Email:</span> {emp.email || "N/A"}</div>
-                            <div><span className="text-gray-500">Phone:</span> {emp.phone || "N/A"}</div>
-                            <div><span className="text-gray-500">Categories:</span> {emp.categories?.join(", ") || "None"}</div>
-                            <div><span className="text-gray-500">Complete:</span> {emp.is_complete ? "Yes" : "No"}</div>
-                            <div className="md:col-span-3"><span className="text-gray-500">Updated:</span> {formatDate(emp.updated_at)}</div>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 mt-4 pt-3 border-t">
-                        <Button
-                          onClick={() => resolveDuplicate(
-                            group.suggested_keep.id,
-                            group.suggested_delete.map(e => e.id),
-                            group.display_name
-                          )}
-                          disabled={resolvingDuplicate === group.suggested_keep.id}
-                          className="bg-green-600 hover:bg-green-700"
-                          size="sm"
-                        >
-                          <Check className="mr-1" size={14} />
-                          {resolvingDuplicate === group.suggested_keep.id ? "Processing..." : "Accept Suggestion"}
-                        </Button>
-                        <Button
-                          onClick={() => resolveDuplicate(
-                            group.suggested_delete[0].id,
-                            [group.suggested_keep.id],
-                            group.display_name
-                          )}
-                          disabled={resolvingDuplicate !== null}
-                          variant="outline"
-                          className="border-red-300 text-red-700 hover:bg-red-50"
-                          size="sm"
-                        >
-                          Keep Older Instead
-                        </Button>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-300">
+                        <div><span className="text-gray-500">Name:</span> {group.suggested_keep.first_name} {group.suggested_keep.last_name}</div>
+                        <div><span className="text-gray-500">Email:</span> {group.suggested_keep.email || "N/A"}</div>
+                        <div><span className="text-gray-500">Phone:</span> {group.suggested_keep.phone || "N/A"}</div>
+                        <div><span className="text-gray-500">Categories:</span> {group.suggested_keep.categories?.join(", ") || "None"}</div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    
+                    {/* Suggested to DELETE */}
+                    {group.suggested_delete.map((emp, empIdx) => (
+                      <div key={empIdx} className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Trash2 className="text-red-400" size={16} />
+                          <span className="text-sm font-semibold text-red-400">Suggested to DELETE</span>
+                          <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">{emp.reason}</span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-300">
+                          <div><span className="text-gray-500">Name:</span> {emp.first_name} {emp.last_name}</div>
+                          <div><span className="text-gray-500">Email:</span> {emp.email || "N/A"}</div>
+                          <div><span className="text-gray-500">Phone:</span> {emp.phone || "N/A"}</div>
+                          <div><span className="text-gray-500">Categories:</span> {emp.categories?.join(", ") || "None"}</div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 mt-4 pt-3 border-t border-white/10">
+                      <button
+                        onClick={() => resolveDuplicate(
+                          group.suggested_keep.id,
+                          group.suggested_delete.map(e => e.id),
+                          group.display_name
+                        )}
+                        disabled={resolvingDuplicate === group.suggested_keep.id}
+                        className="btn-primary text-sm py-2"
+                      >
+                        <Check className="mr-1" size={14} />
+                        {resolvingDuplicate === group.suggested_keep.id ? "Processing..." : "Accept Suggestion"}
+                      </button>
+                      <button
+                        onClick={() => resolveDuplicate(
+                          group.suggested_delete[0].id,
+                          [group.suggested_keep.id],
+                          group.display_name
+                        )}
+                        disabled={resolvingDuplicate !== null}
+                        className="btn-secondary text-sm py-2"
+                      >
+                        Keep Older Instead
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Employee Form Modal */}
         {showForm && (
-          <Card className="mb-8 border-2 border-blue-200 shadow-lg" data-testid="employee-form">
-            <CardHeader className="bg-blue-50">
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center gap-2">
-                  {editingEmployee ? "Edit Employee" : "New Employee"}
-                  <Shield className="text-blue-600" size={20} />
-                </CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => { setShowForm(false); setEditingEmployee(null); }}>
-                  <X size={20} />
-                </Button>
+          <div className="mb-8 glass-card rounded-2xl overflow-hidden animate-slide-up" data-testid="employee-form">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <Shield className="text-teal-400" size={20} />
+                <h2 className="text-xl font-bold text-white">{editingEmployee ? "Edit Employee" : "New Employee"}</h2>
               </div>
-              <CardDescription>All employee data is securely stored and encrypted</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
+              <button onClick={() => { setShowForm(false); setEditingEmployee(null); }} className="p-2 rounded-lg hover:bg-white/10 text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6">
               {/* Sandata Compliance Banner */}
-              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
                 <div className="flex items-start gap-2">
-                  <Shield className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                  <Shield className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-amber-800">Sandata EVV Compliance</p>
-                    <p className="text-xs text-amber-700 mt-1">
-                      Fields marked with * are required for Sandata EVV submission. At least one Employee Category must be selected. SSN is stored securely and only the last 4 digits are displayed.
+                    <p className="text-sm font-semibold text-amber-400">Sandata EVV Compliance</p>
+                    <p className="text-xs text-amber-300/80 mt-1">
+                      Fields marked with * are required for Sandata EVV submission. At least one Employee Category must be selected.
                     </p>
                   </div>
                 </div>
@@ -559,70 +582,32 @@ const Employees = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Personal Information */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Personal Information</h3>
+                  <h3 className="text-sm font-semibold text-teal-400 uppercase mb-4">Personal Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="first_name">First Name *</Label>
-                      <Input
-                        id="first_name"
-                        name="first_name"
-                        value={formData.first_name}
-                        onChange={handleInputChange}
-                        required
-                        data-testid="first-name-input"
-                      />
+                      <Label className="text-gray-300">First Name *</Label>
+                      <Input name="first_name" value={formData.first_name} onChange={handleInputChange} required className="modern-input mt-1" data-testid="first-name-input" />
                     </div>
                     <div>
-                      <Label htmlFor="middle_name">Middle Name</Label>
-                      <Input
-                        id="middle_name"
-                        name="middle_name"
-                        value={formData.middle_name}
-                        onChange={handleInputChange}
-                        data-testid="middle-name-input"
-                      />
+                      <Label className="text-gray-300">Middle Name</Label>
+                      <Input name="middle_name" value={formData.middle_name} onChange={handleInputChange} className="modern-input mt-1" data-testid="middle-name-input" />
                     </div>
                     <div>
-                      <Label htmlFor="last_name">Last Name *</Label>
-                      <Input
-                        id="last_name"
-                        name="last_name"
-                        value={formData.last_name}
-                        onChange={handleInputChange}
-                        required
-                        data-testid="last-name-input"
-                      />
+                      <Label className="text-gray-300">Last Name *</Label>
+                      <Input name="last_name" value={formData.last_name} onChange={handleInputChange} required className="modern-input mt-1" data-testid="last-name-input" />
                     </div>
                     <div>
-                      <Label htmlFor="ssn">Social Security Number *</Label>
-                      <Input
-                        id="ssn"
-                        name="ssn"
-                        value={formData.ssn}
-                        onChange={handleInputChange}
-                        placeholder="XXX-XX-XXXX"
-                        maxLength="11"
-                        required
-                        data-testid="ssn-input"
-                        className="font-mono"
-                      />
+                      <Label className="text-gray-300">SSN *</Label>
+                      <Input name="ssn" value={formData.ssn} onChange={handleInputChange} placeholder="XXX-XX-XXXX" maxLength="11" required className="modern-input mt-1 font-mono" data-testid="ssn-input" />
                     </div>
                     <div>
-                      <Label htmlFor="date_of_birth">Date of Birth *</Label>
-                      <Input
-                        id="date_of_birth"
-                        name="date_of_birth"
-                        type="date"
-                        value={formData.date_of_birth}
-                        onChange={handleInputChange}
-                        required
-                        data-testid="dob-input"
-                      />
+                      <Label className="text-gray-300">Date of Birth *</Label>
+                      <Input name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleInputChange} required className="modern-input mt-1" data-testid="dob-input" />
                     </div>
                     <div>
-                      <Label htmlFor="sex">Sex *</Label>
+                      <Label className="text-gray-300">Sex *</Label>
                       <Select value={formData.sex} onValueChange={(value) => handleSelectChange("sex", value)} required>
-                        <SelectTrigger data-testid="sex-select">
+                        <SelectTrigger className="modern-input mt-1" data-testid="sex-select">
                           <SelectValue placeholder="Select sex" />
                         </SelectTrigger>
                         <SelectContent>
@@ -637,90 +622,53 @@ const Employees = () => {
 
                 {/* Contact Information */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Contact Information</h3>
+                  <h3 className="text-sm font-semibold text-teal-400 uppercase mb-4">Contact Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        data-testid="email-input"
-                      />
+                      <Label className="text-gray-300">Email</Label>
+                      <Input name="email" type="email" value={formData.email} onChange={handleInputChange} className="modern-input mt-1" data-testid="email-input" />
                     </div>
                     <div>
-                      <Label htmlFor="phone">Phone Number *</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="XXX-XXX-XXXX"
-                        maxLength="12"
-                        required
-                        data-testid="phone-input"
-                        className="font-mono"
-                      />
+                      <Label className="text-gray-300">Phone Number *</Label>
+                      <Input name="phone" value={formData.phone} onChange={handleInputChange} placeholder="XXX-XXX-XXXX" maxLength="12" required className="modern-input mt-1 font-mono" data-testid="phone-input" />
                     </div>
                     <div className="md:col-span-2">
-                      <Label htmlFor="address_street">Street Address *</Label>
-                      <Input
-                        id="address_street"
-                        name="address_street"
-                        value={formData.address_street}
-                        onChange={handleInputChange}
-                        required
-                        data-testid="address-street-input"
-                      />
+                      <Label className="text-gray-300">Street Address *</Label>
+                      <Input name="address_street" value={formData.address_street} onChange={handleInputChange} required className="modern-input mt-1" data-testid="address-street-input" />
                     </div>
                     <div>
-                      <Label htmlFor="address_city">City *</Label>
-                      <Input
-                        id="address_city"
-                        name="address_city"
-                        value={formData.address_city}
-                        onChange={handleInputChange}
-                        required
-                        data-testid="city-input"
-                      />
+                      <Label className="text-gray-300">City *</Label>
+                      <Input name="address_city" value={formData.address_city} onChange={handleInputChange} required className="modern-input mt-1" data-testid="city-input" />
                     </div>
-                    <div>
-                      <Label htmlFor="address_state">State *</Label>
-                      <Select value={formData.address_state} onValueChange={(value) => handleSelectChange("address_state", value)} required>
-                        <SelectTrigger data-testid="state-select">
-                          <SelectValue placeholder="State" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {US_STATES.map(state => (
-                            <SelectItem key={state} value={state}>{state}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="address_zip">ZIP Code *</Label>
-                      <Input
-                        id="address_zip"
-                        name="address_zip"
-                        value={formData.address_zip}
-                        onChange={handleInputChange}
-                        maxLength="10"
-                        required
-                        data-testid="zip-input"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-gray-300">State *</Label>
+                        <Select value={formData.address_state} onValueChange={(value) => handleSelectChange("address_state", value)} required>
+                          <SelectTrigger className="modern-input mt-1" data-testid="state-select">
+                            <SelectValue placeholder="State" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {US_STATES.map(state => (
+                              <SelectItem key={state} value={state}>{state}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-gray-300">ZIP Code *</Label>
+                        <Input name="address_zip" value={formData.address_zip} onChange={handleInputChange} maxLength="10" required className="modern-input mt-1" data-testid="zip-input" />
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Employment Information */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Employment Information</h3>
+                  <h3 className="text-sm font-semibold text-teal-400 uppercase mb-4">Employment Information</h3>
                   
-                  {/* Employee Categories - Multi-select (REQUIRED) */}
-                  <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
-                    <Label className="text-sm font-semibold text-gray-700 mb-3 block">
+                  {/* Employee Categories */}
+                  <div className="mb-4 p-4 glass-card rounded-xl">
+                    <Label className="text-gray-300 mb-3 block">
                       Employee Categories * <span className="text-xs font-normal text-gray-500">(Required - Select all that apply)</span>
                     </Label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -729,42 +677,43 @@ const Employees = () => {
                         return (
                           <label 
                             key={category.code}
-                            htmlFor={`category-${category.code}`}
                             className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-all ${
                               isSelected 
-                                ? 'border-blue-500 bg-blue-50' 
-                                : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-teal-500/50 bg-teal-500/10' 
+                                : 'border-white/10 hover:border-white/20 bg-white/5'
                             }`}
                           >
                             <input
                               type="checkbox"
-                              id={`category-${category.code}`}
                               checked={isSelected}
                               onChange={(e) => handleCategoryChange(category.code, e.target.checked)}
-                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              className="h-4 w-4 rounded border-gray-600 text-teal-500"
                             />
                             <div className="flex flex-col">
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded ${category.color}`}>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded border ${category.color}`}>
                                 {category.code}
                               </span>
-                              <span className="text-xs text-gray-600 mt-1">{category.label}</span>
+                              <span className="text-xs text-gray-400 mt-1">{category.label}</span>
                             </div>
                           </label>
                         );
                       })}
                     </div>
                     {(!formData.categories || formData.categories.length === 0) && (
-                      <p className="text-xs text-red-600 mt-2 font-medium">⚠️ Required: Please select at least one category</p>
+                      <p className="text-xs text-red-400 mt-2 font-medium flex items-center gap-1">
+                        <AlertCircle size={12} />
+                        Required: Please select at least one category
+                      </p>
                     )}
                   </div>
 
                   {/* Billing Codes Section */}
-                  <div>
-                    <Label className="text-base font-semibold mb-3 block">
+                  <div className="mb-4">
+                    <Label className="text-gray-300 mb-3 block">
                       Billing Codes (HCPCS)
                       <span className="text-xs font-normal text-gray-500 ml-2">Select codes this employee can bill</span>
                     </Label>
-                    <div className="border rounded-lg p-3 max-h-64 overflow-y-auto bg-gray-50">
+                    <div className="glass-card rounded-xl p-3 max-h-64 overflow-y-auto">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         {COMMON_BILLING_CODES.map(bc => {
                           const isSelected = formData.billing_codes?.includes(bc.code) || false;
@@ -772,17 +721,17 @@ const Employees = () => {
                             <label
                               key={bc.code}
                               className={`flex items-center p-2 rounded cursor-pointer transition-colors ${
-                                isSelected ? 'bg-blue-100 border border-blue-300' : 'bg-white border border-gray-200 hover:bg-gray-100'
+                                isSelected ? 'bg-teal-500/20 border border-teal-500/30' : 'bg-white/5 border border-white/10 hover:bg-white/10'
                               }`}
                             >
                               <Checkbox
                                 checked={isSelected}
                                 onCheckedChange={() => handleBillingCodeToggle(bc.code)}
-                                className="mr-2"
+                                className="mr-2 border-gray-600"
                               />
                               <div className="flex-1">
-                                <span className="font-mono text-sm font-semibold text-blue-700">{bc.code}</span>
-                                <span className="text-xs text-gray-600 ml-2">{bc.name}</span>
+                                <span className="font-mono text-sm font-semibold text-teal-400">{bc.code}</span>
+                                <span className="text-xs text-gray-400 ml-2">{bc.name}</span>
                               </div>
                             </label>
                           );
@@ -790,37 +739,28 @@ const Employees = () => {
                       </div>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">
-                      {formData.billing_codes?.length || 0} code(s) selected. These will appear in dropdown when editing timesheets.
+                      {formData.billing_codes?.length || 0} code(s) selected
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="employee_id">Employee ID</Label>
-                      <Input
-                        id="employee_id"
-                        name="employee_id"
-                        value={formData.employee_id}
-                        onChange={handleInputChange}
-                        placeholder="Auto-generated if left blank"
-                        data-testid="employee-id-input"
-                      />
-                    </div>
+                  <div>
+                    <Label className="text-gray-300">Employee ID</Label>
+                    <Input name="employee_id" value={formData.employee_id} onChange={handleInputChange} placeholder="Auto-generated if left blank" className="modern-input mt-1" data-testid="employee-id-input" />
                   </div>
                 </div>
 
                 {/* Form Actions */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingEmployee(null); }}>
+                <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                  <button type="button" onClick={() => { setShowForm(false); setEditingEmployee(null); }} className="btn-secondary">
                     Cancel
-                  </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="save-employee-btn">
+                  </button>
+                  <button type="submit" className="btn-primary" data-testid="save-employee-btn">
                     {editingEmployee ? "Update Employee" : "Create Employee"}
-                  </Button>
+                  </button>
                 </div>
               </form>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Search and Filters */}
@@ -867,102 +807,126 @@ const Employees = () => {
         )}
 
         {/* Employees List */}
-        <div>
+        <div className="glass-card rounded-2xl p-6 animate-slide-up">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="icon-container-sm">
+                <UserCheck className="w-5 h-5 text-teal-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Employee Records</h2>
+            </div>
+            <span className="text-sm text-gray-400">{employees.length} total</span>
+          </div>
+
           {employees.length === 0 ? (
-            <Card className="bg-white/70 backdrop-blur-sm shadow-lg">
-              <CardContent className="py-12 text-center">
-                <UserCheck className="mx-auto text-gray-400 mb-4" size={64} />
-                <p className="text-gray-500 text-lg">No employees added yet</p>
-                <p className="text-gray-400 text-sm mt-2">Create your first employee profile to get started</p>
-              </CardContent>
-            </Card>
+            <div className="py-16 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white/5 flex items-center justify-center">
+                <UserCheck className="w-10 h-10 text-gray-600" />
+              </div>
+              <p className="text-gray-400 text-lg mb-2">No employees added yet</p>
+              <p className="text-gray-500 text-sm">Create your first employee profile to get started</p>
+            </div>
           ) : (
             <>
               {/* Select All Checkbox */}
-              <div className="mb-3 flex items-center gap-2 px-2">
+              <div className="mb-4 flex items-center gap-3 px-2">
                 <Checkbox
                   checked={selectedEmployees.length === employees.length && employees.length > 0}
                   onCheckedChange={handleSelectAll}
                   id="select-all-employees"
+                  className="border-gray-600"
                 />
-                <label htmlFor="select-all-employees" className="text-sm font-medium text-gray-700 cursor-pointer">
+                <label htmlFor="select-all-employees" className="text-sm font-medium text-gray-400 cursor-pointer">
                   Select All ({employees.length})
                 </label>
               </div>
               
-              <div className="grid gap-4" data-testid="employees-list">
-                {employees.map((employee) => (
-                  <Card key={employee.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow" data-testid={`employee-${employee.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        {/* Selection Checkbox */}
-                        <div className="pt-1">
-                          <Checkbox
-                            checked={selectedEmployees.includes(employee.id)}
-                            onCheckedChange={(checked) => handleSelectEmployee(employee.id, checked)}
-                          />
-                        </div>
-                        
-                        <div className="flex-1 flex justify-between items-start">
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <div className="space-y-3" data-testid="employees-list">
+                {employees.map((employee, index) => (
+                  <div 
+                    key={employee.id} 
+                    className="glass-card-hover rounded-xl p-5 animate-slide-up"
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                    data-testid={`employee-${employee.id}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Selection Checkbox */}
+                      <div className="pt-1">
+                        <Checkbox
+                          checked={selectedEmployees.includes(employee.id)}
+                          onCheckedChange={(checked) => handleSelectEmployee(employee.id, checked)}
+                          className="border-gray-600"
+                        />
+                      </div>
+                      
+                      <div className="flex-1 flex flex-col lg:flex-row lg:justify-between gap-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2 flex-wrap">
                             {employee.first_name} {employee.middle_name} {employee.last_name}
                             {employee.is_complete === false && (
-                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
-                                INCOMPLETE
-                              </span>
+                              <span className="status-badge status-pending">INCOMPLETE</span>
                             )}
                             {employee.auto_created_from_timesheet && (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
-                                AUTO-CREATED
-                              </span>
+                              <span className="status-badge status-processing">AUTO-CREATED</span>
                             )}
                           </h3>
+                          
                           {/* Employee Categories */}
                           <div className="flex flex-wrap gap-1 mb-3">
                             {employee.categories && employee.categories.length > 0 ? (
                               employee.categories.map(code => {
                                 const cat = EMPLOYEE_CATEGORIES.find(c => c.code === code);
                                 return cat ? (
-                                  <span key={code} className={`text-xs font-bold px-2 py-0.5 rounded ${cat.color}`}>
+                                  <span key={code} className={`text-xs font-bold px-2 py-0.5 rounded border ${cat.color}`}>
                                     {cat.code}
                                   </span>
                                 ) : null;
                               })
                             ) : (
-                              <span className="text-xs text-amber-600">⚠️ No category</span>
+                              <span className="text-xs text-amber-400 flex items-center gap-1">
+                                <AlertCircle size={12} />
+                                No category
+                              </span>
                             )}
                           </div>
-                          <div className="space-y-1 text-sm">
-                            <p className="text-gray-600"><span className="font-semibold">DOB:</span> {employee.date_of_birth}</p>
-                            <p className="text-gray-600"><span className="font-semibold">Sex:</span> {employee.sex}</p>
-                            <p className="text-gray-600"><span className="font-semibold">SSN:</span> <span className="font-mono">{maskSSN(employee.ssn)}</span></p>
-                            {employee.email && <p className="text-gray-600 text-xs">{employee.email}</p>}
-                            <p className="text-gray-600 font-mono text-xs">{employee.phone}</p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div className="space-y-1">
+                              <p className="text-gray-400"><span className="text-gray-300 font-medium">DOB:</span> {employee.date_of_birth}</p>
+                              <p className="text-gray-400"><span className="text-gray-300 font-medium">Sex:</span> {employee.sex}</p>
+                              <p className="text-gray-400"><span className="text-gray-300 font-medium">SSN:</span> <span className="font-mono">{maskSSN(employee.ssn)}</span></p>
+                              {employee.email && <p className="text-gray-400 text-xs">{employee.email}</p>}
+                              <p className="text-gray-400 font-mono text-xs">{employee.phone}</p>
+                            </div>
+                            
+                            {employee.employee_id && (
+                              <div>
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Employee ID</p>
+                                <p className="text-sm text-gray-300 font-mono">{employee.employee_id}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                         
-                        {employee.employee_id && (
-                          <div>
-                            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Employee ID</h4>
-                            <p className="text-sm text-gray-700 font-mono">{employee.employee_id}</p>
-                          </div>
-                        )}
-                          </div>
-                          
-                          <div className="flex gap-2 ml-4">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(employee)} data-testid={`edit-employee-${employee.id}`}>
-                              <Edit className="text-blue-600" size={18} />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(employee.id)} data-testid={`delete-employee-${employee.id}`}>
-                              <Trash2 className="text-red-500" size={18} />
-                            </Button>
-                          </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleEdit(employee)} 
+                            className="p-2 rounded-lg bg-white/5 hover:bg-teal-500/20 text-gray-400 hover:text-teal-400 transition-all"
+                            data-testid={`edit-employee-${employee.id}`}
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(employee.id)} 
+                            className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all"
+                            data-testid={`delete-employee-${employee.id}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             </>

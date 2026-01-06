@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { Users, Plus, Edit, Trash2, X, CheckCircle, FileText, Calendar, User, AlertCircle, Heart, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,22 +10,12 @@ import { toast } from "sonner";
 import SearchFilter from "@/components/SearchFilter";
 import BulkActionToolbar from "@/components/BulkActionToolbar";
 import MultiStepForm from "@/components/MultiStepForm";
-import ICD10Lookup from "@/components/ICD10Lookup";
 import ICD10Badge from "@/components/ICD10Badge";
-import PhysicianLookup from "@/components/PhysicianLookup";
 import PhysicianBadge from "@/components/PhysicianBadge";
 import { getPatientFormSteps } from "@/components/PatientFormSteps";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
-
-const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
-];
 
 const Patients = () => {
   const [patients, setPatients] = useState([]);
@@ -52,7 +41,6 @@ const Patients = () => {
     physician_name: "",
     physician_npi: "",
     medicaid_number: "",
-    // Other Insurance
     has_other_insurance: false,
     other_insurance: {
       insurance_name: "",
@@ -85,7 +73,7 @@ const Patients = () => {
       
       const response = await axios.get(`${API}/patients?${params.toString()}`);
       setPatients(response.data);
-      setSelectedPatients([]); // Clear selection when data refreshes
+      setSelectedPatients([]);
     } catch (e) {
       console.error("Error fetching patients:", e);
       toast.error("Failed to load patients");
@@ -143,30 +131,18 @@ const Patients = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
   const handleSubmit = async (data) => {
-    // Validate Medicaid number (12 characters max)
     if (data.medicaid_number && data.medicaid_number.length > 12) {
       toast.error("Medicaid number cannot exceed 12 characters");
       return;
     }
     
-    // Validate NPI (10 digits)
     if (data.physician_npi && !/^\d{10}$/.test(data.physician_npi)) {
       toast.error("NPI must be exactly 10 digits");
       return;
     }
 
     try {
-      // Mark as complete when manually saving
       const submitData = {
         ...data,
         is_complete: true,
@@ -189,7 +165,6 @@ const Patients = () => {
       console.error("Error saving patient:", e);
       const errorDetail = e.response?.data?.detail;
       if (typeof errorDetail === 'object' && errorDetail !== null) {
-        // Handle structured error response
         const message = errorDetail.message || "Validation failed";
         const missingFields = errorDetail.missing_fields;
         if (missingFields && Array.isArray(missingFields)) {
@@ -220,7 +195,6 @@ const Patients = () => {
       physician_name: patient.physician_name || "",
       physician_npi: patient.physician_npi || "",
       medicaid_number: patient.medicaid_number || "",
-      // Other Insurance
       has_other_insurance: patient.has_other_insurance || false,
       other_insurance: patient.other_insurance || {
         insurance_name: "",
@@ -291,11 +265,10 @@ const Patients = () => {
     });
   };
 
-  // Use memoized form steps to prevent recreation on every render
   const formSteps = useMemo(() => getPatientFormSteps(), []);
 
   return (
-    <div className="min-h-screen healthcare-pattern">
+    <div className="min-h-screen healthcare-pattern" data-testid="patients-page">
       <div className="animated-bg"></div>
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -387,7 +360,6 @@ const Patients = () => {
             />
           </div>
         )}
-
 
         {/* Search and Filters */}
         {!showForm && (
@@ -548,11 +520,12 @@ const Patients = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Patient Details Modal */}
         {showDetailsModal && (
@@ -628,107 +601,103 @@ const Patients = () => {
                             />
                           </div>
                           {selectedPatientDetails.icd10_description && (
-                            <div className="text-gray-600 text-xs italic">{selectedPatientDetails.icd10_description}</div>
+                            <div className="text-gray-500 text-xs italic">{selectedPatientDetails.icd10_description}</div>
                           )}
-                          <div className="pt-2"><span className="font-semibold">Physician:</span> {selectedPatientDetails.physician_name || "N/A"}</div>
+                          <div className="pt-2"><span className="text-gray-500">Physician:</span> {selectedPatientDetails.physician_name || "N/A"}</div>
                           <div className="flex items-center gap-1">
-                            <span className="font-semibold">NPI:</span> 
+                            <span className="text-gray-500">NPI:</span> 
                             <PhysicianBadge 
                               npi={selectedPatientDetails.physician_npi} 
                               name={selectedPatientDetails.physician_name} 
                             />
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Visit Statistics */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      <Card className="bg-blue-50 border-blue-200">
-                        <CardContent className="p-4 flex items-center gap-4">
-                          <div className="bg-blue-100 p-3 rounded-lg">
-                            <FileText size={28} className="text-blue-600" />
+                      <div className="stat-card">
+                        <div className="flex items-center gap-4">
+                          <div className="icon-container">
+                            <FileText className="w-6 h-6 text-teal-400" />
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Total Visits</p>
-                            <p className="text-3xl font-bold text-blue-600">{selectedPatientDetails.total_visits || 0}</p>
+                            <p className="text-sm text-gray-400">Total Visits</p>
+                            <p className="text-3xl font-bold text-white">{selectedPatientDetails.total_visits || 0}</p>
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </div>
 
-                      <Card className="bg-green-50 border-green-200">
-                        <CardContent className="p-4 flex items-center gap-4">
-                          <div className="bg-green-100 p-3 rounded-lg">
-                            <Calendar size={28} className="text-green-600" />
+                      <div className="stat-card">
+                        <div className="flex items-center gap-4">
+                          <div className="icon-container">
+                            <Calendar className="w-6 h-6 text-green-400" />
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Last Visit Date</p>
-                            <p className="text-xl font-bold text-green-600">
+                            <p className="text-sm text-gray-400">Last Visit Date</p>
+                            <p className="text-xl font-bold text-white">
                               {selectedPatientDetails.last_visit_date || "No visits yet"}
                             </p>
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Timesheet History */}
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <FileText size={24} className="text-blue-600" />
+                      <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <FileText className="text-teal-400" size={24} />
                         Timesheet History
                       </h3>
                       
                       {selectedPatientDetails.timesheets && selectedPatientDetails.timesheets.length > 0 ? (
                         <div className="space-y-3">
                           {selectedPatientDetails.timesheets.map((timesheet) => (
-                            <Card key={timesheet.id} className="hover:shadow-md transition-shadow">
-                              <CardContent className="p-4">
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                  <div>
-                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">File</p>
-                                    <p className="text-sm font-mono truncate">{timesheet.filename}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Date</p>
-                                    <p className="text-sm">{timesheet.extracted_data?.date || "N/A"}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Time</p>
-                                    <p className="text-sm">
-                                      {timesheet.extracted_data?.time_in && timesheet.extracted_data?.time_out
-                                        ? `${timesheet.extracted_data.time_in} - ${timesheet.extracted_data.time_out}`
-                                        : "N/A"}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Status</p>
-                                    <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                                      timesheet.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                      timesheet.status === 'failed' ? 'bg-red-100 text-red-800' :
-                                      'bg-yellow-100 text-yellow-800'
-                                    }`}>
-                                      {timesheet.status?.toUpperCase() || "UNKNOWN"}
-                                    </span>
-                                  </div>
+                            <div key={timesheet.id} className="glass-card-hover rounded-xl p-4">
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                  <p className="text-xs text-gray-500 uppercase font-semibold mb-1">File</p>
+                                  <p className="text-sm font-mono text-gray-300 truncate">{timesheet.filename}</p>
                                 </div>
-                                
-                                {timesheet.extracted_data?.employee_name && (
-                                  <div className="mt-3 pt-3 border-t border-gray-100">
-                                    <p className="text-xs text-gray-500">Employee: <span className="text-gray-700 font-medium">{timesheet.extracted_data.employee_name}</span></p>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
+                                <div>
+                                  <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Date</p>
+                                  <p className="text-sm text-gray-300">{timesheet.extracted_data?.date || "N/A"}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Time</p>
+                                  <p className="text-sm text-gray-300">
+                                    {timesheet.extracted_data?.time_in && timesheet.extracted_data?.time_out
+                                      ? `${timesheet.extracted_data.time_in} - ${timesheet.extracted_data.time_out}`
+                                      : "N/A"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Status</p>
+                                  <span className={`status-badge ${
+                                    timesheet.status === 'completed' ? 'status-completed' :
+                                    timesheet.status === 'failed' ? 'status-error' :
+                                    'status-pending'
+                                  }`}>
+                                    {timesheet.status?.toUpperCase() || "UNKNOWN"}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {timesheet.extracted_data?.employee_name && (
+                                <div className="mt-3 pt-3 border-t border-white/10">
+                                  <p className="text-xs text-gray-500">Employee: <span className="text-gray-300 font-medium">{timesheet.extracted_data.employee_name}</span></p>
+                                </div>
+                              )}
+                            </div>
                           ))}
                         </div>
                       ) : (
-                        <Card className="bg-gray-50">
-                          <CardContent className="p-8 text-center">
-                            <FileText size={48} className="mx-auto text-gray-400 mb-3" />
-                            <p className="text-gray-600">No timesheet history for this patient</p>
-                            <p className="text-sm text-gray-500 mt-1">Timesheets will appear here once uploaded</p>
-                          </CardContent>
-                        </Card>
+                        <div className="glass-card rounded-xl p-8 text-center">
+                          <FileText className="mx-auto text-gray-600 mb-3" size={48} />
+                          <p className="text-gray-400">No timesheet history for this patient</p>
+                          <p className="text-sm text-gray-500 mt-1">Timesheets will appear here once uploaded</p>
+                        </div>
                       )}
                     </div>
                   </div>
