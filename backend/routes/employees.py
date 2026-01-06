@@ -787,3 +787,62 @@ async def resolve_duplicate_employees(
         "deleted_names": deleted_names,
         "message": f"Kept 1 employee, deleted {deleted_count} duplicate(s)"
     }
+
+
+
+# ============================================================================
+# Bulk Operations
+# ============================================================================
+
+@employees_router.post("/bulk-update")
+async def bulk_update_employees(request: BulkUpdateRequest, organization_id: str = Depends(get_organization_id)):
+    """Bulk update multiple employee profiles - HIPAA compliant
+    
+    Common use case: Mark multiple profiles as complete
+    """
+    try:
+        # Validate IDs exist within organization
+        count = await db.employees.count_documents({"id": {"$in": request.ids}, "organization_id": organization_id})
+        
+        if count == 0:
+            raise HTTPException(status_code=404, detail="No employees found with provided IDs")
+        
+        # Add updated_at timestamp
+        updates = request.updates.copy()
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        
+        # Perform bulk update within organization
+        result = await db.employees.update_many(
+            {"id": {"$in": request.ids}, "organization_id": organization_id},
+            {"$set": updates}
+        )
+        
+        logger.info(f"Bulk updated {result.modified_count} employees for org {organization_id}")
+        
+        return {
+            "status": "success",
+            "modified_count": result.modified_count,
+            "matched_count": result.matched_count
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Bulk update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@employees_router.post("/bulk-delete")
+async def bulk_delete_employees(request: BulkDeleteRequest, organization_id: str = Depends(get_organization_id)):
+    """Bulk delete multiple employee profiles - HIPAA compliant"""
+    try:
+        result = await db.employees.delete_many({"id": {"$in": request.ids}, "organization_id": organization_id})
+        
+        logger.info(f"Bulk deleted {result.deleted_count} employees for org {organization_id}")
+        
+        return {
+            "status": "success",
+            "deleted_count": result.deleted_count
+        }
+    except Exception as e:
+        logger.error(f"Bulk delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
