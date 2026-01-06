@@ -822,98 +822,87 @@ const Home = () => {
                           </button>
                         </Link>
                         <button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(timesheet.id)}
-                              data-testid={`delete-timesheet-${timesheet.id}`}
-                              title="Delete timesheet"
-                            >
-                              <Trash2 className="text-red-500" size={18} />
-                            </Button>
-                          </div>
-                        </div>
+                          className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all"
+                          onClick={() => handleDelete(timesheet.id)}
+                          data-testid={`delete-timesheet-${timesheet.id}`}
+                          title="Delete timesheet"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
-                  </CardHeader>
+                    </div>
                   
                   {timesheet.extracted_data && timesheet.status === "completed" && (
-                    <CardContent>
-                      <div className="space-y-6">
-                        {/* Client Information */}
-                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                          <p className="text-xs text-blue-700 uppercase font-semibold mb-1">Patient/Client</p>
-                          <p className="text-lg font-bold text-blue-900">{timesheet.extracted_data.client_name || "N/A"}</p>
-                        </div>
+                    <div className="mt-4 pt-4 border-t border-white/5">
+                      {/* Client Information */}
+                      <div className="glass-card rounded-lg p-4 mb-4">
+                        <p className="text-xs text-teal-400 uppercase font-semibold mb-1 flex items-center gap-2">
+                          <Heart size={12} />
+                          Patient/Client
+                        </p>
+                        <p className="text-lg font-bold text-white">{timesheet.extracted_data.client_name || "N/A"}</p>
+                      </div>
 
-                        {/* Chronological Time Entries */}
-                        {timesheet.extracted_data.employee_entries && timesheet.extracted_data.employee_entries.length > 0 && (() => {
-                          // Flatten all time entries from all employees and add employee info
-                          const allEntries = [];
-                          let totalUnits = 0;
-                          
-                          // Helper function to calculate units from time in and time out
-                          const calculateUnits = (timeIn, timeOut, date) => {
-                            try {
-                              if (!timeIn || !timeOut) return 0;
-                              
-                              // Parse time strings (e.g., "08:00 AM")
-                              const dateStr = date || '2025-01-01'; // Use date or default
-                              const timeInDate = new Date(`${dateStr} ${timeIn}`);
-                              const timeOutDate = new Date(`${dateStr} ${timeOut}`);
-                              
-                              // Check for invalid dates
-                              if (isNaN(timeInDate.getTime()) || isNaN(timeOutDate.getTime())) {
-                                return 0;
-                              }
-                              
-                              // Calculate difference in minutes
-                              let diffMinutes = (timeOutDate - timeInDate) / (1000 * 60);
-                              
-                              // Handle overnight shifts (time out is next day)
-                              if (diffMinutes < 0) {
-                                diffMinutes += 24 * 60; // Add 24 hours
-                              }
-                              
-                              // Validate diffMinutes is a valid number
-                              if (isNaN(diffMinutes) || !isFinite(diffMinutes)) {
-                                return 0;
-                              }
-                              
-                              // Special rounding rule: if > 35 minutes and < 45 minutes, round to 3 units (45 min)
-                              if (diffMinutes > 35 && diffMinutes < 45) {
-                                return 3;
-                              }
-                              
-                              // Convert minutes to units (1 unit = 15 minutes)
-                              const units = Math.round(diffMinutes / 15);
-                              return isNaN(units) ? 0 : units;
-                            } catch (e) {
-                              console.error('Error calculating units:', e);
+                      {/* Chronological Time Entries */}
+                      {timesheet.extracted_data.employee_entries && timesheet.extracted_data.employee_entries.length > 0 && (() => {
+                        // Flatten all time entries from all employees and add employee info
+                        const allEntries = [];
+                        let totalUnits = 0;
+                        
+                        // Helper function to calculate units from time in and time out
+                        const calculateUnits = (timeIn, timeOut, date) => {
+                          try {
+                            if (!timeIn || !timeOut) return 0;
+                            
+                            // Parse time strings (e.g., "08:00 AM")
+                            const dateStr = date || '2025-01-01';
+                            const timeInDate = new Date(`${dateStr} ${timeIn}`);
+                            const timeOutDate = new Date(`${dateStr} ${timeOut}`);
+                            
+                            if (isNaN(timeInDate.getTime()) || isNaN(timeOutDate.getTime())) {
                               return 0;
                             }
-                          };
-                          
-                          // Build entries in SCAN ORDER (maintain document order)
-                          // Don't sort - preserve the order they were extracted
-                          let entryIndex = 0;
-                          timesheet.extracted_data.employee_entries.forEach(employee => {
-                            if (employee.time_entries) {
-                              employee.time_entries.forEach(entry => {
-                                // Use units from backend if available, otherwise calculate
-                                const units = entry.units || calculateUnits(entry.time_in, entry.time_out, entry.date);
-                                // Ensure units is a valid number before adding
-                                totalUnits += (isNaN(units) ? 0 : units);
-                                
-                                allEntries.push({
-                                  ...entry,
-                                  employee_name: employee.employee_name,
-                                  service_code: employee.service_code,
-                                  signature: employee.signature,
-                                  units: isNaN(units) ? 0 : units,
-                                  scan_order: entryIndex++ // Track original order
-                                });
-                              });
+                            
+                            let diffMinutes = (timeOutDate - timeInDate) / (1000 * 60);
+                            
+                            if (diffMinutes < 0) {
+                              diffMinutes += 24 * 60;
                             }
-                          });
+                            
+                            if (isNaN(diffMinutes) || !isFinite(diffMinutes)) {
+                              return 0;
+                            }
+                            
+                            if (diffMinutes > 35 && diffMinutes < 45) {
+                              return 3;
+                            }
+                            
+                            const units = Math.round(diffMinutes / 15);
+                            return isNaN(units) ? 0 : units;
+                          } catch (e) {
+                            console.error('Error calculating units:', e);
+                            return 0;
+                          }
+                        };
+                        
+                        let entryIndex = 0;
+                        timesheet.extracted_data.employee_entries.forEach(employee => {
+                          if (employee.time_entries) {
+                            employee.time_entries.forEach(entry => {
+                              const units = entry.units || calculateUnits(entry.time_in, entry.time_out, entry.date);
+                              totalUnits += (isNaN(units) ? 0 : units);
+                              
+                              allEntries.push({
+                                ...entry,
+                                employee_name: employee.employee_name,
+                                service_code: employee.service_code,
+                                signature: employee.signature,
+                                units: isNaN(units) ? 0 : units,
+                                scan_order: entryIndex++
+                              });
+                            });
+                          }
+                        });
                           
                           // DO NOT SORT - maintain scan order from document
                           // Entries are already in the order they were extracted
