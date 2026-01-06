@@ -735,69 +735,93 @@ const Home = () => {
         />
 
         {/* Timesheets List */}
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Recent Timesheets
-          </h2>
+        <div className="glass-card rounded-2xl p-6 animate-slide-up">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="icon-container-sm">
+                <FileText className="w-5 h-5 text-teal-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Recent Timesheets
+              </h2>
+            </div>
+            <span className="text-sm text-gray-400">{timesheets.length} total</span>
+          </div>
           
           {timesheets.length === 0 ? (
-            <Card className="bg-white/70 backdrop-blur-sm shadow-lg">
-              <CardContent className="py-12 text-center">
-                <FileText className="mx-auto text-gray-400 mb-4" size={64} />
-                <p className="text-gray-500 text-lg">No timesheets uploaded yet</p>
-                <p className="text-gray-400 text-sm mt-2">Upload your first timesheet to get started</p>
-              </CardContent>
-            </Card>
+            <div className="py-16 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white/5 flex items-center justify-center">
+                <FileText className="w-10 h-10 text-gray-600" />
+              </div>
+              <p className="text-gray-400 text-lg mb-2">No timesheets uploaded yet</p>
+              <p className="text-gray-500 text-sm">Upload your first timesheet to get started</p>
+            </div>
           ) : (
             <>
               {/* Select All Checkbox */}
-              <div className="mb-3 flex items-center gap-2 px-2">
+              <div className="mb-4 flex items-center gap-3 px-2">
                 <Checkbox
                   checked={selectedTimesheets.length === timesheets.length && timesheets.length > 0}
                   onCheckedChange={handleSelectAll}
                   id="select-all-timesheets"
+                  className="border-gray-600"
                 />
-                <label htmlFor="select-all-timesheets" className="text-sm font-medium text-gray-700 cursor-pointer">
+                <label htmlFor="select-all-timesheets" className="text-sm font-medium text-gray-400 cursor-pointer">
                   Select All ({timesheets.length})
                 </label>
               </div>
               
-              <div className="grid gap-6" data-testid="timesheets-list">
-                {timesheets.map((timesheet) => (
-                  <Card key={timesheet.id} className="bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow" data-testid={`timesheet-${timesheet.id}`}>
-                    <CardHeader>
-                      <div className="flex items-start gap-4">
-                        {/* Selection Checkbox */}
-                        <div className="pt-1">
-                          <Checkbox
-                            checked={selectedTimesheets.includes(timesheet.id)}
-                            onCheckedChange={(checked) => handleSelectTimesheet(timesheet.id, checked)}
-                          />
+              <div className="space-y-3" data-testid="timesheets-list">
+                {timesheets.map((timesheet, index) => (
+                  <div 
+                    key={timesheet.id} 
+                    className="glass-card-hover rounded-xl p-4 animate-slide-up"
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                    data-testid={`timesheet-${timesheet.id}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Selection Checkbox */}
+                      <Checkbox
+                        checked={selectedTimesheets.includes(timesheet.id)}
+                        onCheckedChange={(checked) => handleSelectTimesheet(timesheet.id, checked)}
+                        className="border-gray-600"
+                      />
+                      
+                      {/* Status Icon */}
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        timesheet.status === 'failed' ? 'bg-red-500/20' :
+                        timesheet.status === 'processing' ? 'bg-blue-500/20' :
+                        timesheet.sandata_status === 'submitted' ? 'bg-green-500/20' :
+                        'bg-teal-500/20'
+                      }`}>
+                        {getStatusIcon(timesheet.status, timesheet.sandata_status)}
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-medium truncate">{timesheet.filename}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`status-badge ${getStatusBadgeClass(timesheet.status, timesheet.sandata_status)}`}>
+                            {getStatusText(timesheet.status, timesheet.sandata_status)}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(timesheet.created_at).toLocaleString()}
+                          </span>
                         </div>
-                        
-                        <div className="flex-1 flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            {getStatusIcon(timesheet.status, timesheet.sandata_status)}
-                            <div>
-                              <CardTitle className="text-lg">{timesheet.filename}</CardTitle>
-                              <CardDescription>
-                                {getStatusText(timesheet.status, timesheet.sandata_status)} •{" "}
-                                {new Date(timesheet.created_at).toLocaleString()}
-                              </CardDescription>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Link to={`/timesheet/edit/${timesheet.id}`}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                data-testid={`edit-timesheet-${timesheet.id}`}
-                                title="Edit timesheet"
-                              >
-                                <Edit2 className="text-blue-600" size={18} />
-                              </Button>
-                            </Link>
-                            <Button
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center gap-2">
+                        <Link to={`/timesheet/edit/${timesheet.id}`}>
+                          <button
+                            className="p-2 rounded-lg bg-white/5 hover:bg-teal-500/20 text-gray-400 hover:text-teal-400 transition-all"
+                            data-testid={`edit-timesheet-${timesheet.id}`}
+                            title="Edit timesheet"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                        </Link>
+                        <button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDelete(timesheet.id)}
