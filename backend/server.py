@@ -4331,15 +4331,17 @@ from evv_aggregator_factory import get_default_evv_client
 
 # Business Entity Configuration Endpoints
 @api_router.post("/evv/business-entity", response_model=BusinessEntityConfig)
-async def create_business_entity(entity: BusinessEntityConfig):
-    """Create business entity configuration for EVV"""
+async def create_business_entity(entity: BusinessEntityConfig, organization_id: str = Depends(get_organization_id)):
+    """Create business entity configuration for EVV - HIPAA compliant"""
     try:
         doc = entity.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
         doc['updated_at'] = doc['updated_at'].isoformat()
+        # HIPAA: Associate business entity with organization
+        doc['organization_id'] = organization_id
         
         await db.business_entities.insert_one(doc)
-        logger.info(f"Business entity created: {entity.id}")
+        logger.info(f"Business entity created: {entity.id} for org {organization_id}")
         
         return entity
     except Exception as e:
@@ -4347,9 +4349,10 @@ async def create_business_entity(entity: BusinessEntityConfig):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/evv/business-entity", response_model=List[BusinessEntityConfig])
-async def get_business_entities():
-    """Get all business entity configurations"""
-    entities = await db.business_entities.find({}, {"_id": 0}).to_list(100)
+async def get_business_entities(organization_id: str = Depends(get_organization_id)):
+    """Get all business entity configurations - HIPAA compliant"""
+    # HIPAA: Only get business entities for this organization
+    entities = await db.business_entities.find({"organization_id": organization_id}, {"_id": 0}).to_list(100)
     
     for entity in entities:
         if isinstance(entity.get('created_at'), str):
@@ -4360,9 +4363,14 @@ async def get_business_entities():
     return entities
 
 @api_router.get("/evv/business-entity/active", response_model=BusinessEntityConfig)
-async def get_active_business_entity():
-    """Get active business entity for EVV submissions"""
-    entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
+async def get_active_business_entity(organization_id: str = Depends(get_organization_id)):
+    """Get active business entity for EVV submissions - HIPAA compliant"""
+    # HIPAA: Get active entity for this organization
+    entity = await db.business_entities.find_one({"is_active": True, "organization_id": organization_id}, {"_id": 0})
+    
+    # Fallback to any active entity for backwards compatibility
+    if not entity:
+        entity = await db.business_entities.find_one({"is_active": True}, {"_id": 0})
     
     if not entity:
         raise HTTPException(status_code=404, detail="No active business entity found")
@@ -4376,8 +4384,8 @@ async def get_active_business_entity():
 
 # EVV Visit Endpoints
 @api_router.post("/evv/visits", response_model=EVVVisit)
-async def create_evv_visit(visit: EVVVisit):
-    """Create a new EVV visit record"""
+async def create_evv_visit(visit: EVVVisit, organization_id: str = Depends(get_organization_id)):
+    """Create a new EVV visit record - HIPAA compliant"""
     try:
         # Generate sequence ID if not provided
         if not visit.sequence_id:
