@@ -98,36 +98,47 @@ const Login = () => {
                   <Lock size={16} className="text-teal-400" />
                   Password
                 </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                className="mt-1"
-              />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  className="modern-input"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full btn-primary py-3 text-lg font-semibold flex items-center justify-center gap-2 mt-6"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Signing In...
+                  </>
+                ) : (
+                  <>
+                    <LogIn size={20} />
+                    Sign In
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-400">
+                Don't have an account?{' '}
+                <Link to="/signup" className="text-teal-400 hover:text-teal-300 font-semibold transition-colors">
+                  Sign Up
+                </Link>
+              </p>
             </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              disabled={loading}
-            >
-              {loading ? 'Signing In...' : 'Sign In'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/signup" className="text-blue-600 hover:underline font-semibold">
-                Sign Up
-              </Link>
-            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
