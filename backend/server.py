@@ -2163,12 +2163,16 @@ async def bulk_delete_employees(request: BulkDeleteRequest, organization_id: str
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/timesheets/bulk-delete")
-async def bulk_delete_timesheets(request: BulkDeleteRequest):
-    """Bulk delete multiple timesheets"""
+async def bulk_delete_timesheets(request: BulkDeleteRequest, organization_id: str = Depends(get_organization_id)):
+    """Bulk delete multiple timesheets - HIPAA compliant with org isolation"""
     try:
-        result = await db.timesheets.delete_many({"id": {"$in": request.ids}})
+        # HIPAA: Only delete timesheets belonging to user's organization
+        result = await db.timesheets.delete_many({
+            "id": {"$in": request.ids},
+            "organization_id": organization_id
+        })
         
-        logger.info(f"Bulk deleted {result.deleted_count} timesheets")
+        logger.info(f"Bulk deleted {result.deleted_count} timesheets for org {organization_id}")
         
         return {
             "status": "success",
