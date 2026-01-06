@@ -5,7 +5,7 @@ Build a comprehensive healthcare application for Ohio Medicaid providers featuri
 - PDF timesheet scanning with OCR (Gemini Vision API)
 - Electronic Visit Verification (EVV) compliance with Sandata
 - Payer and Contract management for Medicaid billing
-- Multi-tenant organization management
+- Multi-tenant organization management with HIPAA-compliant data isolation
 - Admin panel for system administration
 
 ## Core Requirements
@@ -14,6 +14,7 @@ Build a comprehensive healthcare application for Ohio Medicaid providers featuri
 3. **Billing Management**: Track payers, contracts, and billing codes
 4. **User Management**: Multi-tenant with organization isolation
 5. **Admin Panel**: Super admin tools for managing organizations and credentials
+6. **HIPAA Compliance**: Organization-level data isolation ensuring one org cannot access another's PHI
 
 ## Current Architecture
 ```
