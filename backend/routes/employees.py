@@ -7,6 +7,7 @@ Contains:
 - Name correction management
 - Duplicate detection and resolution
 - Billing code management
+- Bulk operations
 """
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -22,6 +23,8 @@ import os
 from models import (
     EmployeeProfile,
     EmployeeProfileUpdate,
+    BulkDeleteRequest,
+    BulkUpdateRequest,
 )
 
 # Import auth dependency
